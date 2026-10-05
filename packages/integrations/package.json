@@ -14,7 +14,8 @@
   },
   "dependencies": {
     "@bystro/core": "workspace:*",
-    "@bystro/db": "workspace:*"
+    "@bystro/db": "workspace:*",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@bystro/config": "workspace:*",

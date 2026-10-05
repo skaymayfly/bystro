@@ -2,6 +2,11 @@
 export const SIGN_IN_PATH = "/prihlaseni";
 /** Where signed-in users land. */
 export const APP_HOME_PATH = "/app";
+/** Where signed-in users without a company are sent. */
+export const ONBOARDING_PATH = "/onboarding";
+
+/** Pages that need a session. */
+const PROTECTED_PAGE_PREFIXES = [APP_HOME_PATH, ONBOARDING_PATH];
 
 /**
  * API routes reachable without a session. Everything else under /api is denied by default,
@@ -29,7 +34,7 @@ export function decideAccess(
     const isPublic = PUBLIC_API_PREFIXES.some((prefix) => isUnder(pathname, prefix));
     return isPublic || hasSessionCookie ? { type: "allow" } : { type: "unauthorized" };
   }
-  if (isUnder(pathname, APP_HOME_PATH) && !hasSessionCookie) {
+  if (!hasSessionCookie && PROTECTED_PAGE_PREFIXES.some((prefix) => isUnder(pathname, prefix))) {
     const next = encodeURIComponent(`${pathname}${search}`);
     return { type: "redirect", location: `${SIGN_IN_PATH}?next=${next}` };
   }

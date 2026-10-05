@@ -114,7 +114,7 @@ Výsledek fáze: na veřejné adrese se dá zaregistrovat, založit firmu podle 
 
 **Hotovo když:** všechny obrazovky z prototypu existují jako prázdné stavy a vizuálně odpovídají prototypu na desktopu i mobilu.
 
-### - [ ] 1.6 Onboarding krok 1: firma podle IČO
+### - [x] 1.6 Onboarding krok 1: firma podle IČO
 
 **Cíl:** po registraci uživatel založí firmu.
 

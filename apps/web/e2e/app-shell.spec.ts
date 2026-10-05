@@ -1,6 +1,6 @@
-import { randomUUID } from "node:crypto";
-
 import { expect, test, type Browser, type Page } from "@playwright/test";
+
+import { completeOnboarding, KNOWN_COMPANY_NAME, newEmail, signIn, signUp } from "./helpers";
 
 /** Each screen with a text that only its empty state shows. */
 const SCREENS = [
@@ -17,8 +17,7 @@ const SCREENS = [
 
 const DESKTOP = { width: 1440, height: 900 };
 const MOBILE = { width: 390, height: 844 };
-const PASSWORD = "tajne-heslo-123";
-const email = `e2e-${randomUUID()}@example.test`;
+const email = newEmail();
 
 // One account for the whole file: sign-up and sign-in are rate limited in production mode,
 // so the tests share a session instead of registering again and again.
@@ -29,12 +28,8 @@ test.beforeAll(async ({ browser }, testInfo) => {
   storageStatePath = testInfo.outputPath("session.json");
   const context = await browser.newContext();
   const page = await context.newPage();
-  await page.goto("/registrace");
-  await page.getByLabel("Jméno a příjmení").fill("Petr Dvořák");
-  await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel("Heslo").fill(PASSWORD);
-  await page.getByRole("button", { name: "Vytvořit účet" }).click();
-  await expect(page).toHaveURL("/app");
+  await signUp(page, email);
+  await completeOnboarding(page);
   await context.storageState({ path: storageStatePath });
   await context.close();
 });
@@ -74,9 +69,9 @@ test("navigace na počítači projde všechny obrazovky s prázdnými stavy", as
   const page = await signedInPage(browser, DESKTOP);
   await page.goto("/app");
 
-  // Sidebar shows who is signed in and that no company exists yet.
+  // Sidebar shows who is signed in and for which company.
   await expect(page.getByText("Petr Dvořák")).toBeVisible();
-  await expect(page.getByText("Firma zatím není založená")).toBeVisible();
+  await expect(page.getByText(KNOWN_COMPANY_NAME)).toBeVisible();
 
   await visitEveryScreen(page, "desktop");
   await page.context().close();
@@ -128,9 +123,7 @@ test("po odhlášení a přihlášení se uživatel vrátí na stránku, kterou 
 
   await page.goto("/app/faktury");
   await expect(page).toHaveURL(/\/prihlaseni\?next=%2Fapp%2Ffaktury$/);
-  await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel("Heslo").fill(PASSWORD);
-  await page.getByRole("button", { name: "Přihlásit se" }).click();
+  await signIn(page, email);
 
   await expect(page).toHaveURL("/app/faktury");
   await expect(page.getByText("Zatím tu žádné faktury nejsou")).toBeVisible();

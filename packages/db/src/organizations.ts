@@ -1,8 +1,8 @@
 import type { AuditSource, Role } from "@bystro/core";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 
 import { writeAudit } from "./audit";
-import type { Db } from "./client";
+import type { Db, DbTransaction } from "./client";
 import { requireUuid } from "./ids";
 import { memberships, organizations } from "./schema";
 
@@ -22,47 +22,92 @@ export interface NewOrganization {
   vatPayer?: boolean;
 }
 
+export interface CreateOrganizationInput {
+  organization: NewOrganization;
+  ownerUserId: string;
+  source: AuditSource;
+}
+
+/** Thrown by {@link createFirstOrganization} when the user already belongs to an organization. */
+export class OrganizationAlreadyExistsError extends Error {
+  override name = "OrganizationAlreadyExistsError";
+}
+
+/** Inserts the organization, its owner membership and the audit record inside `tx`. */
+async function insertOrganizationWithOwner(
+  tx: DbTransaction,
+  ownerUserId: string,
+  input: CreateOrganizationInput,
+): Promise<Organization> {
+  const { organization: data } = input;
+  const [organization] = await tx
+    .insert(organizations)
+    .values({
+      name: data.name,
+      ico: data.ico,
+      dic: data.dic ?? null,
+      street: data.street ?? null,
+      city: data.city ?? null,
+      postalCode: data.postalCode ?? null,
+      ...(data.country === undefined ? {} : { country: data.country }),
+      vatPayer: data.vatPayer ?? false,
+    })
+    .returning();
+  if (organization === undefined) {
+    throw new Error("Organization insert returned no row.");
+  }
+
+  await tx
+    .insert(memberships)
+    .values({ organizationId: organization.id, userId: ownerUserId, role: "owner" });
+
+  await writeAudit(tx, organization.id, {
+    actor: { type: "user", userId: ownerUserId },
+    action: "organization.created",
+    target: { type: "organization", id: organization.id },
+    source: input.source,
+  });
+
+  return organization;
+}
+
 /**
  * Creates an organization, makes the given user its owner and writes the audit record,
  * all in one transaction: either everything is stored or nothing is.
  */
 export async function createOrganization(
   db: Db,
-  input: { organization: NewOrganization; ownerUserId: string; source: AuditSource },
+  input: CreateOrganizationInput,
 ): Promise<Organization> {
   const ownerUserId = requireUuid(input.ownerUserId, "ownerUserId");
-  const { organization: data } = input;
+  return db.transaction((tx) => insertOrganizationWithOwner(tx, ownerUserId, input));
+}
+
+/**
+ * Creates the user's first organization (onboarding). Idempotent against double submits:
+ * a per-user lock makes concurrent calls run one after another, and every call after the
+ * first throws {@link OrganizationAlreadyExistsError} instead of creating a duplicate.
+ */
+export async function createFirstOrganization(
+  db: Db,
+  input: CreateOrganizationInput,
+): Promise<Organization> {
+  const ownerUserId = requireUuid(input.ownerUserId, "ownerUserId");
 
   return db.transaction(async (tx) => {
-    const [organization] = await tx
-      .insert(organizations)
-      .values({
-        name: data.name,
-        ico: data.ico,
-        dic: data.dic ?? null,
-        street: data.street ?? null,
-        city: data.city ?? null,
-        postalCode: data.postalCode ?? null,
-        ...(data.country === undefined ? {} : { country: data.country }),
-        vatPayer: data.vatPayer ?? false,
-      })
-      .returning();
-    if (organization === undefined) {
-      throw new Error("Organization insert returned no row.");
+    // Held until the transaction ends; keyed by user, so other users are not blocked.
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${ownerUserId}, 0))`);
+
+    const [existing] = await tx
+      .select({ id: memberships.id })
+      .from(memberships)
+      .where(eq(memberships.userId, ownerUserId))
+      .limit(1);
+    if (existing !== undefined) {
+      throw new OrganizationAlreadyExistsError("The user already belongs to an organization.");
     }
 
-    await tx
-      .insert(memberships)
-      .values({ organizationId: organization.id, userId: ownerUserId, role: "owner" });
-
-    await writeAudit(tx, organization.id, {
-      actor: { type: "user", userId: ownerUserId },
-      action: "organization.created",
-      target: { type: "organization", id: organization.id },
-      source: input.source,
-    });
-
-    return organization;
+    return insertOrganizationWithOwner(tx, ownerUserId, input);
   });
 }
 

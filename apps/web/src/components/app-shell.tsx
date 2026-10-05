@@ -1,44 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 
-import { authClient } from "@/lib/auth-client";
 import { initials, isNavItemActive, NAV_ITEMS } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 import { Logo } from "./bits";
+import { SignOutButton } from "./sign-out-button";
 
 interface AppShellProps {
   userName: string;
-  /** Name of the active organization, or `null` before the user creates one. */
-  organizationName: string | null;
+  organizationName: string;
   children: ReactNode;
-}
-
-function SignOutButton({ className }: { className?: string }) {
-  const router = useRouter();
-  const [pending, setPending] = useState(false);
-
-  async function onClick() {
-    setPending(true);
-    await authClient.signOut();
-    router.push("/prihlaseni");
-    router.refresh();
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={pending}
-      title="Odhlásit"
-      className={cn("cursor-pointer p-1 text-xs text-ink-3 hover:text-ink", className)}
-    >
-      Odejít
-    </button>
-  );
 }
 
 /**
@@ -79,8 +54,8 @@ export function AppShell({ userName, organizationName, children }: AppShellProps
           </span>
           <span className="min-w-0 flex-1">
             <span className="line-clamp-2 text-sm font-semibold break-words">{userName}</span>
-            <span className="line-clamp-2 text-xs break-words text-ink-3">
-              {organizationName ?? "Firma zatím není založená"}
+            <span className="line-clamp-2 text-xs break-words text-ink-3" title={organizationName}>
+              {organizationName}
             </span>
           </span>
           <SignOutButton />

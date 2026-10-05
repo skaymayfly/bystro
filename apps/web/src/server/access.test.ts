@@ -20,6 +20,14 @@ describe("decideAccess", () => {
     });
   });
 
+  it("redirects unauthenticated visitors of onboarding to sign-in", () => {
+    expect(decideAccess("/onboarding", "?krok=2", false)).toEqual({
+      type: "redirect",
+      location: "/prihlaseni?next=%2Fonboarding%3Fkrok%3D2",
+    });
+    expect(decideAccess("/onboarding", "", true)).toEqual({ type: "allow" });
+  });
+
   it("lets /app through when a session cookie is present", () => {
     expect(decideAccess("/app/faktury", "", true)).toEqual({ type: "allow" });
   });

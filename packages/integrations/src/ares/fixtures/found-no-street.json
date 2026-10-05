@@ -1,0 +1,139 @@
+{
+  "ico": "00573418",
+  "obchodniJmeno": "Obec Modrava",
+  "sidlo": {
+    "kodStatu": "CZ",
+    "nazevStatu": "Česká republika",
+    "kodKraje": 43,
+    "nazevKraje": "Plzeňský kraj",
+    "kodOkresu": 3404,
+    "nazevOkresu": "Klatovy",
+    "kodObce": 542148,
+    "nazevObce": "Modrava",
+    "cisloDomovni": 63,
+    "kodCastiObce": 97870,
+    "nazevCastiObce": "Modrava",
+    "kodAdresnihoMista": 21428034,
+    "psc": 34192,
+    "textovaAdresa": "č.p. 63, 34192 Modrava",
+    "standardizaceAdresy": true,
+    "typCisloDomovni": 1
+  },
+  "pravniForma": "801",
+  "pravniFormaRos": "801",
+  "financniUrad": "133",
+  "datumVzniku": "1990-11-24",
+  "datumAktualizace": "2026-06-05",
+  "dic": "CZ00573418",
+  "icoId": "00573418",
+  "adresaDorucovaci": { "radekAdresy1": "č.p. 63", "radekAdresy2": "34192 Modrava" },
+  "czNace2008": ["84110"],
+  "seznamRegistraci": {
+    "stavZdrojeRos": "AKTIVNI",
+    "stavZdrojeVr": "NEEXISTUJICI",
+    "stavZdrojeRes": "AKTIVNI",
+    "stavZdrojeRzp": "AKTIVNI",
+    "stavZdrojeNrpzs": "NEEXISTUJICI",
+    "stavZdrojeRpsh": "NEEXISTUJICI",
+    "stavZdrojeRcns": "NEEXISTUJICI",
+    "stavZdrojeSzr": "NEEXISTUJICI",
+    "stavZdrojeDph": "AKTIVNI",
+    "stavZdrojeSkDph": "NEEXISTUJICI",
+    "stavZdrojeSd": "NEEXISTUJICI",
+    "stavZdrojeIr": "NEEXISTUJICI",
+    "stavZdrojeCeu": "NEEXISTUJICI",
+    "stavZdrojeRs": "NEEXISTUJICI",
+    "stavZdrojeRed": "AKTIVNI",
+    "stavZdrojeMonitor": "AKTIVNI"
+  },
+  "primarniZdroj": "ros",
+  "dalsiUdaje": [
+    {
+      "obchodniJmeno": [{ "obchodniJmeno": "Obec Modrava", "primarniZaznam": true }],
+      "sidlo": [
+        {
+          "sidlo": {
+            "kodStatu": "CZ",
+            "nazevStatu": "Česká republika",
+            "kodKraje": 43,
+            "nazevKraje": "Plzeňský kraj",
+            "kodOkresu": 3404,
+            "nazevOkresu": "Klatovy",
+            "kodObce": 542148,
+            "nazevObce": "Modrava",
+            "cisloDomovni": 63,
+            "kodCastiObce": 97870,
+            "nazevCastiObce": "Modrava",
+            "kodAdresnihoMista": 21428034,
+            "psc": 34192,
+            "textovaAdresa": "č.p. 63, 34192 Modrava",
+            "standardizaceAdresy": true,
+            "typCisloDomovni": 1
+          },
+          "primarniZaznam": true
+        }
+      ],
+      "pravniForma": "801",
+      "pravniFormaRos": "801",
+      "datovyZdroj": "res"
+    },
+    {
+      "obchodniJmeno": [{ "obchodniJmeno": "Obec Modrava", "primarniZaznam": true }],
+      "sidlo": [
+        {
+          "sidlo": {
+            "kodStatu": "CZ",
+            "nazevStatu": "Česká republika",
+            "kodKraje": 43,
+            "nazevKraje": "Plzeňský kraj",
+            "kodOkresu": 3404,
+            "nazevOkresu": "Klatovy",
+            "kodObce": 542148,
+            "nazevObce": "Modrava",
+            "cisloDomovni": 63,
+            "kodCastiObce": 97870,
+            "nazevCastiObce": "Modrava",
+            "kodAdresnihoMista": 21428034,
+            "psc": 34192,
+            "textovaAdresa": "č.p. 63, 34192 Modrava",
+            "standardizaceAdresy": true,
+            "typCisloDomovni": 1
+          },
+          "primarniZaznam": true
+        }
+      ],
+      "pravniFormaRos": "801",
+      "datovyZdroj": "ros"
+    },
+    {
+      "obchodniJmeno": [{ "obchodniJmeno": "Obec Modrava", "primarniZaznam": true }],
+      "sidlo": [
+        {
+          "sidlo": {
+            "kodStatu": "CZ",
+            "nazevStatu": "Česká republika",
+            "kodKraje": 43,
+            "nazevKraje": "Plzeňský kraj",
+            "kodOkresu": 3404,
+            "nazevOkresu": "Klatovy",
+            "kodObce": 542148,
+            "nazevObce": "Modrava",
+            "cisloDomovni": 63,
+            "kodCastiObce": 97870,
+            "nazevCastiObce": "Modrava",
+            "kodAdresnihoMista": 21428034,
+            "psc": 34192,
+            "textovaAdresa": "č.p. 63, 34192 Modrava",
+            "standardizaceAdresy": true,
+            "typCisloDomovni": 1
+          },
+          "primarniZaznam": true
+        }
+      ],
+      "pravniForma": "801",
+      "datovyZdroj": "rzp"
+    }
+  ],
+  "czNace": ["84110"],
+  "subRegistrSzr": "szr"
+}

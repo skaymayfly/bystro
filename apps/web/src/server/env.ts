@@ -48,6 +48,15 @@ export function readAuthEnv(env: Env = process.env): AuthEnv {
   };
 }
 
+/** Base URL of the ARES API; `undefined` means the official public endpoint. */
+export function readAresBaseUrl(env: Env = process.env): string | undefined {
+  const value = optional(env, "ARES_BASE_URL");
+  if (value !== undefined && !URL.canParse(value)) {
+    throw new WebEnvError("ARES_BASE_URL must be a URL.");
+  }
+  return value;
+}
+
 /** Resend settings, or `undefined` when system e-mails are not configured yet. */
 export function readEmailEnv(env: Env = process.env): { apiKey: string; from: string } | undefined {
   const apiKey = optional(env, "RESEND_API_KEY");

@@ -10,8 +10,11 @@ export { decrypt, DecryptionError, encrypt, parseEncryptionKey } from "./crypto"
 export { EnvError, readDatabaseUrl, readEncryptionKey } from "./env";
 export { InvalidIdError } from "./ids";
 export {
+  createFirstOrganization,
   createOrganization,
   listOrganizationsForUser,
+  OrganizationAlreadyExistsError,
+  type CreateOrganizationInput,
   type Membership,
   type NewOrganization,
   type Organization,
