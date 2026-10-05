@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { readFileSync } from "node:fs";
 
 import { Client } from "pg";
 import { describe, expect, it } from "vitest";
@@ -6,6 +7,14 @@ import { describe, expect, it } from "vitest";
 import { runMigrations } from "./migrate";
 import { readTestDatabase } from "./test/test-database";
 import { ensureDatabaseExists } from "./testing";
+
+/** How many migrations exist, read from the journal drizzle-kit maintains. */
+function migrationCount(): number {
+  const journal = JSON.parse(
+    readFileSync(new URL("../migrations/meta/_journal.json", import.meta.url), "utf8"),
+  ) as { entries: unknown[] };
+  return journal.entries.length;
+}
 
 /** Connection strings for a brand-new, empty database next to the shared test database. */
 function freshDatabase() {
@@ -49,7 +58,8 @@ describe("migrations under concurrency", () => {
       );
 
       // Each migration is recorded exactly once, however many runners raced.
-      expect(applied?.count).toBe(1);
+      expect(applied?.count).toBe(migrationCount());
+      expect(migrationCount()).toBeGreaterThan(0);
       expect(tables.map((row) => row.tablename)).toContain("organizations");
     } finally {
       // The database was created by this test and its name ends with `_test`.

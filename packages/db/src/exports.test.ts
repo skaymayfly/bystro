@@ -4,7 +4,11 @@ import { describe, expect, it } from "vitest";
 
 import * as publicApi from "./index";
 import * as authTables from "./schema/auth";
-import * as tenantTables from "./schema/tenant";
+import * as integrationTables from "./schema/integrations";
+import * as organizationTables from "./schema/tenant";
+
+/** Every table holding data of one organization. */
+const tenantTables = { ...organizationTables, ...integrationTables };
 
 // Module namespace objects have a null prototype, which Drizzle's `is` cannot handle.
 function isTable(value: unknown): value is PgTable {
@@ -40,7 +44,16 @@ function exportedTableNames(): string[] {
 
 describe("public API of @bystro/db", () => {
   it("has tenant tables to protect (guards against this test going stale)", () => {
-    expect(tableNames(tenantTables)).toEqual(["audit_logs", "memberships", "organizations"]);
+    expect(tableNames(tenantTables)).toEqual([
+      "audit_logs",
+      "integration_connections",
+      "integration_credentials",
+      "memberships",
+      "oauth_requests",
+      "organizations",
+      "sync_cursors",
+      "webhook_events",
+    ]);
   });
 
   it("exports no tenant table, so tenant data cannot be queried without an organizationId", () => {

@@ -7,3 +7,16 @@ export {
   type AresLookupResult,
 } from "./ares/ares";
 export { EmailSendError, ResendEmailSender, type ResendEmailSenderOptions } from "./email/resend";
+export {
+  createAuthorizationRequest,
+  exchangeAuthorizationCode,
+  hashOAuthState,
+  OAuthError,
+  refreshAccessToken,
+  verifyCallback,
+  type AuthorizationRequest,
+  type OAuthErrorCode,
+  type OAuthProviderConfig,
+  type OAuthTokens,
+  type StoredOAuthRequest,
+} from "./oauth/oauth";
