@@ -27,10 +27,11 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **Kontrola členství u nových API:** `getRequestContext()` vrací jen organizaci, ve které je uživatel členem. Každý nový route handler ji musí použít; automatické testy izolace endpointů jsou až v kroku 7.3.
 - **Stahování Chromia pro Playwright** na vývojovém počítači vyprší (CDN je dostupná, stahovač Playwrightu ne). Lokálně se používá nainstalovaný Chrome přes `E2E_BROWSER_CHANNEL=chrome`; v CI (krok 1.7) ověřit běžnou instalaci.
 - **Agentní soubory generované nástroji:** `next dev` vytváří a obnovuje `apps/web/AGENTS.md` a `apps/web/CLAUDE.md` (jsou v repozitáři od kroku 1.4). Závazné instrukce jsou jen v kořenovém `CLAUDE.md`.
-- **Krok 1.8 čeká na nasazení uživatelem:** obrazy, health endpoint, migrace a návod jsou hotové a ověřené lokálně i v CI. Krok se uzavře, až na veřejné adrese projde ruční průchod z kroku 1.6 a `/api/health` vrátí OK.
+- **Bezpečnostní hlavičky chybí** (vynucení HTTPS, zákaz vkládání do rámce, CSP) a odpověď obsahuje `x-powered-by: Next.js`. Zjištěno při kontrole nasazené adresy; řešit v kroku 7.3.
+- **Testovací prostředí běží s klíči Resend a Google, které byly sdílené v chatu.** Před betou (fáze 7) vyměnit a zadat přímo do Railway.
+- **Návod pro Railway** je ověřený jedním skutečným nasazením; názvy položek v administraci zůstávají orientační a cestu ke konfiguračnímu souboru služby (`railway.json`) jsme nezkoušeli.
 - **Závislosti workeru:** do obrazu jdou jen závislosti z `apps/worker/package.json`. Knihovnu, kterou používá přibalený balíček `@bystro/*` (např. `pino`, později `pg`, `drizzle-orm`, `bullmq`), je potřeba uvést i tam; chybějící závislost odhalí úloha `images` v CI, protože worker nenastartuje.
 - **Zdrojové mapy pro Sentry** se nahrají jen při sestavení se `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` a `SENTRY_PROJECT`; neověřeno se skutečným tokenem.
-- **Návod pro Railway není ověřený proti skutečnému účtu:** názvy položek v administraci jsou orientační; možnost zadat cestu ke konfiguračnímu souboru služby (`railway.json`) jsem v dokumentaci nedohledal, proto návod používá proměnnou `RAILWAY_DOCKERFILE_PATH` a ruční nastavení.
 - **Návrat k předchozí verzi nevrací migrace.** Pravidlo pro migrace: zpětně kompatibilní změny schématu, mazání sloupců až v následující verzi.
 - **Velikost obrazů:** web 407 MB, worker 465 MB (většinu workeru tvoří `@sentry/node`). Zatím neřešeno.
 - **Sentry je ověřené jen z workeru:** testovací chyba z workeru do Sentry dorazila. Z webu (server i prohlížeč) zatím žádná skutečná chyba odeslaná nebyla; ověřit po nasazení.
@@ -59,7 +60,14 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 
 ## Záznamy
 
-## 2026-10-05 — krok 1.8 Nasazení na testovací prostředí (rozpracováno)
+## 2026-10-05 — změna plánu: iDoklad ve fázi 2
+
+- Rozhodnutí uživatele: kromě Fakturoidu chce ve fázi 2 i iDoklad (původně v sekci „Po spuštění“).
+- Do `PLAN.md` přidán krok 2.8 Adapter iDoklad, zařazený až za dokončený Fakturoid (kroky 2.4–2.7). Důvod pořadí: druhý adaptér se ladí na už hotové cestě od připojení po obrazovku Faktury a společné rozhraní `InvoiceProvider` se prověří dvěma různými systémy.
+- Odhad fáze 2 prodloužen o týden (4–6). Další fáze se v přehledu neposouvaly; přepočítat při nejbližší revizi plánu.
+- Zadání (kapitola 22) s iDokladem po Fakturoidu počítá, takže nejde o rozpor se zadáním.
+
+## 2026-10-05 — krok 1.8 Nasazení na testovací prostředí
 
 - Hotovo: `apps/web/Dockerfile` a `apps/worker/Dockerfile` (vícestupňové, běh pod uživatelem `node`); `GET /api/health` (databáze + Redis, veřejný, vrací jen stav); migrace spustitelné z obrazu (`node migrate.cjs`, jeden přibalený soubor + SQL soubory); `railway.json` pro obě služby; `docs/deploy.md`; úloha `images` v CI.
 - Rozhodnutí (bez ADR, v mezích daného stacku):
@@ -71,8 +79,12 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
   - Worker se na SIGTERM ukončuje výslovně (`process.exit(0)`); bez toho ho platforma po čekací době zabíjela.
 - Oprava z kroku 1.7: Sentry posílal řádky zdrojového kódu kolem místa chyby bez redakce. `scrubSentryEvent` teď čistí i zdrojové řádky a lokální proměnné rámců.
 - Ověřeno lokálně: oba obrazy sestaveny; web z obrazu zmigroval prázdnou databázi, odpověděl na `/api/health` 200, při nedostupné databázi a Redisu 503 bez úniku údajů; worker nastartoval a na SIGTERM skončil s kódem 0.
-- Otevřené body: čeká na nasazení uživatelem; závislosti workeru, zdrojové mapy, neověřený návod, migrace při návratu verze (viz sekce výše).
-- Další krok: po nasazení a ruční kontrole uzavřít 1.8, potom 2.1 Rámec pro integrace
+- Nasazeno uživatelem na Railway: https://bystro-production.up.railway.app. Zvenku ověřeno: `/api/health` vrací 200 (databáze i Redis `ok`), `/app` a `/onboarding` bez přihlášení přesměrují, API bez přihlášení vrací 401. Uživatel ručně prošel přihlášení přes Google a onboarding se založením firmy až na Přehled.
+- Zjištěno při nasazení a opraveno v `docs/deploy.md`:
+  - Railway přidělí aplikaci vlastní port, pokud není nastavená proměnná `PORT`; doména mířící na 3000 pak vrací 502, přestože health check prochází. Návod teď vyžaduje `PORT=3000`.
+  - Nový OAuth klient v Googlu potřebuje návratovou adresu nové domény přesně v poli Authorized redirect URIs (`redirect_uri_mismatch`).
+- Otevřené body: bezpečnostní hlavičky, klíče sdílené v chatu, závislosti workeru, zdrojové mapy, migrace při návratu verze (viz sekce výše).
+- Další krok: 2.1 Rámec pro integrace (fáze 2 — Faktury z Fakturoidu)
 
 ## 2026-10-05 — krok 1.7 Logování, Sentry a CI
 

@@ -51,7 +51,7 @@ Na názvech záleží: proměnné webu se na ně odkazují jako `${{Postgres.DAT
 3. V nastavení služby zadej:
    - **Příkaz před nasazením (Pre-deploy command):** `node migrate.cjs`
    - **Cesta health checku (Healthcheck path):** `/api/health`
-4. V síťovém nastavení služby vygeneruj veřejnou doménu (port 3000).
+4. V síťovém nastavení služby vygeneruj veřejnou doménu a jako cílový port zadej **3000**. Stejné číslo nastavíš v kroku 4 proměnnou `PORT`; obě hodnoty musí být shodné.
 
 Tyto hodnoty jsou zapsané i v `apps/web/railway.json`. Pokud Railway u služby nabízí cestu ke konfiguračnímu souboru, můžeš místo ručního zadání nastavit `apps/web/railway.json`.
 
@@ -59,25 +59,28 @@ Tyto hodnoty jsou zapsané i v `apps/web/railway.json`. Pokud Railway u služby 
 
 Zadej je v záložce proměnných služby `web`. Hodnoty označené jako tajné ulož jako zapečetěné (sealed), pokud to Railway nabízí.
 
-| Proměnná                  | Hodnota                              | Poznámka                                                       |
-| ------------------------- | ------------------------------------ | -------------------------------------------------------------- |
-| `RAILWAY_DOCKERFILE_PATH` | `apps/web/Dockerfile`                | říká Railway, který Dockerfile použít                          |
-| `DATABASE_URL`            | `${{Postgres.DATABASE_URL}}`         | odkaz na službu Postgres                                       |
-| `REDIS_URL`               | `${{Redis.REDIS_URL}}`               | odkaz na službu Redis                                          |
-| `BETTER_AUTH_SECRET`      | první vygenerovaný klíč              | **tajné**                                                      |
-| `BETTER_AUTH_URL`         | `https://${{RAILWAY_PUBLIC_DOMAIN}}` | veřejná adresa webu; musí sedět s adresou v prohlížeči         |
-| `ENCRYPTION_KEY`          | druhý vygenerovaný klíč              | **tajné**; zatím se nepoužívá, od fáze 2 šifruje tokeny        |
-| `RESEND_API_KEY`          | nový klíč z Resendu                  | **tajné**                                                      |
-| `EMAIL_FROM`              | `Bystro <onboarding@resend.dev>`     | zkušební odesílatel; doručí jen na e-mail tvého účtu u Resendu |
-| `GOOGLE_CLIENT_ID`        | Client ID z Google Cloud Console     |                                                                |
-| `GOOGLE_CLIENT_SECRET`    | nový Client secret                   | **tajné**                                                      |
-| `SENTRY_DSN`              | DSN ze Sentry                        | stejná hodnota jako v lokálním `.env`                          |
-| `NEXT_PUBLIC_SENTRY_DSN`  | stejné DSN                           | použije se při sestavení pro hlášení chyb z prohlížeče         |
-| `SENTRY_ENVIRONMENT`      | `staging`                            | aby šly chyby z testovacího prostředí odlišit                  |
+| Proměnná                  | Hodnota                              | Poznámka                                                          |
+| ------------------------- | ------------------------------------ | ----------------------------------------------------------------- |
+| `RAILWAY_DOCKERFILE_PATH` | `apps/web/Dockerfile`                | říká Railway, který Dockerfile použít                             |
+| `PORT`                    | `3000`                               | port, na kterém web poslouchá; musí sedět s cílovým portem domény |
+| `DATABASE_URL`            | `${{Postgres.DATABASE_URL}}`         | odkaz na službu Postgres                                          |
+| `REDIS_URL`               | `${{Redis.REDIS_URL}}`               | odkaz na službu Redis                                             |
+| `BETTER_AUTH_SECRET`      | první vygenerovaný klíč              | **tajné**                                                         |
+| `BETTER_AUTH_URL`         | `https://${{RAILWAY_PUBLIC_DOMAIN}}` | veřejná adresa webu; musí sedět s adresou v prohlížeči            |
+| `ENCRYPTION_KEY`          | druhý vygenerovaný klíč              | **tajné**; zatím se nepoužívá, od fáze 2 šifruje tokeny           |
+| `RESEND_API_KEY`          | nový klíč z Resendu                  | **tajné**                                                         |
+| `EMAIL_FROM`              | `Bystro <onboarding@resend.dev>`     | zkušební odesílatel; doručí jen na e-mail tvého účtu u Resendu    |
+| `GOOGLE_CLIENT_ID`        | Client ID z Google Cloud Console     |                                                                   |
+| `GOOGLE_CLIENT_SECRET`    | nový Client secret                   | **tajné**                                                         |
+| `SENTRY_DSN`              | DSN ze Sentry                        | stejná hodnota jako v lokálním `.env`                             |
+| `NEXT_PUBLIC_SENTRY_DSN`  | stejné DSN                           | použije se při sestavení pro hlášení chyb z prohlížeče            |
+| `SENTRY_ENVIRONMENT`      | `staging`                            | aby šly chyby z testovacího prostředí odlišit                     |
 
 Nepovinné, pro čitelné chyby v Sentry (nahrání zdrojových map): `SENTRY_AUTH_TOKEN` (**tajné**), `SENTRY_ORG`, `SENTRY_PROJECT`. Bez nich nasazení funguje stejně, jen chyby z produkčního sestavení mají hůř čitelný výpis.
 
-`NODE_ENV` ani `PORT` nenastavuj: `NODE_ENV=production` je v obrazu a `PORT` dodá Railway.
+`PORT=3000` je potřeba zadat výslovně. Railway jinak aplikaci přidělí vlastní port: health check projde, ale veřejná doména mířící na 3000 vrací `502 Application failed to respond`.
+
+`NODE_ENV` nenastavuj, `NODE_ENV=production` je v obrazu.
 
 ## 5. Google: návratová adresa
 
@@ -115,6 +118,7 @@ Worker zatím jen nastartuje a čeká. Databázi a Redis začne potřebovat v kr
 
 ## Když něco nefunguje
 
+- **Nasazení je úspěšné, ale adresa vrací `502 Application failed to respond`:** doména míří na jiný port, než na kterém aplikace poslouchá. V logu běžící aplikace najdi řádek `Local: http://localhost:<port>` a porovnej ho s cílovým portem domény. Oprava: proměnná `PORT=3000` u služby `web` (viz krok 4), nebo změna cílového portu domény.
 - **Health check vrací 503:** odpověď říká, která část je `down`. Zkontroluj odkazy `${{Postgres.DATABASE_URL}}` a `${{Redis.REDIS_URL}}` a názvy služeb.
 - **Přihlášení vrací chybu nebo se točí dokola:** `BETTER_AUTH_URL` nesedí s adresou v prohlížeči (včetně `https://`).
 - **Google hlásí neplatnou návratovou adresu:** chybí krok 5, nebo se doména změnila.
