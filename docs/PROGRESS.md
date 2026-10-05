@@ -27,11 +27,15 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **Kontrola členství u nových API:** `getRequestContext()` vrací jen organizaci, ve které je uživatel členem. Každý nový route handler ji musí použít; automatické testy izolace endpointů jsou až v kroku 7.3.
 - **Stahování Chromia pro Playwright** na vývojovém počítači vyprší (CDN je dostupná, stahovač Playwrightu ne). Lokálně se používá nainstalovaný Chrome přes `E2E_BROWSER_CHANNEL=chrome`; v CI (krok 1.7) ověřit běžnou instalaci.
 - **Agentní soubory generované nástroji:** `next dev` vytváří a obnovuje `apps/web/AGENTS.md` a `apps/web/CLAUDE.md` (jsou v repozitáři od kroku 1.4). Závazné instrukce jsou jen v kořenovém `CLAUDE.md`.
-- **Sentry není ověřené se skutečným účtem:** kód je připravený a očištění událostí otestované, ale doručení chyby do Sentry nikdo nevyzkoušel (chybí DSN). Po založení účtu (plán Developer je zdarma) vložit `SENTRY_DSN` a `NEXT_PUBLIC_SENTRY_DSN` do `.env` a vyvolat testovací chybu ve webu i workeru.
-- **Zdrojové mapy pro Sentry** se nenahrávají (`sourcemaps.disable`); chyby z produkce budou mít minifikované stacky. Zapnout při nasazení (krok 1.8) s `SENTRY_AUTH_TOKEN`.
+- **Krok 1.8 čeká na nasazení uživatelem:** obrazy, health endpoint, migrace a návod jsou hotové a ověřené lokálně i v CI. Krok se uzavře, až na veřejné adrese projde ruční průchod z kroku 1.6 a `/api/health` vrátí OK.
+- **Závislosti workeru:** do obrazu jdou jen závislosti z `apps/worker/package.json`. Knihovnu, kterou používá přibalený balíček `@bystro/*` (např. `pino`, později `pg`, `drizzle-orm`, `bullmq`), je potřeba uvést i tam; chybějící závislost odhalí úloha `images` v CI, protože worker nenastartuje.
+- **Zdrojové mapy pro Sentry** se nahrají jen při sestavení se `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` a `SENTRY_PROJECT`; neověřeno se skutečným tokenem.
+- **Návod pro Railway není ověřený proti skutečnému účtu:** názvy položek v administraci jsou orientační; možnost zadat cestu ke konfiguračnímu souboru služby (`railway.json`) jsem v dokumentaci nedohledal, proto návod používá proměnnou `RAILWAY_DOCKERFILE_PATH` a ruční nastavení.
+- **Návrat k předchozí verzi nevrací migrace.** Pravidlo pro migrace: zpětně kompatibilní změny schématu, mazání sloupců až v následující verzi.
+- **Velikost obrazů:** web 407 MB, worker 465 MB (většinu workeru tvoří `@sentry/node`). Zatím neřešeno.
+- **Sentry je ověřené jen z workeru:** testovací chyba z workeru do Sentry dorazila. Z webu (server i prohlížeč) zatím žádná skutečná chyba odeslaná nebyla; ověřit po nasazení.
 - **Chyby požadavků vypisuje Next.js sám** na standardní chybový výstup mimo náš logger, tedy bez redakce. Chybové zprávy proto nesmí obsahovat citlivé hodnoty (naše chybové třídy to dodržují); při nasazení zvážit, kam tento výstup teče.
 - **Redakce podle obsahu textu je záchranná síť:** chytá e-maily, IBANy, česká čísla účtů, bearer tokeny a částky s měnou. Částku bez měny nebo neobvyklý formát nepozná.
-- **Závislosti workeru po sestavení:** balíčky `@bystro/*` se do `dist` přibalují, jejich knihovny (`pino`, později `pg`, `drizzle-orm`) ne, takže je worker musí mít ve vlastních závislostech. Rozhodnout způsob balení v kroku 1.8 (Dockerfile).
 - **Audit přihlášení a registrace** zůstává otevřený: logy je teď zachytí (bez e-mailu), do `audit_logs` se nezapisují.
 - **Limity ARES nejsou ověřené:** stránka ARES pro vývojáře se načítá skriptem a nešla přečíst; OpenAPI specifikace limity neuvádí. Posíláme jeden dotaz na jedno kliknutí přihlášeného uživatele, bez opakování, s limitem 5 s. Před betou ověřit podmínky použití a případně přidat omezení počtu dotazů na uživatele (krok 7.3).
 - **Jedna firma na účet:** `createFirstOrganization` druhou firmu odmítne (`409`). Víc firem na účet a přepínání mezi nimi v plánu není.
@@ -48,13 +52,27 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **Izolace tenantů je na úrovni kódu, ne databáze:** firemní tabulky nejsou exportované z `@bystro/db` a aplikace mají ESLintem zakázaný `drizzle-orm`, `pg`, `.execute()` a `$client`. Lint jde vědomě obejít (`eslint-disable`), proto v kroku 7.3 zvážit Row Level Security jako druhou vrstvu.
 - **Pozvánky dalších členů do organizace** nejsou v plánu rozepsané; role `admin` a `member` zatím nemá jak vzniknout přes UI.
 - **Mazání uživatele a organizace:** cizí klíče z `memberships` a `audit_logs` nemažou kaskádově, takže smazání uživatele s členstvím selže. Vyřešit v kroku 7.4 (GDPR).
-- **Migrace při nasazení (krok 1.8):** `runMigrations` hledá složku `packages/db/migrations` relativně ke zdrojovému souboru. Funguje přes `tsx` a ve Vitestu, ale ne po zabalení do bundlu; v kroku 1.8 je potřeba rozhodnout, jak se migrace pouští v produkci.
 - **Rotace `ENCRYPTION_KEY`:** formát šifry má prefix verze (`v1`), ale postup rotace klíče zatím neexistuje. Vyřešit před ostrým provozem (nejpozději fáze 7).
 - **Soubory `.DS_Store`** v kořeni a v `docs/` zůstávají na disku, jen jsou v `.gitignore`.
 
 ---
 
 ## Záznamy
+
+## 2026-10-05 — krok 1.8 Nasazení na testovací prostředí (rozpracováno)
+
+- Hotovo: `apps/web/Dockerfile` a `apps/worker/Dockerfile` (vícestupňové, běh pod uživatelem `node`); `GET /api/health` (databáze + Redis, veřejný, vrací jen stav); migrace spustitelné z obrazu (`node migrate.cjs`, jeden přibalený soubor + SQL soubory); `railway.json` pro obě služby; `docs/deploy.md`; úloha `images` v CI.
+- Rozhodnutí (bez ADR, v mezích daného stacku):
+  - Hosting Railway (zvolil uživatel): web, worker, Postgres a Redis v jednom projektu. Vercel odpadl kvůli zákazu komerčního použití na plánu zdarma a chybějící podpoře trvale běžícího workeru.
+  - Web běží jako samostatný server Next.js (`output: "standalone"`), zapnutý jen při sestavení obrazu (`NEXT_OUTPUT_STANDALONE=1`), protože `next start` v E2E s ním nefunguje.
+  - Migrace běží jako příkaz před nasazením ze stejného obrazu jako web; skript je přibalený do jednoho souboru (`tsup`, CommonJS) a SQL soubory hledá přes `MIGRATIONS_DIR`.
+  - Worker se do obrazu skládá přes `pnpm deploy --prod`.
+  - Redis klient ve webu je `ioredis` (stejný, jaký používá BullMQ) s `family: 0` kvůli sítím jen s IPv6.
+  - Worker se na SIGTERM ukončuje výslovně (`process.exit(0)`); bez toho ho platforma po čekací době zabíjela.
+- Oprava z kroku 1.7: Sentry posílal řádky zdrojového kódu kolem místa chyby bez redakce. `scrubSentryEvent` teď čistí i zdrojové řádky a lokální proměnné rámců.
+- Ověřeno lokálně: oba obrazy sestaveny; web z obrazu zmigroval prázdnou databázi, odpověděl na `/api/health` 200, při nedostupné databázi a Redisu 503 bez úniku údajů; worker nastartoval a na SIGTERM skončil s kódem 0.
+- Otevřené body: čeká na nasazení uživatelem; závislosti workeru, zdrojové mapy, neověřený návod, migrace při návratu verze (viz sekce výše).
+- Další krok: po nasazení a ruční kontrole uzavřít 1.8, potom 2.1 Rámec pro integrace
 
 ## 2026-10-05 — krok 1.7 Logování, Sentry a CI
 

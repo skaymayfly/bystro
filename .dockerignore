@@ -1,0 +1,21 @@
+# Never send secrets or local state to the Docker daemon.
+.env
+.env.*
+!.env.example
+.git
+.github
+
+# Rebuilt inside the image.
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+**/*.tsbuildinfo
+
+# Not needed to build the apps.
+docs
+**/test-results
+**/playwright-report
+**/coverage
+*.log
+.DS_Store

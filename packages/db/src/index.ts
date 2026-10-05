@@ -8,6 +8,7 @@ export { writeAudit, type AuditActor, type AuditEntry } from "./audit";
 export { createDb, type Db, type DbConnection, type DbExecutor } from "./client";
 export { decrypt, DecryptionError, encrypt, parseEncryptionKey } from "./crypto";
 export { EnvError, readDatabaseUrl, readEncryptionKey } from "./env";
+export { pingDatabase } from "./health";
 export { InvalidIdError } from "./ids";
 export {
   createFirstOrganization,

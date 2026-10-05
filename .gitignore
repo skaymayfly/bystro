@@ -28,3 +28,6 @@ Thumbs.db
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Bundled migration CLI for the deployed image
+packages/db/dist/

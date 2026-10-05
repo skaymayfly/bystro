@@ -38,6 +38,8 @@ describe("decideAccess", () => {
     expect(decideAccess("/api/authx", "", false)).toEqual({ type: "unauthorized" });
     expect(decideAccess("/api/auth/sign-in/email", "", false)).toEqual({ type: "allow" });
     expect(decideAccess("/api/auth", "", false)).toEqual({ type: "allow" });
+    expect(decideAccess("/api/health", "", false)).toEqual({ type: "allow" });
+    expect(decideAccess("/api/healthz", "", false)).toEqual({ type: "unauthorized" });
   });
 
   it("lets API routes through when a session cookie is present", () => {

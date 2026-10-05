@@ -89,3 +89,74 @@ jobs:
             apps/web/playwright-report
             apps/web/test-results
           retention-days: 7
+
+  images:
+    name: Build and smoke-test container images
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: bystro
+          POSTGRES_PASSWORD: bystro
+          POSTGRES_DB: bystro
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bystro -d bystro"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    # Throwaway values for this job only.
+    env:
+      DATABASE_URL: postgresql://bystro:bystro@localhost:5432/bystro
+      REDIS_URL: redis://localhost:6379
+      BETTER_AUTH_SECRET: ci-only-secret-ci-only-secret-ci-only-1
+      BETTER_AUTH_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build web image
+        run: docker build -f apps/web/Dockerfile -t bystro-web:ci .
+
+      - name: Build worker image
+        run: docker build -f apps/worker/Dockerfile -t bystro-worker:ci .
+
+      - name: Worker starts and stops cleanly
+        run: |
+          docker run -d --name worker bystro-worker:ci
+          sleep 5
+          docker logs worker
+          docker logs worker 2>&1 | grep -q "Bystro worker: hello"
+          test "$(docker inspect -f '{{.State.Running}}' worker)" = "true"
+          docker stop --time 10 worker
+          test "$(docker inspect -f '{{.State.ExitCode}}' worker)" = "0"
+
+      - name: Migrations run from the web image
+        run: >-
+          docker run --rm --network host -e DATABASE_URL bystro-web:ci node migrate.cjs
+
+      - name: Web image answers the health check
+        run: |
+          docker run -d --name web --network host \
+            -e DATABASE_URL -e REDIS_URL -e BETTER_AUTH_SECRET -e BETTER_AUTH_URL \
+            bystro-web:ci
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://localhost:3000/api/health; then exit 0; fi
+            sleep 2
+          done
+          docker logs web
+          exit 1
