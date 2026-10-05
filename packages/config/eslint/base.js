@@ -21,12 +21,19 @@ export default tseslint.config(
       globals: { ...globals.node },
     },
     rules: {
+      // Logs go through the redacting logger from @bystro/observability.
+      "no-console": "error",
       "@typescript-eslint/consistent-type-imports": "error",
       "@typescript-eslint/no-unused-vars": [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
     },
+  },
+  {
+    // Command-line scripts and test tooling talk to a terminal, not to the log pipeline.
+    files: ["**/scripts/**", "**/e2e/**", "**/*.config.*"],
+    rules: { "no-console": "off" },
   },
   prettier,
 );

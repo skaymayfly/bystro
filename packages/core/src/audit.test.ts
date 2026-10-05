@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { REDACTED, sanitizeAuditMetadata } from "./audit";
+import { sanitizeAuditMetadata } from "./audit";
+import { REDACTED } from "./redaction";
 
 describe("sanitizeAuditMetadata", () => {
   it("keeps harmless values untouched", () => {

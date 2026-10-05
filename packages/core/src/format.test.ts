@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { formatCzk, formatDate, formatWeekday, toDateParts, type DateOnly } from "./format";
 
 /** Replaces non-breaking spaces so expectations stay readable. */
-const plain = (value: string) => value.replaceAll(" ", " ");
+const plain = (value: string) => value.replaceAll("\u00a0", " ");
 
 describe("formatCzk", () => {
   it("formats whole crowns without decimals and groups thousands", () => {
@@ -27,7 +27,7 @@ describe("formatCzk", () => {
   });
 
   it("joins number and currency with non-breaking spaces", () => {
-    expect(formatCzk(18_640_000)).toBe("186 400 Kč");
+    expect(formatCzk(18_640_000)).toBe("186\u00a0400\u00a0Kč");
   });
 
   it("accepts bigint beyond the safe integer range without losing precision", () => {

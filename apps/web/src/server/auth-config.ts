@@ -1,5 +1,6 @@
 import type { EmailSender } from "@bystro/core";
 import { authSchema, type Db } from "@bystro/db";
+import type { Logger } from "@bystro/observability";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
@@ -26,6 +27,7 @@ export interface AuthDependencies {
   db: Db;
   emailSender: EmailSender;
   env: AuthEnv;
+  logger: Logger;
 }
 
 /**
@@ -34,7 +36,7 @@ export interface AuthDependencies {
  *
  * Must stay in sync with `packages/db/src/schema/auth.ts`: plural table names and UUID ids.
  */
-export function createAuth({ db, emailSender, env }: AuthDependencies) {
+export function createAuth({ db, emailSender, env, logger }: AuthDependencies) {
   return betterAuth({
     appName: "Bystro",
     baseURL: env.baseUrl,
@@ -52,7 +54,7 @@ export function createAuth({ db, emailSender, env }: AuthDependencies) {
         // Not awaited on purpose (Better Auth docs): response time must not reveal whether
         // the address has an account. The link is a secret, so failures log no details.
         void emailSender.send(resetPasswordEmail({ to: user.email, url })).catch(() => {
-          console.error("Password reset e-mail could not be sent.");
+          logger.error("Password reset e-mail could not be sent.");
         });
       },
     },
@@ -69,6 +71,16 @@ export function createAuth({ db, emailSender, env }: AuthDependencies) {
             },
           },
         }),
+
+    // Better Auth writes its own diagnostics; route them through the redacting logger.
+    logger: {
+      log: (level, message, ...args) => {
+        logger[level](
+          args.length > 0 ? { source: "better-auth", args } : { source: "better-auth" },
+          message,
+        );
+      },
+    },
 
     account: { encryptOAuthTokens: true },
     databaseHooks: {
