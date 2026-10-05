@@ -53,6 +53,7 @@ packages/
   core/           Doménová logika bez I/O
   integrations/   Adaptery externích systémů za rozhraními Provider
   ai/             LlmProvider, nástroje, prompty, evaluace
+  observability/  Logger s redakcí citlivých polí, očištění událostí pro Sentry
   config/         Sdílený tsconfig, ESLint, Prettier
 docs/             Plán, deník, zadání, prototyp, rozhodnutí
 ```

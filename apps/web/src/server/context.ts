@@ -35,7 +35,10 @@ export async function resolveRequestContext(db: Db, user: RequestUser): Promise<
 
 /** The validated session's context, or `null` when nobody is signed in. */
 export async function getRequestContext(): Promise<RequestContext | null> {
-  const session = await getAuth().api.getSession({ headers: await headers() });
+  // Read the request first: during `next build` this is what marks the page as dynamic,
+  // before anything needs the database or runtime secrets.
+  const requestHeaders = await headers();
+  const session = await getAuth().api.getSession({ headers: requestHeaders });
   if (session === null) {
     return null;
   }

@@ -95,11 +95,12 @@ packages/
   core/           Doménová logika bez I/O: faktury, párování, cashflow, akce, priority
   integrations/   Adaptery (fakturoid, fio, ares, …) za rozhraními Provider
   ai/             LlmProvider, nástroje (tools), prompty, evaluace
+  observability/  Logger (pino) s redakcí citlivých polí, očištění událostí pro Sentry
   config/         Sdílený tsconfig, eslint, prettier
 docs/             PLAN.md, PROGRESS.md, zadání, prototyp, decisions/
 ```
 
-Pravidla závislostí: `core` nezávisí na ničem z ostatních balíčků. `integrations` a `ai` znají `core` a `db`. Aplikace (`web`, `worker`) skládají balíčky dohromady. Business logika nikdy v React komponentách.
+Pravidla závislostí: `core` nezávisí na ničem z ostatních balíčků. `observability` zná jen `core`. `integrations` a `ai` znají `core` a `db`. Aplikace (`web`, `worker`) skládají balíčky dohromady. Business logika nikdy v React komponentách.
 
 ## Konvence
 
@@ -109,7 +110,7 @@ Pravidla závislostí: `core` nezávisí na ničem z ostatních balíčků. `int
 - **Externí data:** tabulky mají `organization_id`, `source`, `external_id`, `source_updated_at`, `synced_at`, `deleted_at`, případně `raw_hash`.
 - **Přístup k DB:** jen přes funkce, které povinně berou `organizationId`. Žádné volné dotazy z route handlerů.
 - **Tajné hodnoty:** proměnné prostředí, vždy doplnit `.env.example`. Tokeny v DB šifrovat AES-256-GCM klíčem `ENCRYPTION_KEY`.
-- **Logy:** strukturované, bez částek, IBANů, e-mailových adres, textů e-mailů a tokenů.
+- **Logy:** strukturované, bez částek, IBANů, e-mailových adres, textů e-mailů a tokenů. Vždy přes logger z `@bystro/observability` (`console` je v kódu aplikací a balíčků zakázaný lintem); redakce je záchranná síť, citlivé hodnoty do logů neposílej vůbec.
 - **UI:** texty česky (převzít tón z prototypu: tykání, krátké věty). Formáty `Intl` s `cs-CZ`, měna `Kč`.
 - **Kód, identifikátory, commity:** anglicky. Komunikace s uživatelem: česky.
 - **Testy:** unit testy vedle kódu (`*.test.ts`), E2E v `apps/web/e2e`. Testy externích API přes nahrané odpovědi (fixtures), nikdy proti produkci.
@@ -118,7 +119,7 @@ Pravidla závislostí: `core` nezávisí na ničem z ostatních balíčků. `int
 
 ## Příkazy
 
-Stav po kroku 1.4. Při každé změně skriptů tuto sekci aktualizuj podle skutečnosti.
+Stav po kroku 1.7. Při každé změně skriptů tuto sekci aktualizuj podle skutečnosti.
 
 ```
 pnpm install             # na Windows vyžaduje zapnutý Režim pro vývojáře (symlinky)
@@ -138,5 +139,7 @@ pnpm format:check
 Integrační a E2E testy běží proti databázi z `DATABASE_URL_TEST` (název musí končit na `_test`); testy si ji samy založí a zmigrují.
 
 E2E potřebuje prohlížeč: `pnpm --filter @bystro/web exec playwright install chromium`, nebo nainstalovaný Chrome/Edge přes `E2E_BROWSER_CHANNEL` v `.env`.
+
+CI (`.github/workflows/ci.yml`) spouští při každém pull requestu a pushi do `main`: format:check, lint, typecheck, migrace, testy, build a E2E.
 
 Proměnnou `NODE_ENV` do `.env` nedávej — nestandardní hodnota rozbije `next build`.

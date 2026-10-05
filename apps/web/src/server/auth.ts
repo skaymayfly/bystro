@@ -3,6 +3,7 @@ import { ResendEmailSender } from "@bystro/integrations";
 
 import { createAuth, type Auth } from "./auth-config";
 import { getDb } from "./db";
+import { logger } from "./logger";
 import { readAuthEnv, readEmailEnv } from "./env";
 
 /** Used until Resend is configured: sending fails loudly instead of pretending to work. */
@@ -28,6 +29,7 @@ export function getAuth(): Auth {
     db: getDb(),
     emailSender: createEmailSender(),
     env: readAuthEnv(),
+    logger,
   });
   return globalForAuth.__bystroAuth;
 }

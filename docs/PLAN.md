@@ -127,7 +127,7 @@ Výsledek fáze: na veřejné adrese se dá zaregistrovat, založit firmu podle 
 
 **Hotovo když:** E2E: registrace → zadání IČO → firma založena → Přehled. Test adapteru ARES s nahranými odpověďmi.
 
-### - [ ] 1.7 Logování, Sentry a CI
+### - [x] 1.7 Logování, Sentry a CI
 
 **Cíl:** chyby jsou vidět a nic rozbitého se nedostane do hlavní větve.
 

@@ -1,6 +1,6 @@
 const LOCALE = "cs-CZ";
 const TIME_ZONE = "Europe/Prague";
-const NBSP = " ";
+const NBSP = "\u00a0";
 /** Typographic minus, as used in the prototype for negative amounts. */
 const MINUS = "−";
 

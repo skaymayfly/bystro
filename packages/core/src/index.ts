@@ -5,12 +5,10 @@ export {
   AUDIT_ACTOR_TYPES,
   AUDIT_RESULTS,
   AUDIT_SOURCES,
-  REDACTED,
   sanitizeAuditMetadata,
   type AuditActorType,
   type AuditResult,
   type AuditSource,
-  type JsonValue,
 } from "./audit";
 export type { EmailMessage, EmailSender } from "./email";
 export {
@@ -24,4 +22,13 @@ export {
 } from "./format";
 export { isValidIco, normalizeIco } from "./ico";
 export { organizationInputSchema, type OrganizationInput } from "./organization-input";
+export {
+  AMOUNT_KEY,
+  redactDeep,
+  REDACTED,
+  redactText,
+  SENSITIVE_KEY,
+  type JsonValue,
+  type RedactOptions,
+} from "./redaction";
 export { ROLES, type Role } from "./roles";

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { createDb, createOrganization } from "@bystro/db";
 import { readTestDatabase } from "@bystro/db/testing";
 import { FakeEmailSender } from "@bystro/integrations/testing";
+import { createLogger } from "@bystro/observability";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { createAuth } from "./auth-config";
@@ -11,12 +12,21 @@ import { resolveRequestContext } from "./context";
 const BASE_URL = "http://localhost:3000";
 const { db, close } = createDb(readTestDatabase().url);
 
+/** Everything Better Auth and our own code log during the tests ends up here. */
+const logLines: string[] = [];
+const logger = createLogger({
+  service: "web-test",
+  level: "debug",
+  destination: { write: (line: string) => void logLines.push(line) },
+});
+
 function setup() {
   const emailSender = new FakeEmailSender();
   const auth = createAuth({
     db,
     emailSender,
     env: { secret: "test-secret-test-secret-test-secret-1234", baseUrl: BASE_URL },
+    logger,
   });
   return { auth, emailSender };
 }
@@ -254,5 +264,30 @@ describe("resolveRequestContext", () => {
     expect(ownerContext.role).toBe("owner");
     expect(strangerContext.organization).toBeNull();
     expect(strangerContext.role).toBeNull();
+  });
+});
+
+describe("logging", () => {
+  it("keeps e-mail addresses, passwords and reset tokens out of the logs", async () => {
+    const { auth, emailSender } = setup();
+    const { email, password } = await signUp(auth);
+
+    // Trigger the paths that make Better Auth log: failed sign-ins and a password reset.
+    await canSignIn(auth, email, "spatne-heslo-999");
+    await canSignIn(auth, newEmail(), "spatne-heslo-999");
+    await auth.api.requestPasswordReset({ body: { email, redirectTo: "/obnova-hesla" } });
+    await waitForEmails(emailSender, 1);
+    const token = resetTokenFrom(emailSender.sent[0]?.text ?? "");
+    await auth.api.requestPasswordReset({
+      body: { email: newEmail(), redirectTo: "/obnova-hesla" },
+    });
+
+    const output = logLines.join("");
+    expect(output).toContain("better-auth");
+    expect(output).not.toContain(email);
+    expect(output).not.toContain(password);
+    expect(output).not.toContain("spatne-heslo-999");
+    expect(output).not.toContain(token);
+    expect(output).not.toMatch(/@example\.test/);
   });
 });

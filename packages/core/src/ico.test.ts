@@ -33,7 +33,7 @@ describe("isValidIco", () => {
 describe("normalizeIco", () => {
   it("removes spaces so a formatted IČO validates", () => {
     expect(normalizeIco(" 270 74 358 ")).toBe("27074358");
-    expect(isValidIco(normalizeIco("270 74 358"))).toBe(true);
+    expect(isValidIco(normalizeIco("270\u00a074\u00a0358"))).toBe(true);
   });
 
   it("does not pad or otherwise repair the value", () => {

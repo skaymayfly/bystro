@@ -1,16 +1,23 @@
 import { loadRootEnv, readTestDatabase } from "@bystro/db/testing";
 import { defineConfig, devices } from "@playwright/test";
 
+import {
+  ARES_STUB_PORT,
+  ARES_STUB_URL,
+  E2E_AUTH_SECRET,
+  E2E_BASE_URL,
+  E2E_PORT,
+} from "./e2e/config";
+
 loadRootEnv();
 
 // E2E runs a production build on its own port against the test database,
 // so it never touches development data and can run next to `pnpm dev`.
-const PORT = 3100;
-const ARES_STUB_PORT = 3101;
+const PORT = E2E_PORT;
 // Optional: use an installed browser ("chrome", "msedge") instead of Playwright's Chromium.
 const channel = process.env.E2E_BROWSER_CHANNEL?.trim();
-const baseURL = `http://localhost:${PORT}`;
-const aresStubUrl = `http://localhost:${ARES_STUB_PORT}`;
+const baseURL = E2E_BASE_URL;
+const aresStubUrl = ARES_STUB_URL;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -50,14 +57,15 @@ export default defineConfig({
         NEXT_TELEMETRY_DISABLED: "1",
         DATABASE_URL: readTestDatabase().url,
         BETTER_AUTH_URL: baseURL,
-        // Throwaway secret for the test server only.
-        BETTER_AUTH_SECRET: "e2e-only-secret-e2e-only-secret-e2e-only",
+        BETTER_AUTH_SECRET: E2E_AUTH_SECRET,
         ARES_BASE_URL: aresStubUrl,
         // Keep third-party integrations off in E2E, whatever the developer has in .env.
         GOOGLE_CLIENT_ID: "",
         GOOGLE_CLIENT_SECRET: "",
         RESEND_API_KEY: "",
         EMAIL_FROM: "",
+        SENTRY_DSN: "",
+        NEXT_PUBLIC_SENTRY_DSN: "",
       },
     },
   ],

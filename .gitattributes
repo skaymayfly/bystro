@@ -1,0 +1,4 @@
+# Keep LF line endings on every platform so formatting checks agree on Windows and in CI.
+* text=auto eol=lf
+*.pdf binary
+*.png binary
