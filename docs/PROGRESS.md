@@ -26,6 +26,7 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **Přepínání mezi organizacemi:** aktivní je první organizace, ve které je uživatel členem. Až bude potřeba víc firem na účet, doplnit výběr.
 - **Kontrola členství u nových API:** `getRequestContext()` vrací jen organizaci, ve které je uživatel členem. Každý nový route handler ji musí použít; automatické testy izolace endpointů jsou až v kroku 7.3.
 - **Stahování Chromia pro Playwright** na vývojovém počítači vyprší (CDN je dostupná, stahovač Playwrightu ne). Lokálně se používá nainstalovaný Chrome přes `E2E_BROWSER_CHANNEL=chrome`; v CI (krok 1.7) ověřit běžnou instalaci.
+- **Agentní soubory generované nástroji:** `next dev` vytváří a obnovuje `apps/web/AGENTS.md` a `apps/web/CLAUDE.md` (jsou v repozitáři od kroku 1.4). Závazné instrukce jsou jen v kořenovém `CLAUDE.md`.
 - **Sentry není ověřené se skutečným účtem:** kód je připravený a očištění událostí otestované, ale doručení chyby do Sentry nikdo nevyzkoušel (chybí DSN). Po založení účtu (plán Developer je zdarma) vložit `SENTRY_DSN` a `NEXT_PUBLIC_SENTRY_DSN` do `.env` a vyvolat testovací chybu ve webu i workeru.
 - **Zdrojové mapy pro Sentry** se nenahrávají (`sourcemaps.disable`); chyby z produkce budou mít minifikované stacky. Zapnout při nasazení (krok 1.8) s `SENTRY_AUTH_TOKEN`.
 - **Chyby požadavků vypisuje Next.js sám** na standardní chybový výstup mimo náš logger, tedy bez redakce. Chybové zprávy proto nesmí obsahovat citlivé hodnoty (naše chybové třídy to dodržují); při nasazení zvážit, kam tento výstup teče.
@@ -65,6 +66,12 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
   - Sentry: jen chyby (žádný tracing ani záznam relací), `sendDefaultPii: false`, z požadavku zůstává metoda a cesta bez query stringu, z uživatele jen ID.
   - CI používá jednorázové hodnoty pro testovací databázi; žádné skutečné tajné hodnoty nepotřebuje.
   - Worker ve vývoji čte kořenový `.env` přes `--env-file-if-exists`.
+- První běh CI na GitHubu selhal; chyby jsem dohledal spuštěním stejných kroků v čistém linuxovém kontejneru a opravil:
+  - Souběžné migrace: testy `db` a `web` migrovaly prázdnou testovací databázi zároveň. `runMigrations` teď drží databázový advisory lock a založení testovací databáze snese souběh.
+  - `next build` vyžadoval `DATABASE_URL`: kontext požadavku sahal na databázi dřív, než přečetl hlavičky. Teď čte hlavičky první, takže build tajné hodnoty nepotřebuje.
+  - E2E narážely na omezení počtu registrací: testovací uživatelé se teď zakládají přímo na serveru (`createSignedInUser`), přes formulář jde jen test registrace a přihlášení.
+  - Přidán `.gitattributes` (konce řádků LF na všech platformách).
+- Průvodce Sentry (`@sentry/wizard`) spuštěný uživatelem v kořeni repozitáře vytvořil druhou, nevyhovující konfiguraci (100% tracing, sběr uživatelských dat). Soubory jsou přesunuté do zálohy mimo repozitář, DSN je převzaté do `.env`.
 - Otevřené body: ověření Sentry se skutečným účtem, zdrojové mapy, výstup chyb Next.js, meze redakce textu, balení workeru, audit přihlášení (viz sekce výše).
 - Další krok: 1.8 Nasazení na testovací prostředí
 
