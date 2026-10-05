@@ -12,18 +12,18 @@ Každý krok má:
 
 Přehled fází:
 
-| Fáze | Obsah                       | Týdny (plný úvazek) |
-| ---- | --------------------------- | ------------------- |
-| 0    | Příprava (dělá uživatel)    | 1                   |
-| 1    | Základ aplikace             | 2–3                 |
-| 2    | Faktury z Fakturoidu        | 4–5                 |
-| 3    | Banka a párování plateb     | 6–8                 |
-| 4    | Hlídač peněz (cashflow)     | 9–10                |
-| 5    | Akce, upomínky, schvalování | 11–12               |
-| 6    | AI asistent a ranní přehled | 13–15               |
-| 7    | Beta s prvními firmami      | 16–18               |
-| 8    | E-mail a kalendář           | 19–23               |
-| 9    | Placení a ostré spuštění    | 24–26               |
+| Fáze | Obsah                           | Týdny (plný úvazek) |
+| ---- | ------------------------------- | ------------------- |
+| 0    | Příprava (dělá uživatel)        | 1                   |
+| 1    | Základ aplikace                 | 2–3                 |
+| 2    | Faktury z Fakturoidu a iDokladu | 4–6                 |
+| 3    | Banka a párování plateb         | 6–8                 |
+| 4    | Hlídač peněz (cashflow)         | 9–10                |
+| 5    | Akce, upomínky, schvalování     | 11–12               |
+| 6    | AI asistent a ranní přehled     | 13–15               |
+| 7    | Beta s prvními firmami          | 16–18               |
+| 8    | E-mail a kalendář               | 19–23               |
+| 9    | Placení a ostré spuštění        | 24–26               |
 
 ---
 
@@ -154,9 +154,9 @@ Výsledek fáze: na veřejné adrese se dá zaregistrovat, založit firmu podle 
 
 ---
 
-## Fáze 2 — Faktury z Fakturoidu
+## Fáze 2 — Faktury z Fakturoidu a iDokladu
 
-Výsledek fáze: uživatel připojí Fakturoid a vidí své skutečné faktury, včetně těch po splatnosti.
+Výsledek fáze: uživatel připojí Fakturoid nebo iDoklad a vidí své skutečné faktury, včetně těch po splatnosti.
 
 ### - [ ] 2.1 Rámec pro integrace
 
@@ -244,6 +244,21 @@ Výsledek fáze: uživatel připojí Fakturoid a vidí své skutečné faktury, 
 - Přehled: karta „Po splatnosti“ (počet, součet, nejstarší) se zdrojem a časem aktualizace.
 
 **Hotovo když:** s reálným testovacím Fakturoidem vidíš správné faktury a součty sedí s Fakturoidem.
+
+### - [ ] 2.8 Adapter iDoklad
+
+**Cíl:** druhý fakturační systém přes stejné rozhraní jako Fakturoid.
+
+**Udělej:**
+
+- 👤 Uživatel založí účet v iDokladu a zaregistruje aplikaci pro API (postup ověř v dokumentaci a doplň do návodu).
+- Přečti aktuální dokumentaci iDoklad API (způsob přihlášení, scopes, stránkování, limity, webhooky).
+- `packages/integrations/idoklad`: implementace `InvoiceProvider`, mapování na doménové typy (částky na haléře), ošetření chyb stejně jako u Fakturoidu.
+- Synchronizace přes stejné úlohy jako v kroku 2.5; žádná logika specifická pro poskytovatele mimo adaptér.
+- Obrazovka Propojení a onboarding nabídnou iDoklad vedle Fakturoidu.
+- Testy proti nahraným odpovědím (fixtures), ne proti živému API.
+
+**Hotovo když:** testy mapování a chybových stavů procházejí, žádný endpoint není vymyšlený a s reálným testovacím iDokladem sedí faktury a součty na obrazovce Faktury.
 
 ---
 
@@ -776,4 +791,4 @@ Výsledek fáze: kdokoli se zaregistruje, 30 dní zkouší zdarma a pak platí.
 
 ## Po spuštění (zatím nerozepsáno)
 
-Rozepsat až podle zpětné vazby platících zákazníků: iDoklad, Pohoda, CRM (Pipedrive, Raynet, HubSpot) a profil zákazníka, příprava na schůzky, automatická pravidla, týmy a role, PWA, zadávání plateb (PIS).
+Rozepsat až podle zpětné vazby platících zákazníků: Pohoda, CRM (Pipedrive, Raynet, HubSpot) a profil zákazníka, příprava na schůzky, automatická pravidla, týmy a role, PWA, zadávání plateb (PIS).
