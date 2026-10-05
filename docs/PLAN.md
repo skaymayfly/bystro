@@ -139,7 +139,7 @@ Výsledek fáze: na veřejné adrese se dá zaregistrovat, založit firmu podle 
 
 **Hotovo když:** pull request spustí CI a vše projde; test ověří, že logger neodešle hodnotu z redigovaného pole.
 
-### - [ ] 1.8 Nasazení na testovací prostředí
+### - [x] 1.8 Nasazení na testovací prostředí
 
 **Cíl:** aplikace běží na internetu.
 
