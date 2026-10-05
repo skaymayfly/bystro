@@ -12,7 +12,7 @@ const PROTECTED_PAGE_PREFIXES = [APP_HOME_PATH, ONBOARDING_PATH];
  * API routes reachable without a session. Everything else under /api is denied by default,
  * so a new route is private unless it is added here on purpose.
  */
-const PUBLIC_API_PREFIXES = ["/api/auth"];
+const PUBLIC_API_PREFIXES = ["/api/auth", "/api/health"];
 
 function isUnder(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);

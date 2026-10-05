@@ -10,13 +10,30 @@ export interface ScrubbableEvent {
   message?: string | undefined;
   user?: { id?: string | number | undefined; [key: string]: unknown } | undefined;
   request?: Record<string, unknown> | undefined;
-  exception?: { values?: { value?: string | undefined }[] | undefined } | undefined;
+  exception?:
+    | {
+        values?:
+          | {
+              value?: string | undefined;
+              stacktrace?: { frames?: ScrubbableFrame[] | undefined } | undefined;
+            }[]
+          | undefined;
+      }
+    | undefined;
   breadcrumbs?:
     { message?: string | undefined; data?: Record<string, unknown> | undefined }[] | undefined;
   extra?: Record<string, unknown> | undefined;
   contexts?: Record<string, Record<string, unknown> | undefined> | undefined;
   tags?: Record<string, unknown> | undefined;
   server_name?: string | undefined;
+}
+
+/** A stack frame: Sentry attaches source lines around it and, if enabled, local variables. */
+interface ScrubbableFrame {
+  context_line?: string | undefined;
+  pre_context?: string[] | undefined;
+  post_context?: string[] | undefined;
+  vars?: Record<string, unknown> | undefined;
 }
 
 const scrubRecord = <T extends Record<string, unknown>>(value: T): T =>
@@ -28,7 +45,8 @@ const scrubRecord = <T extends Record<string, unknown>>(value: T): T =>
  *
  * Kept: error types, stack traces, the request method and path, the user's ID.
  * Dropped: cookies, headers, query string, request body, the rest of the user object.
- * Scrubbed: messages, breadcrumbs, extra data, contexts and tags.
+ * Scrubbed: messages, source lines and local variables of stack frames, breadcrumbs,
+ * extra data, contexts and tags.
  */
 export function scrubSentryEvent<T extends object>(sentryEvent: T): T {
   // SDK event types are stricter than the structural shape used here; the fields touched
@@ -51,6 +69,21 @@ export function scrubSentryEvent<T extends object>(sentryEvent: T): T {
   for (const exception of event.exception?.values ?? []) {
     if (exception.value !== undefined) {
       exception.value = redactText(exception.value);
+    }
+    for (const frame of exception.stacktrace?.frames ?? []) {
+      // Source lines can hold literals (test data, fixtures); local variables hold live data.
+      if (frame.context_line !== undefined) {
+        frame.context_line = redactText(frame.context_line);
+      }
+      if (frame.pre_context !== undefined) {
+        frame.pre_context = frame.pre_context.map(redactText);
+      }
+      if (frame.post_context !== undefined) {
+        frame.post_context = frame.post_context.map(redactText);
+      }
+      if (frame.vars !== undefined) {
+        frame.vars = scrubRecord(frame.vars);
+      }
     }
   }
   for (const breadcrumb of event.breadcrumbs ?? []) {

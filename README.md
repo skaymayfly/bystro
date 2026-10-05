@@ -4,6 +4,8 @@ SaaS pro majitele malých českých firem: propojí fakturaci, banku, e-mail, ka
 
 Pravidla a postup práce jsou v [CLAUDE.md](CLAUDE.md), plán v [docs/PLAN.md](docs/PLAN.md), deník v [docs/PROGRESS.md](docs/PROGRESS.md).
 
+Nasazení na Railway popisuje [docs/deploy.md](docs/deploy.md).
+
 ## Co potřebuješ
 
 - Node.js 24 (viz `.nvmrc`)

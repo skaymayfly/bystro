@@ -48,6 +48,15 @@ export function readAuthEnv(env: Env = process.env): AuthEnv {
   };
 }
 
+/** Redis connection string (job queues from step 2.2, health check now). */
+export function readRedisUrl(env: Env = process.env): string {
+  const value = optional(env, "REDIS_URL");
+  if (value === undefined || !(value.startsWith("redis://") || value.startsWith("rediss://"))) {
+    throw new WebEnvError("REDIS_URL must be a redis:// or rediss:// connection string.");
+  }
+  return value;
+}
+
 /** Base URL of the ARES API; `undefined` means the official public endpoint. */
 export function readAresBaseUrl(env: Env = process.env): string | undefined {
   const value = optional(env, "ARES_BASE_URL");

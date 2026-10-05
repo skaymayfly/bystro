@@ -1,4 +1,4 @@
 {
   "extends": "@bystro/config/tsconfig/node.json",
-  "include": ["src", "drizzle.config.ts", "vitest.config.ts"]
+  "include": ["src", "drizzle.config.ts", "vitest.config.ts", "tsup.migrate.config.ts"]
 }

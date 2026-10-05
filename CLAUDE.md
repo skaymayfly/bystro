@@ -17,6 +17,7 @@ Pořadí vývoje stojí na „Hlídači peněz“: faktury → banka → párov�
 | `docs/zadani.pdf`    | Kompletní produktové a technické zadání. Kapitola 22 = závazná pravidla.            |
 | `docs/prototyp.html` | Klikací prototyp: vzhled, texty, obrazovky, prázdné stavy. UI texty přebírej odsud. |
 | `docs/decisions/`    | Zapsaná architektonická rozhodnutí (ADR), jeden soubor na rozhodnutí.               |
+| `docs/deploy.md`     | Návod na nasazení (Railway): služby, proměnné, migrace, kontrola po nasazení.       |
 
 Když si zdroje odporují, platí: tento soubor → `docs/PLAN.md` → `docs/zadani.pdf` → prototyp. Rozpor zapiš do `PROGRESS.md` a upozorni na něj.
 
@@ -119,7 +120,7 @@ Pravidla závislostí: `core` nezávisí na ničem z ostatních balíčků. `obs
 
 ## Příkazy
 
-Stav po kroku 1.7. Při každé změně skriptů tuto sekci aktualizuj podle skutečnosti.
+Stav po kroku 1.8. Při každé změně skriptů tuto sekci aktualizuj podle skutečnosti.
 
 ```
 pnpm install             # na Windows vyžaduje zapnutý Režim pro vývojáře (symlinky)
@@ -134,12 +135,16 @@ pnpm test:e2e            # Playwright; sestaví web a pustí ho na portu 3100 pr
 pnpm build               # web (.next) + worker (dist)
 pnpm format              # Prettier, zápis
 pnpm format:check
+docker build -f apps/web/Dockerfile -t bystro-web .        # obraz webu (z kořene repozitáře)
+docker build -f apps/worker/Dockerfile -t bystro-worker .  # obraz workeru
 ```
 
 Integrační a E2E testy běží proti databázi z `DATABASE_URL_TEST` (název musí končit na `_test`); testy si ji samy založí a zmigrují.
 
 E2E potřebuje prohlížeč: `pnpm --filter @bystro/web exec playwright install chromium`, nebo nainstalovaný Chrome/Edge přes `E2E_BROWSER_CHANNEL` v `.env`.
 
-CI (`.github/workflows/ci.yml`) spouští při každém pull requestu a pushi do `main`: format:check, lint, typecheck, migrace, testy, build a E2E.
+CI (`.github/workflows/ci.yml`) spouští při každém pull requestu a pushi do `main`: format:check, lint, typecheck, migrace, testy, build a E2E; druhá úloha sestaví oba obrazy a ověří, že worker nastartuje a web odpoví na `/api/health`.
+
+Nasazení popisuje `docs/deploy.md` (Railway). Worker po sestavení obsahuje jen vlastní závislosti: knihovnu, kterou používá některý balíček `@bystro/*` přibalený do workeru, je potřeba uvést i v `apps/worker/package.json`.
 
 Proměnnou `NODE_ENV` do `.env` nedávej — nestandardní hodnota rozbije `next build`.
