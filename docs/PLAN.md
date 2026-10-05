@@ -100,7 +100,7 @@ Výsledek fáze: na veřejné adrese se dá zaregistrovat, založit firmu podle 
 
 **Hotovo když:** E2E test: registrace → odhlášení → přihlášení projde; nepřihlášený uživatel na `/app` je přesměrován.
 
-### - [ ] 1.5 Vzhled a navigace podle prototypu
+### - [x] 1.5 Vzhled a navigace podle prototypu
 
 **Cíl:** aplikace vypadá jako prototyp.
 

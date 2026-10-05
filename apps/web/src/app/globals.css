@@ -1,1 +1,101 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * Design tokens taken from docs/prototyp.html.
+ * The reasoning and the full table live in docs/decisions/0001-design-tokens.md.
+ */
+:root {
+  /* shadcn/ui roles mapped to the Bystro palette */
+  --background: #f3f2ef;
+  --foreground: #161514;
+  --card: #ffffff;
+  --card-foreground: #161514;
+  --popover: #ffffff;
+  --popover-foreground: #161514;
+  --primary: #c94a2c;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f2ef;
+  --secondary-foreground: #161514;
+  --muted: #f7f6f3;
+  --muted-foreground: #6b6964;
+  --accent: #fbe7e0;
+  --accent-foreground: #9e3820;
+  --destructive: #9e3820;
+  --border: #e6e4df;
+  --input: #e6e4df;
+  --ring: #161514;
+  --radius: 1rem;
+}
+
+@theme inline {
+  --font-sans: var(--font-onest), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+
+  /* shadcn/ui roles */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Bystro palette */
+  --color-ink: #161514;
+  --color-ink-2: #55534e;
+  --color-ink-3: #6b6964;
+  --color-ink-4: #8a877f;
+  --color-on-ink-muted: #a8a49d;
+  --color-ink-line: #2e2c29;
+  --color-brand: #c94a2c;
+  --color-brand-strong: #9e3820;
+  --color-brand-soft: #fbe7e0;
+  --color-field: #fafaf8;
+  --color-line: #e6e4df;
+  --color-line-soft: #efede9;
+  --color-line-dashed: #e0ddd6;
+  --color-line-strong: #d9d6d0;
+  --color-dot: #cfcbc4;
+  --color-success: #2f8f5b;
+  --color-success-strong: #226b43;
+  --color-success-soft: #e3f1e8;
+  --color-warning-strong: #8a5a00;
+  --color-warning-soft: #fff1d6;
+
+  /* Radii: pills are `rounded-full` */
+  --radius-sm: calc(var(--radius) * 0.75);
+  --radius-md: calc(var(--radius) * 0.875);
+  --radius-lg: var(--radius);
+  --radius-field: 16px;
+  --radius-tile: 20px;
+  --radius-card: 28px;
+  --radius-panel: 36px;
+
+  --shadow-soft: 0 1px 4px rgb(0 0 0 / 0.08);
+  --shadow-raised: 0 1px 4px rgb(0 0 0 / 0.12);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}

@@ -16,9 +16,9 @@ test("registrace → odhlášení → přihlášení", async ({ page }) => {
   await page.getByRole("button", { name: "Vytvořit účet" }).click();
 
   await expect(page).toHaveURL("/app");
-  await expect(page.getByRole("heading", { name: "Ahoj, Petr Dvořák" })).toBeVisible();
+  await expect(page.getByText("Petr Dvořák")).toBeVisible();
 
-  await page.getByRole("button", { name: "Odhlásit se" }).click();
+  await page.getByRole("button", { name: "Odejít" }).click();
   await expect(page).toHaveURL("/prihlaseni");
 
   // After signing out the app is closed again.
@@ -31,7 +31,7 @@ test("registrace → odhlášení → přihlášení", async ({ page }) => {
   await page.getByRole("button", { name: "Přihlásit se" }).click();
 
   await expect(page).toHaveURL("/app");
-  await expect(page.getByRole("heading", { name: "Ahoj, Petr Dvořák" })).toBeVisible();
+  await expect(page.getByText("Petr Dvořák")).toBeVisible();
 });
 
 test("nepřihlášený uživatel je z /app přesměrován na přihlášení", async ({ page }) => {
@@ -59,7 +59,7 @@ test("špatné heslo ukáže chybu a nepřihlásí", async ({ page }) => {
   await page.getByLabel("Heslo").fill(PASSWORD);
   await page.getByRole("button", { name: "Vytvořit účet" }).click();
   await expect(page).toHaveURL("/app");
-  await page.getByRole("button", { name: "Odhlásit se" }).click();
+  await page.getByRole("button", { name: "Odejít" }).click();
   await expect(page).toHaveURL("/prihlaseni");
 
   await page.getByLabel("E-mail").fill(email);

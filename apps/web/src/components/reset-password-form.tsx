@@ -6,8 +6,12 @@ import { useState, type FormEvent } from "react";
 
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
+import { cn } from "@/lib/utils";
 
 import { authStyles } from "./auth-shell";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 
 export function ResetPasswordForm({ token }: { token: string | null }) {
   const router = useRouter();
@@ -42,30 +46,29 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
         </p>
       ) : (
         <form onSubmit={onSubmit} className="flex flex-col gap-5">
-          <label className={authStyles.label}>
+          <Label>
             Nové heslo
-            <input
+            <Input
               name="password"
               type="password"
               required
               minLength={8}
               autoComplete="new-password"
               placeholder="Aspoň 8 znaků"
-              className={authStyles.input}
             />
-          </label>
+          </Label>
           {error !== null && (
             <p role="alert" className={authStyles.error}>
               {error}
             </p>
           )}
-          <button type="submit" disabled={pending} className={authStyles.primaryButton}>
+          <Button type="submit" size="xl" disabled={pending}>
             Uložit heslo
-          </button>
+          </Button>
         </form>
       )}
 
-      <p className={`${authStyles.hint} text-center`}>
+      <p className={cn(authStyles.hint, "text-center")}>
         <Link href="/zapomenute-heslo" className={authStyles.link}>
           Poslat nový odkaz
         </Link>

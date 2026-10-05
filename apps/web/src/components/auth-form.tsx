@@ -6,8 +6,12 @@ import { useState, type FormEvent } from "react";
 
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
+import { cn } from "@/lib/utils";
 
 import { authStyles } from "./auth-shell";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 
 export type AuthMode = "signup" | "login";
 
@@ -21,9 +25,10 @@ interface AuthFormProps {
 }
 
 const tabClass = (active: boolean) =>
-  `flex-1 rounded-full p-[11px] text-center text-[14px] font-semibold text-[#161514] ${
-    active ? "bg-white" : "bg-transparent"
-  }`;
+  cn(
+    "flex-1 rounded-full p-[11px] text-center text-sm font-semibold text-ink",
+    active ? "bg-card" : "bg-transparent",
+  );
 
 export function AuthForm({ mode, nextPath, googleEnabled, notice }: AuthFormProps) {
   const router = useRouter();
@@ -66,7 +71,7 @@ export function AuthForm({ mode, nextPath, googleEnabled, notice }: AuthFormProp
 
   return (
     <>
-      <nav className="flex rounded-full bg-[#F3F2EF] p-1" aria-label="Registrace nebo přihlášení">
+      <nav className="flex rounded-full bg-secondary p-1" aria-label="Registrace nebo přihlášení">
         <Link
           href={`/registrace${nextQuery}`}
           className={tabClass(isSignup)}
@@ -89,58 +94,45 @@ export function AuthForm({ mode, nextPath, googleEnabled, notice }: AuthFormProp
 
       {googleEnabled && (
         <>
-          <button
-            type="button"
-            onClick={onGoogle}
-            disabled={pending}
-            className={authStyles.secondaryButton}
-          >
+          <Button type="button" variant="secondary" size="lg" onClick={onGoogle} disabled={pending}>
             Pokračovat přes Google
-          </button>
-          <div className="flex items-center gap-3 text-[13px] text-[#8A877F]">
-            <div className="h-px flex-1 bg-[#E6E4DF]" />
+          </Button>
+          <div className="flex items-center gap-3 text-[13px] text-ink-4">
+            <div className="h-px flex-1 bg-line" />
             nebo e-mailem
-            <div className="h-px flex-1 bg-[#E6E4DF]" />
+            <div className="h-px flex-1 bg-line" />
           </div>
         </>
       )}
 
       <form onSubmit={onSubmit} className="flex flex-col gap-5">
         {isSignup && (
-          <label className={authStyles.label}>
+          <Label>
             Jméno a příjmení
-            <input
-              name="name"
-              required
-              autoComplete="name"
-              placeholder="Petr Dvořák"
-              className={authStyles.input}
-            />
-          </label>
+            <Input name="name" required autoComplete="name" placeholder="Petr Dvořák" />
+          </Label>
         )}
-        <label className={authStyles.label}>
+        <Label>
           E-mail
-          <input
+          <Input
             name="email"
             type="email"
             required
             autoComplete="email"
             placeholder="petr@dvorak-interiery.cz"
-            className={authStyles.input}
           />
-        </label>
-        <label className={authStyles.label}>
+        </Label>
+        <Label>
           Heslo
-          <input
+          <Input
             name="password"
             type="password"
             required
             minLength={8}
             autoComplete={isSignup ? "new-password" : "current-password"}
             placeholder={isSignup ? "Aspoň 8 znaků" : "Tvoje heslo"}
-            className={authStyles.input}
           />
-        </label>
+        </Label>
 
         {error !== null && (
           <p role="alert" className={authStyles.error}>
@@ -148,13 +140,13 @@ export function AuthForm({ mode, nextPath, googleEnabled, notice }: AuthFormProp
           </p>
         )}
 
-        <button type="submit" disabled={pending} className={authStyles.primaryButton}>
+        <Button type="submit" size="xl" disabled={pending}>
           {isSignup ? "Vytvořit účet" : "Přihlásit se"}
-        </button>
+        </Button>
       </form>
 
       {!isSignup && (
-        <p className={`${authStyles.hint} text-center`}>
+        <p className={cn(authStyles.hint, "text-center")}>
           <Link href="/zapomenute-heslo" className={authStyles.link}>
             Nepamatuju si heslo
           </Link>

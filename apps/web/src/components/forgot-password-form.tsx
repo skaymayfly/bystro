@@ -5,8 +5,12 @@ import { useState, type FormEvent } from "react";
 
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
+import { cn } from "@/lib/utils";
 
 import { authStyles } from "./auth-shell";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 
 export function ForgotPasswordForm() {
   const [state, setState] = useState<"idle" | "pending" | "sent">("idle");
@@ -44,34 +48,29 @@ export function ForgotPasswordForm() {
             Napiš svůj e-mail. Pošlu ti odkaz, kde si nastavíš nové.
           </p>
           <form onSubmit={onSubmit} className="flex flex-col gap-5">
-            <label className={authStyles.label}>
+            <Label>
               E-mail
-              <input
+              <Input
                 name="email"
                 type="email"
                 required
                 autoComplete="email"
                 placeholder="petr@dvorak-interiery.cz"
-                className={authStyles.input}
               />
-            </label>
+            </Label>
             {error !== null && (
               <p role="alert" className={authStyles.error}>
                 {error}
               </p>
             )}
-            <button
-              type="submit"
-              disabled={state === "pending"}
-              className={authStyles.primaryButton}
-            >
+            <Button type="submit" size="xl" disabled={state === "pending"}>
               Poslat odkaz
-            </button>
+            </Button>
           </form>
         </>
       )}
 
-      <p className={`${authStyles.hint} text-center`}>
+      <p className={cn(authStyles.hint, "text-center")}>
         <Link href="/prihlaseni" className={authStyles.link}>
           Zpět na přihlášení
         </Link>
