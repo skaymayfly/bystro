@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 
-import { completeOnboarding, KNOWN_COMPANY_NAME, newEmail, signIn, signUp } from "./helpers";
+import { completeOnboarding, createSignedInUser, KNOWN_COMPANY_NAME, signIn } from "./helpers";
 
 /** Each screen with a text that only its empty state shows. */
 const SCREENS = [
@@ -17,10 +17,9 @@ const SCREENS = [
 
 const DESKTOP = { width: 1440, height: 900 };
 const MOBILE = { width: 390, height: 844 };
-const email = newEmail();
+let email: string;
 
-// One account for the whole file: sign-up and sign-in are rate limited in production mode,
-// so the tests share a session instead of registering again and again.
+// One account and one finished onboarding for the whole file.
 test.describe.configure({ mode: "serial" });
 let storageStatePath: string;
 
@@ -28,7 +27,8 @@ test.beforeAll(async ({ browser }, testInfo) => {
   storageStatePath = testInfo.outputPath("session.json");
   const context = await browser.newContext();
   const page = await context.newPage();
-  await signUp(page, email);
+  ({ email } = await createSignedInUser(context));
+  await page.goto("/onboarding");
   await completeOnboarding(page);
   await context.storageState({ path: storageStatePath });
   await context.close();

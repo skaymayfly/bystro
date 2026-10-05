@@ -1,11 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 import {
+  createSignedInUser,
   KNOWN_COMPANY_NAME,
   KNOWN_ICO,
-  newEmail,
   OUTAGE_ICO,
-  signUp,
   UNKNOWN_ICO,
 } from "./helpers";
 
@@ -13,7 +12,7 @@ test.describe.configure({ mode: "serial" });
 
 test("registrace → zadání IČO → firma založena → Přehled", async ({ page, baseURL }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await signUp(page, newEmail());
+  await createSignedInUser(page.context());
 
   // The app itself is closed until a company exists.
   await page.goto("/app/faktury");
@@ -70,7 +69,8 @@ test("registrace → zadání IČO → firma založena → Přehled", async ({ p
 
 test("když ARES firmu nenajde nebo neodpovídá, jde údaje vyplnit ručně", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await signUp(page, newEmail(), "Jana Nováková");
+  await createSignedInUser(page.context(), { name: "Jana Nováková" });
+  await page.goto("/onboarding");
 
   await page.getByLabel("IČO").fill(UNKNOWN_ICO);
   await page.getByRole("button", { name: "Dohledat v ARES" }).click();
