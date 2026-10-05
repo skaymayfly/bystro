@@ -12,7 +12,9 @@
     "typecheck": "cross-env TURBO_TELEMETRY_DISABLED=1 turbo run typecheck",
     "test": "cross-env TURBO_TELEMETRY_DISABLED=1 turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "db:generate": "pnpm --filter @bystro/db db:generate",
+    "db:migrate": "pnpm --filter @bystro/db db:migrate"
   },
   "devDependencies": {
     "@bystro/config": "workspace:*",

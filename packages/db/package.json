@@ -9,15 +9,23 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/scripts/migrate.ts"
   },
   "dependencies": {
-    "@bystro/core": "workspace:*"
+    "@bystro/core": "workspace:*",
+    "drizzle-orm": "^0.45.3",
+    "pg": "^8.23.1",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@bystro/config": "workspace:*",
     "@types/node": "^24.0.0",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^10.12.0",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.3",
     "vitest": "^5.0.3"
   }

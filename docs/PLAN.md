@@ -60,7 +60,7 @@ Výsledek fáze: na veřejné adrese se dá zaregistrovat, založit firmu podle 
 
 **Hotovo když:** `pnpm install && pnpm lint && pnpm typecheck && pnpm test && pnpm build` projde bez chyb a sekce Příkazy v `CLAUDE.md` odpovídá skutečnosti.
 
-### - [ ] 1.2 Lokální databáze a Redis
+### - [x] 1.2 Lokální databáze a Redis
 
 **Cíl:** jednotné lokální prostředí.
 

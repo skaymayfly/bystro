@@ -9,10 +9,13 @@
     },
     "lint": {},
     "typecheck": {},
-    "test": {},
+    "test": {
+      "env": ["DATABASE_URL_TEST"]
+    },
     "dev": {
       "cache": false,
       "persistent": true
     }
-  }
+  },
+  "globalDependencies": [".env"]
 }
