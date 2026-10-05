@@ -86,7 +86,7 @@ Výsledek fáze: na veřejné adrese se dá zaregistrovat, založit firmu podle 
 
 **Hotovo když:** migrace projde, test izolace je zelený a v kódu neexistuje cesta, jak číst tenant data bez `organizationId`.
 
-### - [ ] 1.4 Přihlášení a registrace
+### - [x] 1.4 Přihlášení a registrace
 
 **Cíl:** uživatel se zaregistruje a přihlásí.
 

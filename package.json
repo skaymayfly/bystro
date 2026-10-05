@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:generate": "pnpm --filter @bystro/db db:generate",
-    "db:migrate": "pnpm --filter @bystro/db db:migrate"
+    "db:migrate": "pnpm --filter @bystro/db db:migrate",
+    "test:e2e": "pnpm --filter @bystro/web test:e2e"
   },
   "devDependencies": {
     "@bystro/config": "workspace:*",

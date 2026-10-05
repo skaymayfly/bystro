@@ -12,4 +12,5 @@ export {
   type AuditSource,
   type JsonValue,
 } from "./audit";
+export type { EmailMessage, EmailSender } from "./email";
 export { ROLES, type Role } from "./roles";

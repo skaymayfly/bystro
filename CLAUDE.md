@@ -118,26 +118,25 @@ Pravidla závislostí: `core` nezávisí na ničem z ostatních balíčků. `int
 
 ## Příkazy
 
-Stav po kroku 1.2. Při každé změně skriptů tuto sekci aktualizuj podle skutečnosti.
+Stav po kroku 1.4. Při každé změně skriptů tuto sekci aktualizuj podle skutečnosti.
 
 ```
 pnpm install             # na Windows vyžaduje zapnutý Režim pro vývojáře (symlinky)
 docker compose up -d     # Postgres 16 + Redis 7 (jen localhost)
 pnpm db:migrate          # aplikuje migrace na DATABASE_URL
-pnpm db:generate         # nová migrace ze schématu (packages/db/src/schema.ts)
+pnpm db:generate         # nová migrace ze schématu (packages/db/src/schema/)
 pnpm dev                 # web (http://localhost:3000) + worker
 pnpm lint
 pnpm typecheck
 pnpm test                # unit + integrační testy; potřebuje běžící Postgres
+pnpm test:e2e            # Playwright; sestaví web a pustí ho na portu 3100 proti testovací DB
 pnpm build               # web (.next) + worker (dist)
 pnpm format              # Prettier, zápis
 pnpm format:check
 ```
 
-Integrační testy běží proti databázi z `DATABASE_URL_TEST` (název musí končit na `_test`); testy si ji samy založí a zmigrují.
+Integrační a E2E testy běží proti databázi z `DATABASE_URL_TEST` (název musí končit na `_test`); testy si ji samy založí a zmigrují.
 
-Zatím neexistují, vzniknou v dalších krocích:
+E2E potřebuje prohlížeč: `pnpm --filter @bystro/web exec playwright install chromium`, nebo nainstalovaný Chrome/Edge přes `E2E_BROWSER_CHANNEL` v `.env`.
 
-```
-pnpm test:e2e            # Playwright (krok 1.4)
-```
+Proměnnou `NODE_ENV` do `.env` nedávej — nestandardní hodnota rozbije `next build`.

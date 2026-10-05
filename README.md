@@ -17,7 +17,7 @@ Pravidla a postup práce jsou v [CLAUDE.md](CLAUDE.md), plán v [docs/PLAN.md](d
 
 ```
 pnpm install
-cp .env.example .env      # a doplň ENCRYPTION_KEY podle návodu v souboru
+cp .env.example .env      # a doplň ENCRYPTION_KEY a BETTER_AUTH_SECRET podle návodu v souboru
 docker compose up -d
 pnpm db:migrate
 pnpm dev
@@ -28,18 +28,19 @@ pnpm dev
 
 ## Příkazy
 
-| Příkaz                 | Co dělá                                                     |
-| ---------------------- | ----------------------------------------------------------- |
-| `pnpm dev`             | Spustí web i worker ve vývojovém režimu                     |
-| `pnpm lint`            | ESLint ve všech balíčcích                                   |
-| `pnpm typecheck`       | Kontrola typů (TypeScript strict)                           |
-| `docker compose up -d` | Spustí Postgres a Redis                                     |
-| `pnpm db:migrate`      | Aplikuje migrace na databázi z `DATABASE_URL`               |
-| `pnpm db:generate`     | Vytvoří novou migraci ze schématu                           |
-| `pnpm test`            | Unit a integrační testy (Vitest); potřebuje běžící Postgres |
-| `pnpm build`           | Produkční build webu (`.next`) a workeru (`dist`)           |
-| `pnpm format`          | Zformátuje kód Prettierem                                   |
-| `pnpm format:check`    | Zkontroluje formátování bez zápisu                          |
+| Příkaz                 | Co dělá                                                              |
+| ---------------------- | -------------------------------------------------------------------- |
+| `pnpm dev`             | Spustí web i worker ve vývojovém režimu                              |
+| `pnpm lint`            | ESLint ve všech balíčcích                                            |
+| `pnpm typecheck`       | Kontrola typů (TypeScript strict)                                    |
+| `docker compose up -d` | Spustí Postgres a Redis                                              |
+| `pnpm db:migrate`      | Aplikuje migrace na databázi z `DATABASE_URL`                        |
+| `pnpm db:generate`     | Vytvoří novou migraci ze schématu                                    |
+| `pnpm test`            | Unit a integrační testy (Vitest); potřebuje běžící Postgres          |
+| `pnpm test:e2e`        | E2E testy v Playwrightu (sestaví web, port 3100, testovací databáze) |
+| `pnpm build`           | Produkční build webu (`.next`) a workeru (`dist`)                    |
+| `pnpm format`          | Zformátuje kód Prettierem                                            |
+| `pnpm format:check`    | Zkontroluje formátování bez zápisu                                   |
 
 ## Struktura
 

@@ -20,21 +20,43 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **TypeScript připnutý na 6.0.x:** `typescript-eslint` 8.71 podporuje jen `<6.1.0`. Na TypeScript 7 přejít, až ho podpoří.
 - **ESLint pro Next.js:** `eslint-config-next` táhne pluginy bez podpory ESLint 10, proto je použit přímo `@next/eslint-plugin-next` + `eslint-plugin-react-hooks`. Pravidla pro přístupnost (jsx-a11y) zatím chybí; doplnit, až budou kompatibilní.
 - **Fáze 0:** chybí GitHub remote (potřeba nejpozději v kroku 1.7 kvůli CI) a účty Fakturoid, Fio, Sentry, Resend, Anthropic, hosting.
-- **Tokeny v tabulce `accounts` (krok 1.4):** Better Auth do ní ukládá `access_token`, `refresh_token` a `id_token` z přihlášení přes Google a hash hesla. Při konfiguraci Better Auth ověřit v dokumentaci, jak tokeny šifrovat nebo neukládat (pravidlo: tokeny v DB šifrované).
-- **Konfigurace Better Auth musí sedět se schématem (krok 1.4):** tabulky jsou vygenerované pro `usePlural: true` a `advanced.database.generateId: "uuid"`; časy jsou ručně změněné na `timestamptz`. V kroku 1.4 znovu spustit `auth generate` a porovnat.
+- **Klíče pro ostrý provoz:** vývojové klíče Resend a Google byly sdílené v chatu; před nasazením vygenerovat nové. Pro ostrý provoz také ověřit vlastní doménu v Resendu (teď se posílá ze zkušební adresy jen na e-mail majitele účtu) a v Googlu přepnout aplikaci z režimu Testing a doplnit produkční redirect URI.
+- **Ověření e-mailu při registraci je vypnuté** (plán ho nepožaduje): dá se registrovat na cizí adresu a registrace prozradí, že účet s e-mailem už existuje. Rozhodnout před betou (fáze 7).
+- **Omezení počtu pokusů o přihlášení:** Better Auth ho má zapnuté jen v produkci a drží ho v paměti procesu; při více instancích nestačí. Vyřešit v kroku 7.3.
+- **Audit přihlášení a registrace:** `audit_logs` vyžaduje organizaci, takže události uživatele bez organizace se nezapisují. Rozhodnout v kroku 1.7 nebo 7.3, jestli je logovat jinam.
+- **Přepínání mezi organizacemi:** aktivní je první organizace, ve které je uživatel členem. Až bude potřeba víc firem na účet, doplnit výběr.
+- **Kontrola členství u nových API:** `getRequestContext()` vrací jen organizaci, ve které je uživatel členem. Každý nový route handler ji musí použít; automatické testy izolace endpointů jsou až v kroku 7.3.
+- **Načítání `.env` ve workeru:** web čte kořenový `.env` přes `next.config.ts`; worker ho začne potřebovat v kroku 2.2.
+- **Stahování Chromia pro Playwright** na vývojovém počítači vyprší (CDN je dostupná, stahovač Playwrightu ne). Lokálně se používá nainstalovaný Chrome přes `E2E_BROWSER_CHANNEL=chrome`; v CI (krok 1.7) ověřit běžnou instalaci.
+- **Vzhled přihlašovacích stránek** má barvy z prototypu zapsané přímo v komponentách; v kroku 1.5 převést na design tokeny a doplnit písmo Onest.
 - **Izolace tenantů je na úrovni kódu, ne databáze:** firemní tabulky nejsou exportované z `@bystro/db` a aplikace mají ESLintem zakázaný `drizzle-orm`, `pg`, `.execute()` a `$client`. Lint jde vědomě obejít (`eslint-disable`), proto v kroku 7.3 zvážit Row Level Security jako druhou vrstvu.
-- **`forOrganization` neověřuje oprávnění uživatele:** jen filtruje podle organizace. Kontrolu členství (`getMembership`) musí udělat kontext požadavku v kroku 1.4.
 - **Pozvánky dalších členů do organizace** nejsou v plánu rozepsané; role `admin` a `member` zatím nemá jak vzniknout přes UI.
 - **Mazání uživatele a organizace:** cizí klíče z `memberships` a `audit_logs` nemažou kaskádově, takže smazání uživatele s členstvím selže. Vyřešit v kroku 7.4 (GDPR).
 - **Adresa organizace je nepovinná** (ARES nemusí odpovědět); povinnost polí rozhodnout v kroku 1.6.
 - **Migrace při nasazení (krok 1.8):** `runMigrations` hledá složku `packages/db/migrations` relativně ke zdrojovému souboru. Funguje přes `tsx` a ve Vitestu, ale ne po zabalení do bundlu; v kroku 1.8 je potřeba rozhodnout, jak se migrace pouští v produkci.
-- **Načítání `.env` ve web a worker:** `.env` v kořeni zatím čtou jen skripty a testy v `packages/db`. Aplikace ho začnou potřebovat v kroku 1.4 (web) a 2.2 (worker).
 - **Rotace `ENCRYPTION_KEY`:** formát šifry má prefix verze (`v1`), ale postup rotace klíče zatím neexistuje. Vyřešit před ostrým provozem (nejpozději fáze 7).
 - **Soubory `.DS_Store`** v kořeni a v `docs/` zůstávají na disku, jen jsou v `.gitignore`.
 
 ---
 
 ## Záznamy
+
+## 2026-10-05 — krok 1.4 Přihlášení a registrace
+
+- Hotovo: Better Auth 1.7 (e-mail + heslo min. 8 znaků, Google připravený); stránky `/registrace`, `/prihlaseni`, `/zapomenute-heslo`, `/obnova-hesla` a holá `/app`; `proxy.ts` (nepřihlášený na `/app` → přesměrování, API mimo `/api/auth` → 401) a ověření session na serveru v layoutu `/app`; `getRequestContext()` (uživatel + aktivní organizace + role); rozhraní `EmailSender` v `core`, `ResendEmailSender` v `integrations`, `FakeEmailSender` jen pro testy; E2E v Playwrightu (`pnpm test:e2e`).
+- Rozhodnutí (bez ADR, v mezích daného stacku):
+  - Tokeny z Google se neukládají vůbec: databázové hooky je při každém zápisu účtu vymažou, `encryptOAuthTokens` je zapnuté jako pojistka. Výchozí scopes Better Auth jsou přesně `openid email profile` (ověřeno ve zdrojovém kódu 1.7.7).
+  - Konfigurace sedí se schématem z kroku 1.3 (`usePlural`, UUID); integrační testy registrace a přihlášení běží proti migrované databázi.
+  - `ResendEmailSender` volá HTTP API přímo přes `fetch`, bez SDK. Bez klíče se použije odesílač, který selže s chybou; žádný mock v běžící aplikaci.
+  - Odkaz pro reset hesla se nikdy neloguje; odeslání se nečeká, aby doba odpovědi neprozradila existenci účtu.
+  - Po resetu hesla se zruší všechny session uživatele.
+  - Instance Better Auth vzniká až při prvním požadavku, takže `next build` nepotřebuje tajné hodnoty.
+  - E2E běží nad produkčním buildem na portu 3100 proti testovací databázi, s vypnutým Googlem a Resendem.
+  - `NODE_ENV` odstraněno z `.env.example`: hodnota `development` z `.env` rozbila `next build` spuštěný z Playwrightu.
+  - České adresy stránek (`/registrace`, `/prihlaseni`, …).
+- Ručně ověřeno uživatelem s reálnými klíči: přihlášení přes Google a doručení e-mailu pro reset hesla přes Resend. V databázi po přihlášení přes Google nezůstal žádný token (`access_token`, `refresh_token`, `id_token` jsou prázdné).
+- Otevřené body: klíče pro ostrý provoz, ověření e-mailu při registraci, rate limiting, audit přihlášení, stahování Chromia (viz sekce výše).
+- Další krok: 1.5 Vzhled a navigace podle prototypu
 
 ## 2026-10-05 — krok 1.3 Organizace, uživatelé, role, audit
 
