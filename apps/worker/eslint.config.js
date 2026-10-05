@@ -1,3 +1,3 @@
-import base from "@bystro/config/eslint/base";
+import base, { noDirectDatabaseAccess } from "@bystro/config/eslint/base";
 
-export default base;
+export default [...base, noDirectDatabaseAccess];

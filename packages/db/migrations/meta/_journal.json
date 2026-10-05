@@ -1,5 +1,13 @@
 {
   "version": "7",
   "dialect": "postgresql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791198290360,
+      "tag": "0000_organizations_users_audit",
+      "breakpoints": true
+    }
+  ]
 }

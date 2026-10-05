@@ -73,7 +73,7 @@ Výsledek fáze: na veřejné adrese se dá zaregistrovat, založit firmu podle 
 
 **Hotovo když:** `docker compose up -d && pnpm db:migrate` funguje na čisté instalaci a testy šifrování procházejí.
 
-### - [ ] 1.3 Organizace, uživatelé, role, audit
+### - [x] 1.3 Organizace, uživatelé, role, audit
 
 **Cíl:** datový základ pro multi-tenant aplikaci.
 
