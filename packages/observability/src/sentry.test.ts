@@ -45,6 +45,37 @@ describe("scrubSentryEvent", () => {
     );
   });
 
+  it("scrubs source lines and local variables attached to stack frames", () => {
+    const event = scrubSentryEvent({
+      exception: {
+        values: [
+          {
+            value: "boom",
+            stacktrace: {
+              frames: [
+                {
+                  pre_context: ['const to = "' + EMAIL + '";'],
+                  context_line: 'throw new Error("contact ' + EMAIL + ' about 12 500 Kč");',
+                  post_context: ["// CZ6508000000192000145399"],
+                  vars: { invoiceId: "FV-1", accessToken: "abc", note: EMAIL },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+
+    const frame = event.exception?.values?.[0]?.stacktrace?.frames?.[0];
+    expect(JSON.stringify(event)).not.toMatch(/example.cz|12 500|CZ65/);
+    expect(frame?.context_line).toBe('throw new Error("contact [redacted] about [redacted]");');
+    expect(frame?.vars).toEqual({
+      invoiceId: "FV-1",
+      accessToken: "[redacted]",
+      note: "[redacted]",
+    });
+  });
+
   it("scrubs breadcrumbs, extra data, contexts and tags", () => {
     const event = scrubSentryEvent({
       breadcrumbs: [
