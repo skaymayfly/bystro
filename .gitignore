@@ -25,3 +25,6 @@ test-results/
 .DS_Store
 Thumbs.db
 .idea/
+
+# Sentry Config File
+.env.sentry-build-plugin
