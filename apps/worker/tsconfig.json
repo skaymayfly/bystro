@@ -1,0 +1,4 @@
+{
+  "extends": "@bystro/config/tsconfig/node.json",
+  "include": ["src", "tsup.config.ts"]
+}

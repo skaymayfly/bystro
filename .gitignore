@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# build output
+.next/
+dist/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+
+# environment (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# test output
+coverage/
+playwright-report/
+test-results/
+
+# logs
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/

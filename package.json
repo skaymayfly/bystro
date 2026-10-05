@@ -1,0 +1,25 @@
+{
+  "name": "bystro",
+  "private": true,
+  "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "cross-env TURBO_TELEMETRY_DISABLED=1 turbo run dev",
+    "build": "cross-env TURBO_TELEMETRY_DISABLED=1 turbo run build",
+    "lint": "cross-env TURBO_TELEMETRY_DISABLED=1 turbo run lint",
+    "typecheck": "cross-env TURBO_TELEMETRY_DISABLED=1 turbo run typecheck",
+    "test": "cross-env TURBO_TELEMETRY_DISABLED=1 turbo run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@bystro/config": "workspace:*",
+    "cross-env": "^10.1.0",
+    "prettier": "^3.9.9",
+    "turbo": "^2.11.7",
+    "typescript": "~6.0.3"
+  },
+  "prettier": "@bystro/config/prettier"
+}
