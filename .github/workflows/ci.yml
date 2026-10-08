@@ -33,12 +33,22 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
 
-    # Throwaway values for the CI database only; no real secrets are needed to run the checks.
+    # Throwaway values for the CI services only; no real secrets are needed to run the checks.
     env:
       CI: "true"
       DATABASE_URL: postgresql://bystro:bystro@localhost:5432/bystro
       DATABASE_URL_TEST: postgresql://bystro:bystro@localhost:5432/bystro_test
+      REDIS_URL: redis://localhost:6379
       TURBO_TELEMETRY_DISABLED: "1"
       NEXT_TELEMETRY_DISABLED: "1"
 
@@ -135,15 +145,20 @@ jobs:
       - name: Build worker image
         run: docker build -f apps/worker/Dockerfile -t bystro-worker:ci .
 
-      - name: Worker starts and stops cleanly
+      - name: Worker connects to Redis, starts and stops cleanly
         run: |
-          docker run -d --name worker bystro-worker:ci
+          docker run -d --name worker --network host -e DATABASE_URL -e REDIS_URL bystro-worker:ci
           sleep 5
           docker logs worker
-          docker logs worker 2>&1 | grep -q "Bystro worker: hello"
+          docker logs worker 2>&1 | grep -q "Bystro worker: ready"
           test "$(docker inspect -f '{{.State.Running}}' worker)" = "true"
           docker stop --time 10 worker
           test "$(docker inspect -f '{{.State.ExitCode}}' worker)" = "0"
+
+      - name: Worker refuses to start without its configuration
+        run: |
+          docker run --name worker-unconfigured bystro-worker:ci && exit 1
+          test "$(docker inspect -f '{{.State.ExitCode}}' worker-unconfigured)" = "1"
 
       - name: Migrations run from the web image
         run: >-

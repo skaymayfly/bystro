@@ -28,15 +28,20 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **Stahování Chromia pro Playwright** na vývojovém počítači vyprší (CDN je dostupná, stahovač Playwrightu ne). Lokálně se používá nainstalovaný Chrome přes `E2E_BROWSER_CHANNEL=chrome`; v CI (krok 1.7) ověřit běžnou instalaci.
 - **Agentní soubory generované nástroji:** `next dev` vytváří a obnovuje `apps/web/AGENTS.md` a `apps/web/CLAUDE.md` (jsou v repozitáři od kroku 1.4). Závazné instrukce jsou jen v kořenovém `CLAUDE.md`.
 - **Rámec pro integrace zatím nemá žádné HTTP cesty ani obrazovku:** zahájení OAuth, návrat od poskytovatele a obrazovka Propojení vzniknou v krocích 2.4 a 2.6. Návratová cesta musí ověřit přihlášeného uživatele a organizaci, najít požadavek přes `findOAuthRequest`, zavolat `verifyCallback`, pak `consumeOAuthRequest` a teprve potom vyměnit kód.
-- **Úklid tabulky `oauth_requests`:** vypršelé a použité požadavky se nemažou. Přidat plánovanou úlohu v kroku 2.2 (má na to index podle `expires_at`).
+- **Zařazování úloh z webu:** fronty a funkce `enqueue` jsou zatím jen ve workeru. Web začne úlohy zařazovat v kroku 2.6 (start synchronizace po připojení) a 5.2 (provedení schválené akce); tehdy se společná část přesune tam, kde na ni dosáhnou obě aplikace.
+- **Limity poskytovatelů nejsou nikde nastavené:** omezovač bere limit jako parametr. Konkrétní čísla doplní adaptéry podle dokumentace poskytovatele (Fakturoid v kroku 2.4, Fio v kroku 3.2).
+- **Dead-letter fronta se jen plní:** nikdo ji nečte a nic z ní neubývá. Záznam jde zároveň do logu a do Sentry; upozornění a postup, jak úlohu pustit znovu, patří do kroku 9.4.
+- **Úklid `oauth_requests` se nezapisuje do audit logu:** maže napříč organizacemi jen vypršelé technické záznamy (otisk `state`, zašifrovaný PKCE ověřovač), ne data firem, a audit je vedený po organizacích. Počet smazaných řádků je v logu workeru. Potvrdit, že to takhle stačí.
+- **Idempotence přes `jobId` platí jen po dobu, co fronta úlohu drží** (dokončené 24 hodin nebo posledních 1000, neúspěšné 7 dní). Proto musí být idempotentní i samotné handlery (upsert); `jobId` má obsahovat časové okno.
+- **Více instancí workeru** je možné (plánovač i omezovač jsou sdílené přes Redis), ale nevyzkoušené; na Railway běží jedna.
+- **Redis na Railway** by měl mít zapnuté ukládání na disk a `maxmemory-policy noeviction`, jinak může při nedostatku paměti zahodit úlohy. Ověřit v nastavení služby před betou.
 - **Jedno připojení na poskytovatele a organizaci** (unikátní klíč). Dva účty u téhož poskytovatele v jedné firmě zatím nejdou.
 - **`last_error_code`** je krátký strojový kód, který volí náš kód (např. `http_401`, `rate_limited`); texty chyb od poskytovatele se neukládají. Seznam kódů sjednotit s prvním adaptérem v kroku 2.4.
 - **Rotace `ENCRYPTION_KEY`** stále nemá postup; od tohoto kroku se jím skutečně šifrují tokeny a PKCE ověřovače.
-- **Worker bude od kroku 2.2 potřebovat** `DATABASE_URL`, `REDIS_URL` a `ENCRYPTION_KEY` (na Railway i lokálně) a v `apps/worker/package.json` závislosti `pg` a `drizzle-orm`.
 - **Bezpečnostní hlavičky chybí** (vynucení HTTPS, zákaz vkládání do rámce, CSP) a odpověď obsahuje `x-powered-by: Next.js`. Zjištěno při kontrole nasazené adresy; řešit v kroku 7.3.
 - **Testovací prostředí běží s klíči Resend a Google, které byly sdílené v chatu.** Před betou (fáze 7) vyměnit a zadat přímo do Railway.
 - **Návod pro Railway** je ověřený jedním skutečným nasazením; názvy položek v administraci zůstávají orientační a cestu ke konfiguračnímu souboru služby (`railway.json`) jsme nezkoušeli.
-- **Závislosti workeru:** do obrazu jdou jen závislosti z `apps/worker/package.json`. Knihovnu, kterou používá přibalený balíček `@bystro/*` (např. `pino`, později `pg`, `drizzle-orm`, `bullmq`), je potřeba uvést i tam; chybějící závislost odhalí úloha `images` v CI, protože worker nenastartuje.
+- **Závislosti workeru:** do obrazu jdou jen závislosti z `apps/worker/package.json`. Knihovnu, kterou používá přibalený balíček `@bystro/*` (např. `pino`, `pg`, `drizzle-orm`, `zod`), je potřeba uvést i tam; chybějící závislost odhalí úloha `images` v CI, protože worker nenastartuje.
 - **Zdrojové mapy pro Sentry** se nahrají jen při sestavení se `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` a `SENTRY_PROJECT`; neověřeno se skutečným tokenem.
 - **Návrat k předchozí verzi nevrací migrace.** Pravidlo pro migrace: zpětně kompatibilní změny schématu, mazání sloupců až v následující verzi.
 - **Velikost obrazů:** web 407 MB, worker 465 MB (většinu workeru tvoří `@sentry/node`). Zatím neřešeno.
@@ -71,6 +76,26 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 ---
 
 ## Záznamy
+
+## 2026-10-08 — krok 2.2 Worker a fronta úloh
+
+- Hotovo: BullMQ 6 ve workeru s frontami `sync`, `actions`, `scheduled` a `dead-letter`; kontrakty úloh v `packages/core/src/jobs.ts` (názvy front, schémata dat, pravidla opakování, `buildJobId`, rozvrhy, rozhodování omezovače, kód chyby); registr handlerů a zpracování v `apps/worker/src/processing.ts`; omezovač počtu volání v `rate-limiter.ts`; plánovač opakovaných úloh v zóně Europe/Prague; první skutečná úloha: noční úklid `oauth_requests` (`deleteExpiredOAuthRequests` v `packages/db`); worker při startu ověří `REDIS_URL` a `DATABASE_URL` a na SIGTERM nechá doběhnout rozdělané úlohy.
+- Ověřeno v dokumentaci a v typech BullMQ 6.3.11: knihovna nemá dead-letter frontu, vestavěný limiter platí jen pro celou frontu (limit po skupinách je v placené verzi), úloha se stejným `jobId` se ignoruje jen dokud fronta tu původní drží, `jobId` nesmí obsahovat dvojtečku ani být jen z číslic.
+- Rozhodnutí (bez ADR, v mezích daného stacku):
+  - Data úloh obsahují jen identifikátory. Redis není šifrovaný, takže do něj nejdou tokeny, částky, e-maily ani texty z externích systémů. Data se validují při zařazení i při zpracování.
+  - Opakování: výchozí 3 pokusy, čekání 5 s × 2ⁿ s horní mezí 10 minut a rozptylem; výpočet je čistá funkce v `core`. `PermanentJobError` zbylé pokusy přeskočí.
+  - Dead-letter: po posledním neúspěchu se do fronty `dead-letter` zapíše původní fronta, název, `jobId`, data, počet pokusů a strojový kód chyby. Text chyby se neukládá ani neloguje, může citovat externí data. Záznam má `jobId` odvozené od původní úlohy, takže vznikne jen jednou.
+  - Neznámý název úlohy a neplatná data jdou do dead-letter hned, bez opakování. Handlery pro `sync` a `actions` zatím neexistují (kroky 2.5 a 5.2); žádné zástupné jsme nepřidali.
+  - Omezovač je vlastní počítadlo v Redisu (pevné okno, atomický skript), klíč poskytovatel nebo poskytovatel + připojení. Úloha, která narazí na limit, se odloží do konce okna a nepřijde o pokus.
+  - Plánovač při každém startu srovná rozvrhy v Redisu se seznamem v kódu: založí nebo upraví uvedené a smaže ty, které v seznamu už nejsou.
+  - Úklid maže žádosti vypršelé před více než 24 hodinami, denně ve 3:30.
+  - Klíče front mají předponu `bystro`; testy používají náhodnou předponu a po sobě uklidí.
+  - `pnpm`: instalační skript volitelného nativního doplňku `msgpackr-extract` (závislost BullMQ) je výslovně zakázaný; knihovna bez něj funguje.
+- Testy: unit testy v `core` (čekání mezi pokusy, `jobId`, schémata, rozhodování omezovače, kód chyby) a ve workeru (prostředí, registr, úklid); integrační testy proti Redisu pokrývají podmínky kroku: úloha dvakrát selže a napotřetí doběhne, stejné `jobId` se nespustí dvakrát, po vyčerpání pokusů je v dead-letter právě jeden záznam; dále omezovač (včetně toho, že odložení nestojí pokus), plánovač (opakovaná registrace, zóna, mazání starých rozvrhů) a neznámé nebo neplatné úlohy. Integrační test úklidu proti Postgresu je v `packages/db`.
+- CI: úloha `check` má nově službu Redis; kontrola obrazu workeru ověřuje připojení k Redisu, čisté ukončení a to, že bez nastavení worker nenastartuje.
+- 👤 Před nasazením: službě `worker` na Railway doplnit `DATABASE_URL`, `REDIS_URL` a `ENCRYPTION_KEY` (viz `docs/deploy.md`, část 6). Bez prvních dvou worker po nasazení spadne.
+- Otevřené body: zařazování úloh z webu, limity poskytovatelů, čtení dead-letter fronty, audit úklidu, více instancí, nastavení Redisu (viz sekce výše).
+- Další krok: 2.3 Doménový model faktur
 
 ## 2026-10-08 — krok 2.1b Redesign podle prototypu v4
 

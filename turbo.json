@@ -10,7 +10,7 @@
     "lint": {},
     "typecheck": {},
     "test": {
-      "env": ["DATABASE_URL_TEST"]
+      "env": ["DATABASE_URL_TEST", "REDIS_URL"]
     },
     "dev": {
       "cache": false,

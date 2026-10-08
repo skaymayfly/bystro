@@ -99,19 +99,25 @@ Adresu pro `localhost` tam nech, ať funguje i lokální vývoj.
 3. Veřejnou doménu negeneruj; worker nepřijímá požadavky z internetu.
 4. Proměnné:
 
-| Proměnná                  | Hodnota                  |
-| ------------------------- | ------------------------ |
-| `RAILWAY_DOCKERFILE_PATH` | `apps/worker/Dockerfile` |
-| `SENTRY_DSN`              | DSN ze Sentry            |
-| `SENTRY_ENVIRONMENT`      | `staging`                |
+| Proměnná                  | Hodnota                                                      |
+| ------------------------- | ------------------------------------------------------------ |
+| `RAILWAY_DOCKERFILE_PATH` | `apps/worker/Dockerfile`                                     |
+| `DATABASE_URL`            | `${{Postgres.DATABASE_URL}}`                                 |
+| `REDIS_URL`               | `${{Redis.REDIS_URL}}`                                       |
+| `ENCRYPTION_KEY`          | stejná hodnota jako u webu; **tajné**                        |
+| `SENTRY_DSN`              | DSN ze Sentry                                                |
+| `SENTRY_ENVIRONMENT`      | `staging`                                                    |
+| `WORKER_CONCURRENCY`      | nepovinné; kolik úloh jedné fronty běží najednou (výchozí 5) |
 
-Worker zatím jen nastartuje a čeká. Databázi a Redis začne potřebovat v kroku 2.2; proměnné `DATABASE_URL`, `REDIS_URL` a `ENCRYPTION_KEY` mu doplníme tehdy.
+Bez `DATABASE_URL` a `REDIS_URL` worker nenastartuje a nasazení skončí chybou. `ENCRYPTION_KEY` začne worker číst, až bude synchronizovat data (krok 2.5); nastav ho už teď, ať se na něj nezapomene. Musí být stejný jako u webu, jinak worker tokeny nerozšifruje.
+
+Worker si při startu sám založí opakované úlohy (zatím noční úklid vypršelých žádostí o propojení ve 3:30 našeho času). Fronty žijí v Redisu pod předponou `bystro`.
 
 ## 7. Kontrola po nasazení
 
 1. Obě služby mají poslední nasazení ve stavu úspěšně dokončeno.
 2. `https://<doména>/api/health` vrátí `{"status":"ok","database":"ok","redis":"ok"}`.
-3. V logu služby `worker` je řádek `Bystro worker: hello`.
+3. V logu služby `worker` je řádek `Bystro worker: ready`.
 4. V logu nasazení webu je před startem řádek `Migrations applied.`
 5. Ruční průchod: registrace → zadání IČO → založení firmy → Přehled. Pak odhlášení a přihlášení, případně přes Google.
 6. Reset hesla: e-mail dorazí jen na adresu, kterou máš registrovanou u Resendu (omezení zkušebního odesílatele).

@@ -5,7 +5,7 @@ import {
   type IntegrationCategory,
   type IntegrationEvent,
 } from "@bystro/core";
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNull, lt } from "drizzle-orm";
 
 import { writeAudit, type AuditActor } from "./audit";
 import type { Db, DbExecutor } from "./client";
@@ -141,6 +141,20 @@ export async function consumeOAuthRequest(
     )
     .returning({ id: oauthRequests.id });
   return consumed.length === 1;
+}
+
+/**
+ * Deletes OAuth requests that expired before the given moment, used or not, in every
+ * organization. Maintenance only: these rows are short-lived technical records (a state
+ * hash and an encrypted PKCE verifier), not company data, and an expired one can no longer
+ * complete an authorization. Returns how many rows were removed; running it again is a no-op.
+ */
+export async function deleteExpiredOAuthRequests(db: Db, expiredBefore: Date): Promise<number> {
+  const deleted = await db
+    .delete(oauthRequests)
+    .where(lt(oauthRequests.expiresAt, expiredBefore))
+    .returning({ id: oauthRequests.id });
+  return deleted.length;
 }
 
 // ---------------------------------------------------------------------------------------

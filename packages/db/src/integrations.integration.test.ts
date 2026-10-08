@@ -11,6 +11,7 @@ import {
   ConnectionNotFoundError,
   consumeOAuthRequest,
   createOAuthRequest,
+  deleteExpiredOAuthRequests,
   disconnectConnection,
   findOAuthRequest,
   getConnection,
@@ -544,5 +545,53 @@ describe("webhook events", () => {
         externalId,
       }),
     ).toBe(true);
+  });
+});
+
+describe("deleteExpiredOAuthRequests", () => {
+  // Other test files share this database, so the cut-off lies far in the past: only the
+  // rows created here can be older than it.
+  const cutOff = new Date("2001-06-01T00:00:00Z");
+  const request = (userId: string, expiresAt: Date) => ({
+    userId,
+    provider: "fakturoid",
+    stateHash: randomBytes(32).toString("hex"),
+    codeVerifier: null,
+    redirectUri: "http://localhost:3000/api/integrations/fakturoid/callback",
+    expiresAt,
+  });
+  const exists = async (stateHash: string) =>
+    (await db.select().from(oauthRequests).where(eq(oauthRequests.stateHash, stateHash))).length ===
+    1;
+
+  it("removes requests that expired before the cut-off, used or not, and nothing else", async () => {
+    const a = await createTestOrganization(db, "Firma A");
+    const b = await createTestOrganization(db, "Firma B");
+    const oldUnused = request(a.owner.id, new Date("2001-01-01T00:00:00Z"));
+    const oldUsed = request(b.owner.id, new Date("2001-02-01T00:00:00Z"));
+    const afterCutOff = request(a.owner.id, new Date("2001-06-02T00:00:00Z"));
+    const live = request(b.owner.id, new Date(Date.now() + 10 * 60 * 1000));
+    await createOAuthRequest(db, a.organization.id, oldUnused, key);
+    await createOAuthRequest(db, b.organization.id, oldUsed, key);
+    await createOAuthRequest(db, a.organization.id, afterCutOff, key);
+    await createOAuthRequest(db, b.organization.id, live, key);
+    const used = await findOAuthRequest(
+      db,
+      b.organization.id,
+      { stateHash: live.stateHash, userId: b.owner.id },
+      key,
+    );
+    expect(used).not.toBeNull();
+
+    expect(await deleteExpiredOAuthRequests(db, cutOff)).toBe(2);
+
+    expect(await exists(oldUnused.stateHash)).toBe(false);
+    expect(await exists(oldUsed.stateHash)).toBe(false);
+    expect(await exists(afterCutOff.stateHash)).toBe(true);
+    expect(await exists(live.stateHash)).toBe(true);
+  });
+
+  it("does nothing when run again", async () => {
+    expect(await deleteExpiredOAuthRequests(db, cutOff)).toBe(0);
   });
 });
