@@ -27,6 +27,12 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **Kontrola členství u nových API:** `getRequestContext()` vrací jen organizaci, ve které je uživatel členem. Každý nový route handler ji musí použít; automatické testy izolace endpointů jsou až v kroku 7.3.
 - **Stahování Chromia pro Playwright** na vývojovém počítači vyprší (CDN je dostupná, stahovač Playwrightu ne). Lokálně se používá nainstalovaný Chrome přes `E2E_BROWSER_CHANNEL=chrome`; v CI (krok 1.7) ověřit běžnou instalaci.
 - **Agentní soubory generované nástroji:** `next dev` vytváří a obnovuje `apps/web/AGENTS.md` a `apps/web/CLAUDE.md` (jsou v repozitáři od kroku 1.4). Závazné instrukce jsou jen v kořenovém `CLAUDE.md`.
+- **Rámec pro integrace zatím nemá žádné HTTP cesty ani obrazovku:** zahájení OAuth, návrat od poskytovatele a obrazovka Propojení vzniknou v krocích 2.4 a 2.6. Návratová cesta musí ověřit přihlášeného uživatele a organizaci, najít požadavek přes `findOAuthRequest`, zavolat `verifyCallback`, pak `consumeOAuthRequest` a teprve potom vyměnit kód.
+- **Úklid tabulky `oauth_requests`:** vypršelé a použité požadavky se nemažou. Přidat plánovanou úlohu v kroku 2.2 (má na to index podle `expires_at`).
+- **Jedno připojení na poskytovatele a organizaci** (unikátní klíč). Dva účty u téhož poskytovatele v jedné firmě zatím nejdou.
+- **`last_error_code`** je krátký strojový kód, který volí náš kód (např. `http_401`, `rate_limited`); texty chyb od poskytovatele se neukládají. Seznam kódů sjednotit s prvním adaptérem v kroku 2.4.
+- **Rotace `ENCRYPTION_KEY`** stále nemá postup; od tohoto kroku se jím skutečně šifrují tokeny a PKCE ověřovače.
+- **Worker bude od kroku 2.2 potřebovat** `DATABASE_URL`, `REDIS_URL` a `ENCRYPTION_KEY` (na Railway i lokálně) a v `apps/worker/package.json` závislosti `pg` a `drizzle-orm`.
 - **Bezpečnostní hlavičky chybí** (vynucení HTTPS, zákaz vkládání do rámce, CSP) a odpověď obsahuje `x-powered-by: Next.js`. Zjištěno při kontrole nasazené adresy; řešit v kroku 7.3.
 - **Testovací prostředí běží s klíči Resend a Google, které byly sdílené v chatu.** Před betou (fáze 7) vyměnit a zadat přímo do Railway.
 - **Návod pro Railway** je ověřený jedním skutečným nasazením; názvy položek v administraci zůstávají orientační a cestu ke konfiguračnímu souboru služby (`railway.json`) jsme nezkoušeli.
@@ -59,6 +65,20 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 ---
 
 ## Záznamy
+
+## 2026-10-05 — krok 2.1 Rámec pro integrace
+
+- Hotovo: migrace `0001_integration_framework` (tabulky `integration_connections`, `integration_credentials`, `sync_cursors`, `webhook_events`, `oauth_requests`); stavový automat integrace a třída `Secret` v `packages/core`; obecný OAuth postup v `packages/integrations/oauth` (`createAuthorizationRequest`, `verifyCallback`, `exchangeAuthorizationCode`, `refreshAccessToken`); datová vrstva v `packages/db/src/integrations.ts`.
+- Rozhodnutí (bez ADR, v mezích daného stacku):
+  - Tabulka `oauth_requests` navíc proti plánu (schváleno uživatelem): rozdělané autorizace se drží na serveru, ukládá se jen SHA-256 otisk hodnoty `state` a zašifrovaný PKCE ověřovač; požadavek jde spotřebovat právě jednou (atomická aktualizace).
+  - Tokeny a tajné hodnoty se v paměti předávají jen jako `Secret`: při převodu na JSON, do textu i při výpisu dávají `[redacted]`, hodnotu vrací jen výslovné `reveal()`.
+  - Tokeny jsou v samostatné tabulce `integration_credentials`, šifrované AES-256-GCM (`crypto.ts` z kroku 1.2); při odpojení se mažou ve stejné transakci, ve které připojení přejde do `revoked`.
+  - Stavový automat: `reauth_required` a `revoked` vrací zpět jen nová autorizace (`reconnected`); výsledek synchronizace se přijímá jen ve stavu `syncing`; souběžné události se řadí zámkem řádku, takže ze souběžných startů synchronizace projde jeden.
+  - OAuth: návratová adresa se porovnává na přesnou shodu se seznamem; `state` se ověřuje dřív než chyba od poskytovatele; z chybové odpovědi poskytovatele se přebírá jen standardní kód `error`, nikdy popis.
+  - Obnova tokenu rozlišuje „autorizace je pryč“ (`reauthorization_required`) od dočasné chyby (`token_exchange_failed`), aby výpadek poskytovatele nezahodil připojení.
+  - Webhook události mají unikátní klíč `(organization_id, source, external_id)`; opakované doručení vrací `false`.
+- Otevřené body: HTTP cesty a obrazovka (2.4, 2.6), úklid `oauth_requests`, jedno připojení na poskytovatele, kódy chyb, rotace klíče, proměnné workeru (viz sekce výše).
+- Další krok: 2.2 Worker a fronta úloh
 
 ## 2026-10-05 — změna plánu: iDoklad ve fázi 2
 

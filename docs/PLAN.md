@@ -158,7 +158,7 @@ Výsledek fáze: na veřejné adrese se dá zaregistrovat, založit firmu podle 
 
 Výsledek fáze: uživatel připojí Fakturoid nebo iDoklad a vidí své skutečné faktury, včetně těch po splatnosti.
 
-### - [ ] 2.1 Rámec pro integrace
+### - [x] 2.1 Rámec pro integrace
 
 **Cíl:** společný základ pro všechny budoucí konektory.
 

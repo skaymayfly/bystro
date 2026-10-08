@@ -21,6 +21,18 @@ export {
   type DateStyle,
 } from "./format";
 export { isValidIco, normalizeIco } from "./ico";
+export {
+  canStartSync,
+  canTransitionIntegration,
+  INTEGRATION_CATEGORIES,
+  INTEGRATION_EVENTS,
+  INTEGRATION_STATUSES,
+  IntegrationTransitionError,
+  transitionIntegration,
+  type IntegrationCategory,
+  type IntegrationEvent,
+  type IntegrationStatus,
+} from "./integration-status";
 export { organizationInputSchema, type OrganizationInput } from "./organization-input";
 export {
   AMOUNT_KEY,
@@ -32,3 +44,4 @@ export {
   type RedactOptions,
 } from "./redaction";
 export { ROLES, type Role } from "./roles";
+export { Secret } from "./secret";

@@ -11,6 +11,28 @@ export { EnvError, readDatabaseUrl, readEncryptionKey } from "./env";
 export { pingDatabase } from "./health";
 export { InvalidIdError } from "./ids";
 export {
+  applyConnectionEvent,
+  ConnectionNotFoundError,
+  consumeOAuthRequest,
+  createOAuthRequest,
+  disconnectConnection,
+  findOAuthRequest,
+  getConnection,
+  getSyncCursor,
+  listConnections,
+  markWebhookEventProcessed,
+  readConnectionTokens,
+  recordWebhookEvent,
+  saveConnection,
+  setSyncCursor,
+  updateConnectionTokens,
+  type ConnectionTokens,
+  type IntegrationConnection,
+  type NewOAuthRequest,
+  type OAuthRequestRecord,
+  type SaveConnectionInput,
+} from "./integrations";
+export {
   createFirstOrganization,
   createOrganization,
   listOrganizationsForUser,
