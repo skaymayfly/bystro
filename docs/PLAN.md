@@ -183,7 +183,7 @@ Výsledek fáze: uživatel připojí Fakturoid nebo iDoklad a vidí své skuteč
 
 **Hotovo když:** všechny existující obrazovky odpovídají v4 na počítači i mobilu a testy procházejí.
 
-### - [ ] 2.2 Worker a fronta úloh
+### - [x] 2.2 Worker a fronta úloh
 
 **Cíl:** spolehlivé úlohy na pozadí.
 

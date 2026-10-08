@@ -15,6 +15,7 @@ export {
   ConnectionNotFoundError,
   consumeOAuthRequest,
   createOAuthRequest,
+  deleteExpiredOAuthRequests,
   disconnectConnection,
   findOAuthRequest,
   getConnection,

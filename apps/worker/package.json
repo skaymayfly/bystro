@@ -13,9 +13,15 @@
   },
   "dependencies": {
     "@bystro/core": "workspace:*",
+    "@bystro/db": "workspace:*",
     "@bystro/observability": "workspace:*",
     "@sentry/node": "^11.4.0",
-    "pino": "^10.4.0"
+    "bullmq": "^6.3.11",
+    "drizzle-orm": "^0.45.3",
+    "ioredis": "^6.0.0",
+    "pg": "^8.23.1",
+    "pino": "^10.4.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@bystro/config": "workspace:*",
