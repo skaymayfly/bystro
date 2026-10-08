@@ -50,12 +50,18 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **Zaniklé firmy:** ARES vrací i subjekty s datem zániku; onboarding na to neupozorňuje.
 - **Kroky 2 a 3 onboardingu** jen zobrazují obsah z prototypu jako „Připravujeme“. Krok 2 ožije v krocích 2.6 a 3.3, krok 3 v kroku 6.6 a celý onboarding v kroku 7.2. Hláška „Hotovo. První ranní přehled dorazí zítra v 7:00.“ z prototypu se nezobrazuje, protože přehled ještě neexistuje.
 - **Ochrana proti CSRF** je zatím jen kontrola hlavičky `Origin` u `POST /api/organizations` (`isSameOrigin`); každý další měnící endpoint ji musí použít taky. Plné řešení je krok 7.3.
-- **Rozpor prototyp × plán — „Nahrát PDF faktury“:** prototyp má v prázdném stavu Faktur tlačítko pro nahrání PDF, žádný krok plánu ho neobsahuje. V aplikaci není; rozhodnout, jestli funkci doplnit do plánu.
-- **Rozpor prototyp × plán — e-mail, kalendář a CRM:** prototyp je ukazuje na Přehledu a v Nastavení, podle plánu přijdou až ve fázi 8 a po spuštění. Zobrazují se neaktivní se štítkem „Připravujeme“.
-- **Prvky „Připravujeme“:** tlačítka pro připojení, pole asistenta, přepínače období a volby v Nastavení jsou vypnuté. Zprovoznit je v krocích 2.6 (fakturace), 3.3 (banka), 4.5–4.6 (Hlídač peněz), 6.4 (asistent) a 6.6 (ranní přehled).
-- **Úvodní věta Přehledu** je zatím pevný text pro stav bez propojení a bez oslovení jménem (prototyp oslovuje 5. pádem, který z jména spolehlivě neodvodíme). Skutečný ranní přehled je krok 6.6.
-- **Mobilní zobrazení** není v prototypu; navržené je v ADR 0001 (horní lišta + spodní navigace). Ověřit s uživateli v betě.
-- **Detail faktury** z prototypu zatím neexistuje (nemá prázdný stav); vznikne v kroku 2.7.
+- **Rozpory prototyp v4 × plán a hotová aplikace** jsou sepsané v ADR 0002 (přihlášení kódem, onboarding, Přehled s úkoly, položky menu, ⌘K, „Vystavit fakturu“, Předplatné). Platí aplikace a plán; vrátit se k nim při revizi plánu.
+- **Úkoly na Přehledu:** prototyp v4 staví Přehled na tabulce úkolů s prioritou, termínem a kategorií. Plán úkoly nezná (nejblíž jsou akce ve fázi 5). Rozhodnout, jestli je do plánu doplnit; do té doby má Přehled panely Hlídač peněz, Dnešní schůzky, Po splatnosti a Odpovědět.
+- **Prvky „Připravujeme“:** tlačítka pro připojení, dlaždice poskytovatelů, otázky a pole asistenta a volby v Nastavení jsou vypnuté. Zprovoznit je v krocích 2.6 (fakturace), 3.3 (banka), 4.5–4.6 (Hlídač peněz), 6.4 (asistent) a 6.6 (ranní přehled).
+- **Úvodní věta Přehledu** je zatím pevný text pro stav bez propojení. Skutečný ranní přehled je krok 6.6.
+- **Mobilní zobrazení** není ani v prototypu v4; navržené je v ADR 0002 (horní lišta + spodní navigace pod 768 px). Ověřit s uživateli v betě.
+- **Detail faktury** z prototypu zatím neexistuje (nemá prázdný stav); vznikne v kroku 2.7 podle v4.
+- **Rychlé akce ⌘K** (vyhledávací paleta z v4) nejsou postavené ani v plánu. Rozhodnout, kam je zařadit.
+- **Profil v Nastavení je jen ke čtení** a volba „Jak spolu mluvíme“ (tykání, vykání, stručně) se neukládá; tón zatím nikde v plánu není.
+- **Karta Předplatné v Nastavení** z v4 chybí; vznikne v kroku 9.1, až budou potvrzené ceny.
+- **Jméno při registraci** se zadává jako dvě pole (Jméno, Příjmení) a ukládá spojené do jednoho; přihlášení přes Google dává jméno vcelku.
+- **Šablona e-mailu pro reset hesla** je prostý text bez loga; do nového vzhledu ji převést spolu s dalšími e-maily (krok 5.3 nebo 6.6).
+- **Složka `Webapp design project kickoff`** (starší verze prototypu a podklady) zůstává na disku mimo repozitář (`.gitignore`); závazný je jen obsah `docs/prototyp/`.
 - **Izolace tenantů je na úrovni kódu, ne databáze:** firemní tabulky nejsou exportované z `@bystro/db` a aplikace mají ESLintem zakázaný `drizzle-orm`, `pg`, `.execute()` a `$client`. Lint jde vědomě obejít (`eslint-disable`), proto v kroku 7.3 zvážit Row Level Security jako druhou vrstvu.
 - **Pozvánky dalších členů do organizace** nejsou v plánu rozepsané; role `admin` a `member` zatím nemá jak vzniknout přes UI.
 - **Mazání uživatele a organizace:** cizí klíče z `memberships` a `audit_logs` nemažou kaskádově, takže smazání uživatele s členstvím selže. Vyřešit v kroku 7.4 (GDPR).
@@ -65,6 +71,20 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 ---
 
 ## Záznamy
+
+## 2026-10-08 — krok 2.1b Redesign podle prototypu v4
+
+- Hotovo: prototyp v4 a logo v `docs/prototyp/` (starý `docs/prototyp.html` odstraněn); nové tokeny v `globals.css` (písmo Geist, černobílá paleta, nové rádiusy a stíny); logo „by/stro“ se značkou lomítka a ikona webu; tlačítko, pole a popisek v novém vzhledu; rozložení aplikace (šedé menu s firmou, ikonami a uživatelem, bílý list s obsahem, úzké menu 768–1000 px, spodní navigace na mobilu); přihlášení, registrace, zapomenuté a nové heslo a onboarding ve dvoupanelovém rozložení s náčrtem aplikace; Přehled, Asistent, Hlídač peněz, Faktury a Nastavení (karty Profil, Propojení, Upozornění) podle v4.
+- Rozhodnutí: [ADR 0002 — Design tokeny podle prototypu v4](decisions/0002-design-tokens-v4.md), nahrazuje ADR 0001. Krok je vložený před 2.2 na přání uživatele. Dále (schváleno uživatelem):
+  - Funkce se nemění: přihlášení zůstává heslem a přes Google, onboarding přes IČO a ARES ve třech krocích, menu má pět položek.
+  - Přehled nemá ve v4 prázdný stav; drží hlavičku a rozložení v4 a každý panel říká, co chybí. Pole pro otázku asistentovi z Přehledu zmizelo (ve v4 tam není), zůstává na obrazovce Asistent.
+  - Platí logo ze samostatných souborů (lomítko, „by/stro“), ne starší značka uvnitř prototypu.
+  - Vynecháno z v4: „Rychlé akce ⌘K“, tlačítko „Vystavit fakturu“, karta Předplatné, štítek „Nové“ u Hlídače peněz, pole „Počet lidí ve firmě“, „Změnit fotku“.
+  - Texty převzaté z v4 mluví v mužském rodě („Nic jsem nenašel“); původní prototyp mluvil v ženském. Držíme v4.
+- Testy: unit testy navigace (skupiny menu, názvy rolí) a E2E upravené na nové texty a rozložení; nově ověřují údaje v menu, karty Nastavení a vypnuté otázky asistenta. Snímky všech obrazovek na šířce 1440, 900 a 390 px porovnané s v4.
+- Bez změn databáze, API a workeru.
+- Otevřené body: úkoly na Přehledu, ⌘K, profil jen ke čtení, Předplatné, e-mailová šablona (viz sekce výše).
+- Další krok: 2.2 Worker a fronta úloh (plán schválen 2026-10-08)
 
 ## 2026-10-05 — krok 2.1 Rámec pro integrace
 

@@ -30,14 +30,14 @@ export default function GlobalError({
           justifyContent: "center",
           gap: 16,
           padding: 24,
-          background: "#f3f2ef",
-          color: "#161514",
+          background: "#ffffff",
+          color: "#111111",
           fontFamily: "system-ui, sans-serif",
           textAlign: "center",
         }}
       >
         <h1 style={{ margin: 0, fontSize: 28 }}>Něco se pokazilo</h1>
-        <p style={{ margin: 0, color: "#55534e" }}>
+        <p style={{ margin: 0, color: "#71717a" }}>
           Chyba je na naší straně. Zkus to prosím znovu.
         </p>
         <button
@@ -46,8 +46,9 @@ export default function GlobalError({
           style={{
             border: "none",
             borderRadius: 999,
-            padding: "15px 24px",
-            background: "#c94a2c",
+            padding: "0 20px",
+            height: 46,
+            background: "#111111",
             color: "#fff",
             fontSize: 15,
             fontWeight: 600,

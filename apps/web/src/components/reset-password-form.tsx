@@ -8,7 +8,7 @@ import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { cn } from "@/lib/utils";
 
-import { authStyles } from "./auth-shell";
+import { AuthHeading, authStyles, FormError } from "./auth-shell";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -38,12 +38,10 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
 
   return (
     <>
-      <h1 className={authStyles.title}>Nové heslo</h1>
+      <AuthHeading title="Nové heslo" text="Vyber si heslo, které má aspoň 8 znaků." />
 
       {token === null ? (
-        <p role="alert" className={authStyles.error}>
-          Odkaz už neplatí. Požádej o nový.
-        </p>
+        <FormError>Odkaz už neplatí. Požádej o nový.</FormError>
       ) : (
         <form onSubmit={onSubmit} className="flex flex-col gap-5">
           <Label>
@@ -57,18 +55,14 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
               placeholder="Aspoň 8 znaků"
             />
           </Label>
-          {error !== null && (
-            <p role="alert" className={authStyles.error}>
-              {error}
-            </p>
-          )}
-          <Button type="submit" size="xl" disabled={pending}>
+          {error !== null && <FormError>{error}</FormError>}
+          <Button type="submit" size="form" className="mt-3.5" disabled={pending}>
             Uložit heslo
           </Button>
         </form>
       )}
 
-      <p className={cn(authStyles.hint, "text-center")}>
+      <p className={cn(authStyles.hint, "mt-5")}>
         <Link href="/zapomenute-heslo" className={authStyles.link}>
           Poslat nový odkaz
         </Link>

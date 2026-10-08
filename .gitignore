@@ -31,3 +31,7 @@ Thumbs.db
 
 # Bundled migration CLI for the deployed image
 packages/db/dist/
+
+# Design working folder (older prototype versions, reference screenshots); the binding
+# prototype lives in docs/prototyp/
+/Webapp design project kickoff/

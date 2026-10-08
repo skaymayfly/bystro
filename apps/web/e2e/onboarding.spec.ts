@@ -17,9 +17,7 @@ test("registrace → zadání IČO → firma založena → Přehled", async ({ p
   // The app itself is closed until a company exists.
   await page.goto("/app/faktury");
   await expect(page).toHaveURL("/onboarding");
-  await expect(
-    page.getByRole("heading", { name: "Ahoj! Jak se jmenuje tvoje firma?" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Jak se jmenuje tvoje firma?" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Pokračovat" })).toBeDisabled();
 
   // A typo is caught before anything is sent to ARES.
@@ -48,13 +46,11 @@ test("registrace → zadání IČO → firma založena → Přehled", async ({ p
   await page.getByRole("link", { name: "Teď přeskočit" }).click();
 
   await expect(page).toHaveURL("/onboarding?krok=3");
-  await expect(
-    page.getByRole("heading", { name: "Kdy ti mám posílat ranní přehled?" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Kdy ti mám posílat přehled?" })).toBeVisible();
   await page.getByRole("link", { name: "Začít používat" }).click();
 
   await expect(page).toHaveURL("/app");
-  await expect(page.getByText("Dvořák Interiéry s.r.o.")).toBeVisible();
+  await expect(page.getByRole("complementary").getByText("Dvořák Interiéry s.r.o.")).toBeVisible();
   await expect(page.getByText("Faktury zatím nevidím")).toBeVisible();
 
   // Onboarding step 1 is over for good; a second company cannot be created.

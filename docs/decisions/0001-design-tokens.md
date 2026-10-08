@@ -1,7 +1,7 @@
 # 0001 — Design tokeny z prototypu
 
 Datum: 2026-10-05
-Stav: přijato
+Stav: nahrazeno (0002)
 
 ## Kontext
 

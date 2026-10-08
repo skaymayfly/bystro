@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 /** Signs the user out and returns to the sign-in page. */
 export function SignOutButton({
-  label = "Odejít",
+  label = "Odhlásit",
   className,
 }: {
   label?: string;
@@ -30,7 +30,7 @@ export function SignOutButton({
       onClick={onClick}
       disabled={pending}
       title="Odhlásit"
-      className={cn("cursor-pointer p-1 text-xs text-ink-3 hover:text-ink", className)}
+      className={cn("cursor-pointer p-1 text-[13px] text-ink-3 hover:text-ink", className)}
     >
       {label}
     </button>

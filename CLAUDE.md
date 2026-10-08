@@ -10,14 +10,14 @@ Pořadí vývoje stojí na „Hlídači peněz“: faktury → banka → párov�
 
 ## Zdroje pravdy
 
-| Soubor               | K čemu                                                                              |
-| -------------------- | ----------------------------------------------------------------------------------- |
-| `docs/PLAN.md`       | Co přesně dělat teď. Kroky jdou po sobě.                                            |
-| `docs/PROGRESS.md`   | Deník: co je hotovo, jaká padla rozhodnutí, co zůstalo otevřené.                    |
-| `docs/zadani.pdf`    | Kompletní produktové a technické zadání. Kapitola 22 = závazná pravidla.            |
-| `docs/prototyp.html` | Klikací prototyp: vzhled, texty, obrazovky, prázdné stavy. UI texty přebírej odsud. |
-| `docs/decisions/`    | Zapsaná architektonická rozhodnutí (ADR), jeden soubor na rozhodnutí.               |
-| `docs/deploy.md`     | Návod na nasazení (Railway): služby, proměnné, migrace, kontrola po nasazení.       |
+| Soubor             | K čemu                                                                                                                                                                                          |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/PLAN.md`     | Co přesně dělat teď. Kroky jdou po sobě.                                                                                                                                                        |
+| `docs/PROGRESS.md` | Deník: co je hotovo, jaká padla rozhodnutí, co zůstalo otevřené.                                                                                                                                |
+| `docs/zadani.pdf`  | Kompletní produktové a technické zadání. Kapitola 22 = závazná pravidla.                                                                                                                        |
+| `docs/prototyp/`   | Klikací prototyp v4 (`prototyp-v4.dc.html`, potřebuje `support.js` vedle sebe) a logo: vzhled, texty, obrazovky, prázdné stavy. UI texty přebírej odsud; odchylky od prototypu jsou v ADR 0002. |
+| `docs/decisions/`  | Zapsaná architektonická rozhodnutí (ADR), jeden soubor na rozhodnutí.                                                                                                                           |
+| `docs/deploy.md`   | Návod na nasazení (Railway): služby, proměnné, migrace, kontrola po nasazení.                                                                                                                   |
 
 Když si zdroje odporují, platí: tento soubor → `docs/PLAN.md` → `docs/zadani.pdf` → prototyp. Rozpor zapiš do `PROGRESS.md` a upozorni na něj.
 
@@ -120,7 +120,7 @@ Pravidla závislostí: `core` nezávisí na ničem z ostatních balíčků. `obs
 
 ## Příkazy
 
-Stav po kroku 1.8. Při každé změně skriptů tuto sekci aktualizuj podle skutečnosti.
+Stav po kroku 2.1b. Při každé změně skriptů tuto sekci aktualizuj podle skutečnosti.
 
 ```
 pnpm install             # na Windows vyžaduje zapnutý Režim pro vývojáře (symlinky)

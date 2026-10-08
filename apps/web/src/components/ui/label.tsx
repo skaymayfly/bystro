@@ -7,7 +7,7 @@ function Label({ className, ...props }: React.ComponentProps<"label">) {
   return (
     <label
       data-slot="label"
-      className={cn("flex flex-col gap-1.5 text-[13px] font-semibold text-ink-2", className)}
+      className={cn("flex flex-col gap-2 pl-0.5 text-[15px] text-ink-2", className)}
       {...props}
     />
   );
