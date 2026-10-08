@@ -170,6 +170,19 @@ Výsledek fáze: uživatel připojí Fakturoid nebo iDoklad a vidí své skuteč
 
 **Hotovo když:** testy OAuth helperu (neplatný state, chybějící PKCE, cizí redirect) a stavového automatu procházejí; tokeny se nikdy nevrací do klienta.
 
+### - [x] 2.1b Redesign podle prototypu v4
+
+**Cíl:** aplikace vypadá jako nový prototyp a má nové logo, než přibudou další obrazovky.
+
+**Udělej:**
+
+- Prototyp v4 a logo do `docs/prototyp/`, nové tokeny do `docs/decisions/0002-design-tokens-v4.md` (nahrazuje ADR 0001).
+- Písmo, barvy, rádiusy, logo a ikona webu podle v4; komponenty upravené na nové tokeny.
+- Rozložení aplikace, přihlášení, onboarding a všech pět obrazovek převedené do nového vzhledu, texty z v4.
+- Beze změny funkcí: přihlášení heslem a přes Google, onboarding přes ARES, pět položek menu.
+
+**Hotovo když:** všechny existující obrazovky odpovídají v4 na počítači i mobilu a testy procházejí.
+
 ### - [ ] 2.2 Worker a fronta úloh
 
 **Cíl:** spolehlivé úlohy na pozadí.

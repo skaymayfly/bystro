@@ -64,10 +64,11 @@ export async function createSignedInUser(
 }
 
 /** Registers through the sign-up form; the new user lands on onboarding (no company yet). */
-export async function signUp(page: Page, email: string, name = "Petr Dvořák") {
+export async function signUp(page: Page, email: string) {
   await page.goto("/registrace");
-  await page.getByLabel("Jméno a příjmení").fill(name);
-  await page.getByLabel("E-mail").fill(email);
+  await page.getByLabel("Jméno", { exact: true }).fill("Petr");
+  await page.getByLabel("Příjmení").fill("Dvořák");
+  await page.getByLabel("E-mailová adresa").fill(email);
   await page.getByLabel("Heslo").fill(PASSWORD);
   await page.getByRole("button", { name: "Vytvořit účet" }).click();
   await expect(page).toHaveURL("/onboarding");
@@ -75,7 +76,7 @@ export async function signUp(page: Page, email: string, name = "Petr Dvořák") 
 
 /** Fills and submits the sign-in form on the current page. */
 export async function signIn(page: Page, email: string, password = PASSWORD) {
-  await page.getByLabel("E-mail").fill(email);
+  await page.getByLabel("E-mailová adresa").fill(email);
   await page.getByLabel("Heslo").fill(password);
   await page.getByRole("button", { name: "Přihlásit se" }).click();
 }

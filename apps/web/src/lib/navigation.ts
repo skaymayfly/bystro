@@ -1,17 +1,34 @@
+export type NavIcon = "home" | "assistant" | "cash" | "invoices" | "settings";
+
 export interface NavItem {
   href: string;
   label: string;
   /** Shorter label for the mobile bottom bar. */
   shortLabel: string;
+  icon: NavIcon;
+  /** The prototype splits the sidebar into two groups divided by a line. */
+  group: 1 | 2;
 }
 
 /** Main navigation, in the order of the prototype. */
 export const NAV_ITEMS: readonly NavItem[] = [
-  { href: "/app", label: "Přehled", shortLabel: "Přehled" },
-  { href: "/app/asistent", label: "Asistent", shortLabel: "Asistent" },
-  { href: "/app/hlidac-penez", label: "Hlídač peněz", shortLabel: "Peníze" },
-  { href: "/app/faktury", label: "Faktury", shortLabel: "Faktury" },
-  { href: "/app/nastaveni", label: "Nastavení", shortLabel: "Nastavení" },
+  { href: "/app", label: "Přehled", shortLabel: "Přehled", icon: "home", group: 1 },
+  { href: "/app/asistent", label: "Asistent", shortLabel: "Asistent", icon: "assistant", group: 1 },
+  {
+    href: "/app/hlidac-penez",
+    label: "Hlídač peněz",
+    shortLabel: "Peníze",
+    icon: "cash",
+    group: 1,
+  },
+  { href: "/app/faktury", label: "Faktury", shortLabel: "Faktury", icon: "invoices", group: 2 },
+  {
+    href: "/app/nastaveni",
+    label: "Nastavení",
+    shortLabel: "Nastavení",
+    icon: "settings",
+    group: 2,
+  },
 ];
 
 /** Whether a nav item should be highlighted for the current path. */
@@ -30,10 +47,13 @@ export function initials(name: string): string {
   return `${first}${last}`.toLocaleUpperCase("cs-CZ") || "?";
 }
 
-/** Greeting by the hour in Europe/Prague. */
-export function greeting(hour: number): string {
-  if (hour < 10) {
-    return "Dobré ráno.";
-  }
-  return hour < 18 ? "Dobrý den." : "Dobrý večer.";
+const ROLE_LABELS: Record<string, string> = {
+  owner: "Majitel",
+  admin: "Správce",
+  member: "Člen týmu",
+};
+
+/** Czech name of a membership role for the sidebar. */
+export function roleLabel(role: string | null): string {
+  return (role !== null ? ROLE_LABELS[role] : undefined) ?? "";
 }

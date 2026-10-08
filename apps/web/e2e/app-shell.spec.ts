@@ -5,13 +5,13 @@ import { completeOnboarding, createSignedInUser, KNOWN_COMPANY_NAME, signIn } fr
 /** Each screen with a text that only its empty state shows. */
 const SCREENS = [
   { label: "Přehled", path: "/app", text: "Faktury zatím nevidím" },
-  { label: "Asistent", path: "/app/asistent", text: "Ptej se, jako by ses ptal účetní." },
+  { label: "Asistent", path: "/app/asistent", text: "Na co se chceš zeptat?" },
   { label: "Hlídač peněz", path: "/app/hlidac-penez", text: "Bez banky nevím, kolik ti zbude" },
   { label: "Faktury", path: "/app/faktury", text: "Zatím tu žádné faktury nejsou" },
   {
     label: "Nastavení",
     path: "/app/nastaveni",
-    text: "Přístup jen pro čtení. Odpojit můžeš kdykoliv.",
+    text: "Profil, propojení a jak často se ti mám ozývat.",
   },
 ] as const;
 
@@ -69,9 +69,12 @@ test("navigace na počítači projde všechny obrazovky s prázdnými stavy", as
   const page = await signedInPage(browser, DESKTOP);
   await page.goto("/app");
 
-  // Sidebar shows who is signed in and for which company.
-  await expect(page.getByText("Petr Dvořák")).toBeVisible();
-  await expect(page.getByText(KNOWN_COMPANY_NAME)).toBeVisible();
+  // Sidebar shows who is signed in, in which role and for which company.
+  const sidebar = page.getByRole("complementary");
+  await expect(sidebar.getByText("Petr Dvořák")).toBeVisible();
+  await expect(sidebar.getByText("Majitel")).toBeVisible();
+  await expect(sidebar.getByText(KNOWN_COMPANY_NAME)).toBeVisible();
+  await expect(sidebar.getByText(email)).toBeVisible();
 
   await visitEveryScreen(page, "desktop");
   await page.context().close();
@@ -92,14 +95,26 @@ test("prvky z pozdějších fází jsou neaktivní a označené jako Připravuje
   await expect(page.getByRole("button", { name: "Připojit fakturaci" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Připojit banku" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Připojit e-mail" })).toBeDisabled();
-  await expect(page.getByRole("textbox", { name: "Otázka pro asistenta" })).toBeDisabled();
   await expect(page.getByText("Připravujeme").first()).toBeVisible();
+
+  await page.goto("/app/asistent");
+  await expect(page.getByRole("textbox", { name: "Otázka pro asistenta" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Kdo mi dluží peníze?" }).first()).toBeDisabled();
 
   await page.goto("/app/faktury");
   await expect(page.getByRole("button", { name: "Připojit fakturaci" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Nahrát PDF faktury" })).toHaveCount(0);
 
+  // Settings are split into tabs; nothing in them can be changed yet.
   await page.goto("/app/nastaveni");
+  await expect(page.getByLabel("Název firmy")).toBeDisabled();
+  await expect(page.getByLabel("Název firmy")).toHaveValue(KNOWN_COMPANY_NAME);
+  const tabs = page.getByRole("navigation", { name: "Části nastavení" });
+  await tabs.getByRole("link", { name: "Propojení" }).click();
+  await expect(page).toHaveURL("/app/nastaveni?karta=propojeni");
+  await expect(page.getByText("Přístup je vždy jen pro čtení.")).toBeVisible();
+  await tabs.getByRole("link", { name: "Upozornění" }).click();
+  await expect(page).toHaveURL("/app/nastaveni?karta=upozorneni");
   await expect(page.getByRole("button", { name: "7:00" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "100 000 Kč" })).toBeDisabled();
   await page.context().close();
@@ -118,7 +133,7 @@ test("po odhlášení a přihlášení se uživatel vrátí na stránku, kterou 
 }) => {
   const page = await signedInPage(browser, MOBILE);
   await page.goto("/app");
-  await page.getByRole("button", { name: "Odejít" }).click();
+  await page.getByRole("button", { name: "Odhlásit" }).click();
   await expect(page).toHaveURL("/prihlaseni");
 
   await page.goto("/app/faktury");

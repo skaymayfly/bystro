@@ -8,11 +8,9 @@ const email = newEmail();
 
 test("registrace → odhlášení → přihlášení", async ({ page }) => {
   await page.goto("/registrace");
-  await expect(page.getByRole("heading", { name: "Začni zdarma na 30 dní" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Začni s Bystro" })).toBeVisible();
   await signUp(page, email);
-  await expect(
-    page.getByRole("heading", { name: "Ahoj! Jak se jmenuje tvoje firma?" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Jak se jmenuje tvoje firma?" })).toBeVisible();
 
   await page.getByRole("button", { name: "Odhlásit se" }).click();
   await expect(page).toHaveURL("/prihlaseni");
@@ -21,7 +19,7 @@ test("registrace → odhlášení → přihlášení", async ({ page }) => {
   await page.goto("/app");
   await expect(page).toHaveURL(/\/prihlaseni\?next=%2Fapp$/);
 
-  await expect(page.getByRole("heading", { name: "Vítej zpátky" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Vítej zpátky v Bystro" })).toBeVisible();
   await signIn(page, email);
 
   // Signed in again; still no company, so onboarding comes first.
@@ -39,7 +37,7 @@ test("špatné heslo ukáže chybu a nepřihlásí", async ({ page }) => {
 test("nepřihlášený uživatel je z /app přesměrován na přihlášení", async ({ page }) => {
   await page.goto("/app");
   await expect(page).toHaveURL(/\/prihlaseni\?next=%2Fapp$/);
-  await expect(page.getByRole("heading", { name: "Vítej zpátky" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Vítej zpátky v Bystro" })).toBeVisible();
 });
 
 test("podvržená session cookie do aplikace nepustí", async ({ page, context, baseURL }) => {
@@ -52,7 +50,7 @@ test("podvržená session cookie do aplikace nepustí", async ({ page, context, 
     await page.goto(path);
     await expect(page).toHaveURL(/\/prihlaseni/);
   }
-  await expect(page.getByRole("heading", { name: "Vítej zpátky" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Vítej zpátky v Bystro" })).toBeVisible();
 });
 
 test("tlačítko Google se bez nastavených klíčů nezobrazí", async ({ page }) => {
@@ -78,7 +76,7 @@ test("zapomenuté heslo odpoví stejně pro neznámý e-mail", async ({ page }) 
   await page.getByRole("link", { name: "Nepamatuju si heslo" }).click();
   await expect(page).toHaveURL("/zapomenute-heslo");
 
-  await page.getByLabel("E-mail").fill(newEmail());
+  await page.getByLabel("E-mailová adresa").fill(newEmail());
   await page.getByRole("button", { name: "Poslat odkaz" }).click();
 
   await expect(page.getByText("Pokud u nás máš účet")).toBeVisible();

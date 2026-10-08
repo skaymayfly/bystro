@@ -3,34 +3,34 @@
 @import "shadcn/tailwind.css";
 
 /*
- * Design tokens taken from docs/prototyp.html.
- * The reasoning and the full table live in docs/decisions/0001-design-tokens.md.
+ * Design tokens taken from docs/prototyp/prototyp-v4.dc.html.
+ * The reasoning and the full table live in docs/decisions/0002-design-tokens-v4.md.
  */
 :root {
   /* shadcn/ui roles mapped to the Bystro palette */
-  --background: #f3f2ef;
-  --foreground: #161514;
+  --background: #ffffff;
+  --foreground: #111111;
   --card: #ffffff;
-  --card-foreground: #161514;
+  --card-foreground: #111111;
   --popover: #ffffff;
-  --popover-foreground: #161514;
-  --primary: #c94a2c;
+  --popover-foreground: #111111;
+  --primary: #111111;
   --primary-foreground: #ffffff;
-  --secondary: #f3f2ef;
-  --secondary-foreground: #161514;
-  --muted: #f7f6f3;
-  --muted-foreground: #6b6964;
-  --accent: #fbe7e0;
-  --accent-foreground: #9e3820;
-  --destructive: #9e3820;
-  --border: #e6e4df;
-  --input: #e6e4df;
-  --ring: #161514;
-  --radius: 1rem;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #111111;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #f1f1f2;
+  --accent-foreground: #111111;
+  --destructive: #dc2626;
+  --border: #e7e7e9;
+  --input: #e4e4e7;
+  --ring: #111111;
+  --radius: 0.625rem;
 }
 
 @theme inline {
-  --font-sans: var(--font-onest), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-sans);
 
   /* shadcn/ui roles */
@@ -53,39 +53,47 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Bystro palette */
-  --color-ink: #161514;
-  --color-ink-2: #55534e;
-  --color-ink-3: #6b6964;
-  --color-ink-4: #8a877f;
-  --color-on-ink-muted: #a8a49d;
-  --color-ink-line: #2e2c29;
-  --color-brand: #c94a2c;
-  --color-brand-strong: #9e3820;
-  --color-brand-soft: #fbe7e0;
-  --color-field: #fafaf8;
-  --color-line: #e6e4df;
-  --color-line-soft: #efede9;
-  --color-line-dashed: #e0ddd6;
-  --color-line-strong: #d9d6d0;
-  --color-dot: #cfcbc4;
-  --color-success: #2f8f5b;
-  --color-success-strong: #226b43;
-  --color-success-soft: #e3f1e8;
-  --color-warning-strong: #8a5a00;
-  --color-warning-soft: #fff1d6;
+  /* Bystro palette: text */
+  --color-ink: #111111;
+  --color-ink-hover: #333333;
+  --color-ink-2: #3f3f46;
+  --color-ink-3: #71717a;
+  --color-ink-4: #a1a1aa;
+
+  /* Surfaces */
+  --color-chrome: #f5f5f5;
+  --color-subtle: #fafafa;
+  --color-fill: #f1f1f2;
+
+  /* Lines */
+  --color-line: #e7e7e9;
+  --color-line-soft: #efeff0;
+  --color-line-strong: #e4e4e7;
+  --color-line-dark: #d4d4d8;
+
+  /* States */
+  --color-danger: #dc2626;
+  --color-danger-strong: #b91c1c;
+  --color-danger-soft: #fef2f2;
+  --color-success: #16a34a;
+  --color-success-strong: #15803d;
+  --color-success-soft: #f0fdf4;
+  --color-warning-strong: #b45309;
+  --color-warning-soft: #fffbeb;
 
   /* Radii: pills are `rounded-full` */
-  --radius-sm: calc(var(--radius) * 0.75);
-  --radius-md: calc(var(--radius) * 0.875);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
-  --radius-field: 16px;
-  --radius-tile: 20px;
-  --radius-card: 28px;
-  --radius-panel: 36px;
+  --radius-control: 10px;
+  --radius-box: 14px;
+  --radius-tile: 16px;
+  --radius-card: 26px;
+  --radius-panel: 28px;
 
-  --shadow-soft: 0 1px 4px rgb(0 0 0 / 0.08);
-  --shadow-raised: 0 1px 4px rgb(0 0 0 / 0.12);
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-focus: 0 0 0 4px rgb(17 17 17 / 0.08);
+  --shadow-raised: 0 24px 60px -12px rgb(0 0 0 / 0.25);
 }
 
 @layer base {

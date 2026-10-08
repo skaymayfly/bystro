@@ -4,6 +4,7 @@ import { isValidIco, normalizeIco } from "@bystro/core";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
+import { authStyles, FormError } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -149,19 +150,9 @@ export function CompanyStep() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-7">
-      <div className="flex flex-col gap-2.5">
-        <p className="text-[13px] font-semibold text-ink-3">Krok 1 ze 3</p>
-        <h1 className="text-[28px] leading-tight font-semibold tracking-[-0.02em] sm:text-4xl">
-          Ahoj! Jak se jmenuje tvoje firma?
-        </h1>
-        <p className="text-base leading-normal text-ink-2">
-          Podle IČO si dohledám základní údaje, ať je nemusíš vypisovat.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap items-end gap-3.5">
-        <Label className="min-w-[200px] flex-1">
+    <form onSubmit={onSubmit} className="flex flex-col gap-5">
+      <div className="flex items-end gap-3">
+        <Label className="min-w-0 flex-1">
           IČO
           <Input
             name="ico"
@@ -181,8 +172,9 @@ export function CompanyStep() {
         </Label>
         <Button
           type="button"
-          variant="secondary"
-          size="lg"
+          variant="outline"
+          size="form"
+          className="w-auto flex-none"
           onClick={onLookup}
           disabled={lookup === "loading"}
         >
@@ -192,11 +184,11 @@ export function CompanyStep() {
 
       {detailsVisible && (
         <>
-          <p role="status" className="rounded-field bg-secondary px-4 py-3 text-sm text-ink">
+          <p role="status" className={authStyles.notice}>
             {LOOKUP_MESSAGES[lookup]}
           </p>
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,240px),1fr))] gap-3.5">
-            <Label>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-5">
+            <Label className="col-span-2">
               Název firmy
               <Input
                 name="name"
@@ -206,16 +198,7 @@ export function CompanyStep() {
                 onChange={(event) => setField("name", event.target.value)}
               />
             </Label>
-            <Label>
-              DIČ
-              <Input
-                name="dic"
-                placeholder="CZ08123456"
-                value={fields.dic}
-                onChange={(event) => setField("dic", event.target.value)}
-              />
-            </Label>
-            <Label>
+            <Label className="col-span-2">
               Ulice a číslo
               <Input
                 name="street"
@@ -245,12 +228,21 @@ export function CompanyStep() {
                 onChange={(event) => setField("postalCode", event.target.value)}
               />
             </Label>
+            <Label className="col-span-2">
+              DIČ
+              <Input
+                name="dic"
+                placeholder="CZ08123456"
+                value={fields.dic}
+                onChange={(event) => setField("dic", event.target.value)}
+              />
+            </Label>
           </div>
-          <label className="flex items-center gap-3 text-[15px] font-medium text-ink">
+          <label className="flex items-center gap-3 pl-0.5 text-[15px] text-ink-2">
             <input
               type="checkbox"
               name="vatPayer"
-              className="size-5 accent-brand"
+              className="size-5 accent-ink"
               checked={fields.vatPayer}
               onChange={(event) => setField("vatPayer", event.target.checked)}
             />
@@ -259,17 +251,13 @@ export function CompanyStep() {
         </>
       )}
 
-      {error !== null && (
-        <p role="alert" className="rounded-field bg-brand-soft px-4 py-3 text-sm text-brand-strong">
-          {error}
-        </p>
-      )}
+      {error !== null && <FormError>{error}</FormError>}
 
-      <div className="flex items-center justify-between gap-2.5 pt-2">
-        <SignOutButton label="Odhlásit se" className="px-2 text-sm" />
-        <Button type="submit" size="lg" className="px-7" disabled={!detailsVisible || saving}>
-          Pokračovat
-        </Button>
+      <Button type="submit" size="form" className="mt-3.5" disabled={!detailsVisible || saving}>
+        Pokračovat
+      </Button>
+      <div className="flex justify-center">
+        <SignOutButton label="Odhlásit se" className={`text-base ${authStyles.link}`} />
       </div>
     </form>
   );

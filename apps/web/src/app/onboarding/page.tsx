@@ -2,15 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { Logo, PillOptions, SoonBadge } from "@/components/bits";
+import { AuthHeading, AuthShell, authStyles } from "@/components/auth-shell";
+import { PillOptions, ProviderTiles, SoonBadge } from "@/components/bits";
 import { CompanyStep } from "@/components/onboarding/company-step";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  BRIEF_CHANNELS,
-  BRIEF_TIMES,
-  CONNECTION_CATEGORIES,
-  DEFAULT_BRIEF_TIME,
-} from "@/lib/content";
+import { BRIEF_CHANNELS, BRIEF_TIMES, DEFAULT_BRIEF_TIME, PROVIDERS } from "@/lib/content";
 import { cn } from "@/lib/utils";
 import { APP_HOME_PATH } from "@/server/access";
 import { requireRequestContext } from "@/server/context";
@@ -18,35 +14,26 @@ import { requireRequestContext } from "@/server/context";
 export const metadata: Metadata = { title: "Začínáme – Bystro" };
 
 type Step = 1 | 2 | 3;
+const STEPS: readonly Step[] = [1, 2, 3];
 
-function StepDots({ step }: { step: Step }) {
+/** Heading and progress bars of a step, as in the prototype. */
+function StepHeading({ step, title, text }: { step: Step; title: string; text: string }) {
   return (
-    <div className="flex gap-1.5" role="img" aria-label={`Krok ${step} ze 3`}>
-      {[1, 2, 3].map((n) => (
-        <span
-          key={n}
-          className={cn(
-            "h-2 rounded-full transition-all",
-            n === step ? "w-8" : "w-2",
-            n <= step ? "bg-brand" : "bg-line-strong",
-          )}
-        />
-      ))}
-    </div>
+    <>
+      <AuthHeading title={title} text={text} className="mb-0" />
+      <div className="my-7 flex gap-2" aria-hidden>
+        {STEPS.map((n) => (
+          <span
+            key={n}
+            className={cn("h-[3px] flex-1 rounded-full", n <= step ? "bg-ink" : "bg-line-strong")}
+          />
+        ))}
+      </div>
+    </>
   );
 }
 
-function StepHeading({ step, title, text }: { step: Step; title: string; text?: string }) {
-  return (
-    <div className="flex flex-col gap-2.5">
-      <p className="text-[13px] font-semibold text-ink-3">Krok {step} ze 3</p>
-      <h1 className="text-[28px] leading-tight font-semibold tracking-[-0.02em] sm:text-4xl">
-        {title}
-      </h1>
-      {text !== undefined && <p className="text-base leading-normal text-ink-2">{text}</p>}
-    </div>
-  );
-}
+const fieldLabelClass = "pl-0.5 text-[15px] text-ink-2";
 
 /** Step 2 from the prototype; connecting sources arrives with steps 2.6 and 3.3. */
 function ConnectionsStep() {
@@ -55,30 +42,20 @@ function ConnectionsStep() {
       <StepHeading
         step={2}
         title="Co mám propojit?"
-        text="Čím víc toho propojíš, tím přesnější bude ranní přehled. Kdykoliv to změníš v nastavení."
+        text="Čím víc toho propojíš, tím přesnější bude ranní přehled. Přístup je jen pro čtení."
       />
-      <ul className="flex flex-col gap-2">
-        {CONNECTION_CATEGORIES.map((category) => (
-          <li
-            key={category.name}
-            className="flex items-center gap-4 rounded-tile bg-muted px-[18px] py-4"
-          >
-            <span className="flex size-11 flex-none items-center justify-center rounded-[14px] bg-card text-[15px] font-bold">
-              {category.short}
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-base font-semibold">{category.name}</span>
-              <span className="block text-[13px] text-ink-3">{category.description}</span>
-            </span>
-            <SoonBadge />
-          </li>
-        ))}
-      </ul>
-      <div className="flex justify-end pt-2">
-        <Link href="/onboarding?krok=3" className={buttonVariants({ size: "lg" })}>
-          Teď přeskočit
-        </Link>
+      <div className="flex flex-col gap-3.5 rounded-[18px] border border-line bg-card p-4 shadow-soft">
+        <ProviderTiles providers={PROVIDERS} className="grid-cols-5 sm:grid-cols-7" />
+        <div className="flex flex-col items-center gap-1.5 px-2 pt-2 pb-1 text-center">
+          <SoonBadge />
+          <p className="text-[13px] leading-normal text-ink-3">
+            Propojení teprve chystáme. Zatím můžeš pokračovat bez něj.
+          </p>
+        </div>
       </div>
+      <Link href="/onboarding?krok=3" className={cn(buttonVariants({ size: "form" }), "mt-[34px]")}>
+        Teď přeskočit
+      </Link>
     </>
   );
 }
@@ -87,39 +64,44 @@ function ConnectionsStep() {
 function BriefStep() {
   return (
     <>
-      <StepHeading step={3} title="Kdy ti mám posílat ranní přehled?" />
-      <div className="flex flex-col gap-3">
-        <PillOptions
-          label="Čas ranního přehledu"
-          options={BRIEF_TIMES}
-          selected={DEFAULT_BRIEF_TIME}
-          tone="plain"
-        />
-        <div>
-          <SoonBadge />
+      <StepHeading
+        step={3}
+        title="Kdy ti mám posílat přehled?"
+        text="Každý pracovní den ti pošlu jednu zprávu se vším důležitým."
+      />
+      <div className="flex flex-col gap-[22px]">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className={fieldLabelClass}>Čas</p>
+            <SoonBadge />
+          </div>
+          <PillOptions
+            label="Čas ranního přehledu"
+            options={BRIEF_TIMES}
+            selected={DEFAULT_BRIEF_TIME}
+            variant="boxes"
+            size="lg"
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <p className={fieldLabelClass}>Kam ho poslat</p>
+          <PillOptions label="Kanál ranního přehledu" options={BRIEF_CHANNELS} variant="boxes" />
         </div>
       </div>
-      <div className="flex flex-col gap-2.5">
-        <p className="text-sm font-semibold text-ink-2">Kam ho poslat?</p>
-        <PillOptions label="Kanál ranního přehledu" options={BRIEF_CHANNELS} tone="plain" />
-      </div>
-      <div className="flex justify-between gap-2.5 pt-2">
-        <Link
-          href="/onboarding?krok=2"
-          className={buttonVariants({ variant: "secondary", size: "lg" })}
-        >
+      <Link href={APP_HOME_PATH} className={cn(buttonVariants({ size: "form" }), "mt-[34px]")}>
+        Začít používat
+      </Link>
+      <p className={cn(authStyles.hint, "mt-5")}>
+        <Link href="/onboarding?krok=2" className={authStyles.link}>
           Zpět
         </Link>
-        <Link href={APP_HOME_PATH} className={buttonVariants({ size: "lg" })}>
-          Začít používat
-        </Link>
-      </div>
+      </p>
     </>
   );
 }
 
 export default async function OnboardingPage(props: PageProps<"/onboarding">) {
-  const { organization } = await requireRequestContext();
+  const { user, organization } = await requireRequestContext();
   const requested = (await props.searchParams).krok;
 
   // Without a company there is only step 1; with one, only steps 2 and 3 make sense.
@@ -132,16 +114,24 @@ export default async function OnboardingPage(props: PageProps<"/onboarding">) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center gap-6 p-4 sm:p-6">
-      <div className="flex w-full max-w-[760px] items-center justify-between">
-        <Logo href={organization === null ? "/onboarding" : APP_HOME_PATH} />
-        <StepDots step={step} />
-      </div>
-      <main className="flex w-full max-w-[760px] flex-col gap-7 rounded-panel bg-card p-6 sm:p-11">
-        {step === 1 && <CompanyStep />}
-        {step === 2 && <ConnectionsStep />}
-        {step === 3 && <BriefStep />}
-      </main>
-    </div>
+    <AuthShell
+      logoHref={organization === null ? "/onboarding" : APP_HOME_PATH}
+      aside={<p className="text-sm text-ink-3">Krok {step} ze 3</p>}
+      previewTitle={organization?.name ?? "Tvoje firma"}
+      previewSubtitle={user.email}
+    >
+      {step === 1 && (
+        <>
+          <StepHeading
+            step={1}
+            title="Jak se jmenuje tvoje firma?"
+            text="Podle IČO dohledám zbytek údajů, ať je nemusíš vypisovat."
+          />
+          <CompanyStep />
+        </>
+      )}
+      {step === 2 && <ConnectionsStep />}
+      {step === 3 && <BriefStep />}
+    </AuthShell>
   );
 }

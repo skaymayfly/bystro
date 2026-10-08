@@ -7,7 +7,7 @@ import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { cn } from "@/lib/utils";
 
-import { authStyles } from "./auth-shell";
+import { AuthHeading, authStyles, FormError } from "./auth-shell";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -35,7 +35,10 @@ export function ForgotPasswordForm() {
 
   return (
     <>
-      <h1 className={authStyles.title}>Zapomenuté heslo</h1>
+      <AuthHeading
+        title="Zapomenuté heslo"
+        text="Napiš svůj e-mail. Pošlu ti odkaz, kde si nastavíš nové."
+      />
 
       {state === "sent" ? (
         <p className={authStyles.notice}>
@@ -43,34 +46,25 @@ export function ForgotPasswordForm() {
           spamu.
         </p>
       ) : (
-        <>
-          <p className={authStyles.hint}>
-            Napiš svůj e-mail. Pošlu ti odkaz, kde si nastavíš nové.
-          </p>
-          <form onSubmit={onSubmit} className="flex flex-col gap-5">
-            <Label>
-              E-mail
-              <Input
-                name="email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="petr@dvorak-interiery.cz"
-              />
-            </Label>
-            {error !== null && (
-              <p role="alert" className={authStyles.error}>
-                {error}
-              </p>
-            )}
-            <Button type="submit" size="xl" disabled={state === "pending"}>
-              Poslat odkaz
-            </Button>
-          </form>
-        </>
+        <form onSubmit={onSubmit} className="flex flex-col gap-5">
+          <Label>
+            E-mailová adresa
+            <Input
+              name="email"
+              type="email"
+              required
+              autoComplete="email"
+              placeholder="petr@dvorak-interiery.cz"
+            />
+          </Label>
+          {error !== null && <FormError>{error}</FormError>}
+          <Button type="submit" size="form" className="mt-3.5" disabled={state === "pending"}>
+            Poslat odkaz
+          </Button>
+        </form>
       )}
 
-      <p className={cn(authStyles.hint, "text-center")}>
+      <p className={cn(authStyles.hint, "mt-5")}>
         <Link href="/prihlaseni" className={authStyles.link}>
           Zpět na přihlášení
         </Link>

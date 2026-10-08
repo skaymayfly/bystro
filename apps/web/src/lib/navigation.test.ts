@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { greeting, initials, isNavItemActive, NAV_ITEMS } from "./navigation";
+import { initials, isNavItemActive, NAV_ITEMS, roleLabel } from "./navigation";
 
 describe("navigation", () => {
   it("lists the five sections in prototype order", () => {
@@ -8,6 +8,18 @@ describe("navigation", () => {
       "Přehled",
       "Asistent",
       "Hlídač peněz",
+      "Faktury",
+      "Nastavení",
+    ]);
+  });
+
+  it("splits the sections into the two sidebar groups of the prototype", () => {
+    expect(NAV_ITEMS.filter((item) => item.group === 1).map((item) => item.label)).toEqual([
+      "Přehled",
+      "Asistent",
+      "Hlídač peněz",
+    ]);
+    expect(NAV_ITEMS.filter((item) => item.group === 2).map((item) => item.label)).toEqual([
       "Faktury",
       "Nastavení",
     ]);
@@ -39,13 +51,15 @@ describe("initials", () => {
   });
 });
 
-describe("greeting", () => {
-  it("depends on the hour", () => {
-    expect(greeting(6)).toBe("Dobré ráno.");
-    expect(greeting(9)).toBe("Dobré ráno.");
-    expect(greeting(10)).toBe("Dobrý den.");
-    expect(greeting(17)).toBe("Dobrý den.");
-    expect(greeting(18)).toBe("Dobrý večer.");
-    expect(greeting(23)).toBe("Dobrý večer.");
+describe("roleLabel", () => {
+  it("names the membership roles in Czech", () => {
+    expect(roleLabel("owner")).toBe("Majitel");
+    expect(roleLabel("admin")).toBe("Správce");
+    expect(roleLabel("member")).toBe("Člen týmu");
+  });
+
+  it("is empty without a role or for an unknown one", () => {
+    expect(roleLabel(null)).toBe("");
+    expect(roleLabel("stranger")).toBe("");
   });
 });
