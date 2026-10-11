@@ -7,7 +7,7 @@ import {
 import { readTestDatabase } from "@bystro/db/testing";
 import { expect, test, type Page } from "@playwright/test";
 
-import { E2E_ENCRYPTION_KEY, FAKTUROID_STUB_URL } from "./config";
+import { E2E_ENCRYPTION_KEY, FAKTUROID_STUB_URL, IDOKLAD_STUB_URL } from "./config";
 import { completeOnboarding, createSignedInUser, KNOWN_ICO } from "./helpers";
 
 const key = Buffer.from(E2E_ENCRYPTION_KEY, "base64");
@@ -24,6 +24,7 @@ async function storedConnections(userId: string) {
     const connections = await listConnections(db, organizationId);
     return await Promise.all(
       connections.map(async (connection) => ({
+        provider: connection.provider,
         status: connection.status,
         tokens: await readConnectionTokens(db, organizationId, connection.id, key),
       })),
@@ -39,8 +40,8 @@ async function connectionsFromApi(page: Page) {
   return ((await response.json()) as { connections: { id: string; status: string }[] }).connections;
 }
 
-async function revocations(page: Page): Promise<number> {
-  const response = await page.request.get(`${FAKTUROID_STUB_URL}/__revocations`);
+async function revocations(page: Page, stubUrl = FAKTUROID_STUB_URL): Promise<number> {
+  const response = await page.request.get(`${stubUrl}/__revocations`);
   return ((await response.json()) as { count: number }).count;
 }
 
@@ -76,7 +77,7 @@ test("připojení Fakturoidu → stav → odpojení; po odpojení nejsou v datab
 
   // Off to (the stand-in for) Fakturoid and back.
   await page.getByRole("button", { name: "Propojit" }).click();
-  await expect(page).toHaveURL("/app/nastaveni?karta=propojeni&propojeni=ok");
+  await expect(page).toHaveURL("/app/nastaveni?karta=propojeni&propojeni=ok&aplikace=fakturoid");
   await expect(
     page.getByText("Fakturoid je propojený. Faktury načtu během chvilky."),
   ).toBeVisible();
@@ -114,7 +115,98 @@ test("připojení Fakturoidu → stav → odpojení; po odpojení nejsou v datab
   expect(await connectionsFromApi(page)).toEqual([]);
   expect(await revocations(page)).toBe(revokedBefore + 1);
   // After disconnecting, the database holds no tokens.
-  expect(await storedConnections(userId)).toEqual([{ status: "revoked", tokens: null }]);
+  expect(await storedConnections(userId)).toEqual([
+    { provider: "fakturoid", status: "revoked", tokens: null },
+  ]);
+});
+
+test("iDoklad jde připojit vedle Fakturoidu a odpojit zvlášť", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const { userId } = await createSignedInUser(page.context());
+  await page.goto("/onboarding");
+  await completeOnboarding(page);
+  await page.goto("/app/nastaveni?karta=propojeni");
+
+  // iDoklad has its own panel with its own requirements and note.
+  const tile = page.getByRole("button", { name: "iDoklad", exact: true });
+  await tile.click();
+  await expect(page.getByText("Tarif iDokladu, který dovoluje přístup přes API")).toBeVisible();
+  await expect(page.getByText("iDoklad je samostatná služba")).toBeVisible();
+  await expect(page.getByText("Fakturoid je samostatná placená služba")).toHaveCount(0);
+  // Nothing else is connected, so there is nothing to warn about.
+  await expect(page.getByText("počítal dvakrát")).toHaveCount(0);
+
+  // Off to (the stand-in for) iDoklad and back. The stand-in gives tokens only for a
+  // request with a PKCE challenge and the matching verifier.
+  await page.getByRole("button", { name: "Propojit" }).click();
+  await expect(page).toHaveURL("/app/nastaveni?karta=propojeni&propojeni=ok&aplikace=idoklad");
+  await expect(page.getByText("iDoklad je propojený. Faktury načtu během chvilky.")).toBeVisible();
+  await expect(page.getByText("1 z 14")).toBeVisible();
+  await expect(page.getByText("Fakturace · Malíři Hejsek")).toBeVisible();
+  expect(await page.content()).not.toMatch(/stub-idoklad-access-token|stub-idoklad-refresh-token/);
+
+  await page.goto("/app/faktury");
+  await expect(page.getByText("iDoklad je propojený", { exact: true })).toBeVisible();
+  await expect(page.getByText("Zdroj: iDoklad")).toBeVisible();
+
+  // Connecting Fakturoid as well is allowed, with a warning about invoices kept in both.
+  await page.goto("/app/nastaveni?karta=propojeni");
+  await page.getByRole("button", { name: "Fakturoid", exact: true }).click();
+  await expect(page.getByText("Už máš propojený iDoklad.")).toBeVisible();
+  await expect(page.getByText("počítal dvakrát")).toBeVisible();
+  await page.getByRole("button", { name: "Propojit" }).click();
+  await expect(page).toHaveURL("/app/nastaveni?karta=propojeni&propojeni=ok&aplikace=fakturoid");
+  await expect(page.getByText("2 z 14")).toBeVisible();
+
+  const both = await storedConnections(userId);
+  expect(both.map((connection) => [connection.provider, connection.status]).sort()).toEqual([
+    ["fakturoid", "connected"],
+    ["idoklad", "connected"],
+  ]);
+  const idoklad = both.find((connection) => connection.provider === "idoklad");
+  expect(idoklad?.tokens?.accessToken.reveal()).toBe("stub-idoklad-access-token");
+  expect(idoklad?.tokens?.refreshToken?.reveal()).toBe("stub-idoklad-refresh-token");
+
+  await page.goto("/app/faktury");
+  await expect(page.getByText("Fakturoid a iDoklad jsou propojené", { exact: true })).toBeVisible();
+  await expect(page.getByText("Zdroj: Fakturoid a iDoklad")).toBeVisible();
+
+  // Disconnecting iDoklad revokes it there and leaves Fakturoid alone.
+  await page.goto("/app/nastaveni?karta=propojeni");
+  const revokedBefore = await revocations(page, IDOKLAD_STUB_URL);
+  const fakturoidRevokedBefore = await revocations(page);
+  page.once("dialog", (dialog) => void dialog.accept());
+  await page
+    .getByRole("listitem")
+    .filter({ hasText: "Malíři Hejsek" })
+    .getByRole("button", { name: "Odpojit" })
+    .click();
+  await expect(page.getByText("1 z 14")).toBeVisible();
+  await expect(page.getByText("Fakturace · Malíři Hejsek")).toHaveCount(0);
+
+  expect(await revocations(page, IDOKLAD_STUB_URL)).toBe(revokedBefore + 1);
+  expect(await revocations(page)).toBe(fakturoidRevokedBefore);
+  const after = await storedConnections(userId);
+  expect(after.find((connection) => connection.provider === "idoklad")).toEqual({
+    provider: "idoklad",
+    status: "revoked",
+    tokens: null,
+  });
+  expect(after.find((connection) => connection.provider === "fakturoid")?.status).toBe("connected");
+});
+
+test("podvržený návrat z iDokladu nic nepřipojí", async ({ page }) => {
+  const { userId } = await createSignedInUser(page.context());
+  await page.goto("/onboarding");
+  await completeOnboarding(page);
+
+  await page.goto("/api/integrations/idoklad/callback?code=ukradeny-kod&state=vymysleny-state");
+
+  await expect(page).toHaveURL(
+    "/app/nastaveni?karta=propojeni&propojeni=neplatne&aplikace=idoklad",
+  );
+  await expect(page.getByText("Tenhle odkaz už neplatí. Zkus to prosím znovu.")).toBeVisible();
+  expect(await storedConnections(userId)).toEqual([]);
 });
 
 test("onboarding nabídne Fakturoid a po připojení pokračuje dál", async ({ page }) => {
@@ -132,7 +224,7 @@ test("onboarding nabídne Fakturoid a po připojení pokračuje dál", async ({ 
   await page.getByRole("button", { name: "Fakturoid", exact: true }).click();
   await page.getByRole("button", { name: "Propojit" }).click();
 
-  await expect(page).toHaveURL("/onboarding?krok=2&propojeni=ok");
+  await expect(page).toHaveURL("/onboarding?krok=2&propojeni=ok&aplikace=fakturoid");
   await expect(page.getByText("Fakturoid je propojený!")).toBeVisible();
   await page.getByRole("link", { name: "Pokračovat" }).click();
   await expect(page).toHaveURL("/onboarding?krok=3");
@@ -144,7 +236,9 @@ test("podvržený návrat z Fakturoidu nic nepřipojí", async ({ page }) => {
   await completeOnboarding(page);
 
   await page.goto("/api/integrations/fakturoid/callback?code=ukradeny-kod&state=vymysleny-state");
-  await expect(page).toHaveURL("/app/nastaveni?karta=propojeni&propojeni=neplatne");
+  await expect(page).toHaveURL(
+    "/app/nastaveni?karta=propojeni&propojeni=neplatne&aplikace=fakturoid",
+  );
   await expect(page.getByText("Tenhle odkaz už neplatí. Zkus to prosím znovu.")).toBeVisible();
   expect(await storedConnections(userId)).toEqual([]);
 });
@@ -159,6 +253,7 @@ test("cesty propojení chrání přihlášení, původ požadavku a cizí data",
   expect((await request.get("/api/integrations/connections")).status()).toBe(401);
   expect((await request.post(`/api/integrations/connections/${id}/disconnect`)).status()).toBe(401);
   expect((await request.post("/api/integrations/fakturoid/connect")).status()).toBe(401);
+  expect((await request.post("/api/integrations/idoklad/connect")).status()).toBe(401);
 
   await createSignedInUser(page.context());
   await page.goto("/onboarding");

@@ -450,7 +450,11 @@ export class FakturoidProvider implements InvoiceProvider {
    */
   async listPayments(options: ListOptions = {}): Promise<Page<InvoicePayment>> {
     const { items, nextCursor } = await this.page("/invoices.json", options);
-    return { items: items.flatMap(mapFakturoidPayments), nextCursor };
+    const wanted = options.invoiceExternalIds;
+    const payments = items
+      .flatMap(mapFakturoidPayments)
+      .filter((payment) => wanted === undefined || wanted.includes(payment.invoiceExternalId));
+    return { items: payments, nextCursor };
   }
 
   async getDocument(invoiceExternalId: string): Promise<InvoiceDocument | null> {

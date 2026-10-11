@@ -69,6 +69,19 @@ function readFakturoid(env: Env): ProviderSettings["fakturoid"] {
   return { clientId, clientSecret: new Secret(clientSecret), userAgent };
 }
 
+/** iDoklad is optional in the same way: both variables or neither. */
+function readIdoklad(env: Env): ProviderSettings["idoklad"] {
+  const clientId = env.IDOKLAD_CLIENT_ID?.trim() ?? "";
+  const clientSecret = env.IDOKLAD_CLIENT_SECRET?.trim() ?? "";
+  if (clientId === "" && clientSecret === "") {
+    return null;
+  }
+  if (clientId === "" || clientSecret === "") {
+    throw new EnvError("Set both IDOKLAD_CLIENT_ID and IDOKLAD_CLIENT_SECRET, or neither.");
+  }
+  return { clientId, clientSecret: new Secret(clientSecret) };
+}
+
 /** Reads everything the worker needs to start; throws {@link EnvError} on the first problem. */
 export function readWorkerEnv(env: Env = process.env): WorkerEnv {
   return {
@@ -76,6 +89,6 @@ export function readWorkerEnv(env: Env = process.env): WorkerEnv {
     databaseUrl: readDatabaseUrl(env),
     encryptionKey: readEncryptionKey(env),
     concurrency: readConcurrency(env),
-    providers: { fakturoid: readFakturoid(env) },
+    providers: { fakturoid: readFakturoid(env), idoklad: readIdoklad(env) },
   };
 }

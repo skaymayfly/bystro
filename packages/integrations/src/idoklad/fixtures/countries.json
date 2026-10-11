@@ -1,0 +1,23 @@
+{
+  "Data": {
+    "Items": [
+      {
+        "Code": "sample string 1",
+        "CurrencyId": 2,
+        "DateLastChange": "2026-09-30",
+        "Id": 4,
+        "IsEuMember": true,
+        "Name": "sample string 6",
+        "NameEnglish": "sample string 7",
+        "NameGerman": "sample string 8",
+        "NameSlovak": "sample string 9"
+      }
+    ],
+    "TotalItems": 1,
+    "TotalPages": 2
+  },
+  "ErrorCode": 0,
+  "IsSuccess": true,
+  "Message": "sample string 2",
+  "StatusCode": 100
+}

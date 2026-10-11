@@ -31,6 +31,31 @@ export {
   type FakturoidAppCredentials,
 } from "./fakturoid/fakturoid";
 export {
+  IDOKLAD_API_BASE_URL,
+  IDOKLAD_IDENTITY_BASE_URL,
+  IDOKLAD_PAGE_SIZE,
+  IDOKLAD_RATE_LIMIT,
+  IdokladClient,
+  type IdokladClientOptions,
+} from "./idoklad/client";
+export {
+  getIdokladAgenda,
+  IDOKLAD_SCOPES,
+  IDOKLAD_SOURCE,
+  IdokladLists,
+  idokladOAuthConfig,
+  IdokladProvider,
+  mapIdokladContact,
+  mapIdokladCreditNote,
+  mapIdokladInvoice,
+  mapIdokladPayment,
+  mapIdokladProforma,
+  revokeIdokladAccess,
+  type IdokladAgenda,
+  type IdokladAppCredentials,
+  type IdokladListValues,
+} from "./idoklad/idoklad";
+export {
   INVOICE_SYNC_LOOKBACK_MONTHS,
   INVOICE_SYNC_MODES,
   syncInvoices,

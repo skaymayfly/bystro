@@ -42,17 +42,20 @@ export function StatusPill({
  * and the Přehled card is computed from data synced from this source.
  */
 export function SourceNote({
+  source,
   lastSyncAt,
   now,
   className,
 }: {
+  /** Name of the invoicing system(s), e.g. "Fakturoid" or "Fakturoid a iDoklad". */
+  source: string;
   lastSyncAt: string | null;
   now: Date;
   className?: string;
 }) {
   return (
     <p className={cn("text-xs text-ink-3", className)}>
-      Zdroj: Fakturoid
+      Zdroj: {source}
       {lastSyncAt !== null && ` · aktualizováno ${relativeTime(new Date(lastSyncAt), now)}`}
     </p>
   );

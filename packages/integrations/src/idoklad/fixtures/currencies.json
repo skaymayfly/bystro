@@ -1,0 +1,21 @@
+{
+  "Data": {
+    "Items": [
+      {
+        "Code": "sample string 1",
+        "CountryName": "sample string 2",
+        "DateLastChange": "2026-09-30T14:26:58.283",
+        "Id": 4,
+        "Name": "sample string 5",
+        "Priority": 6,
+        "Symbol": "sample string 7"
+      }
+    ],
+    "TotalItems": 1,
+    "TotalPages": 2
+  },
+  "ErrorCode": 0,
+  "IsSuccess": true,
+  "Message": "sample string 2",
+  "StatusCode": 100
+}

@@ -1,0 +1,93 @@
+{
+  "Data": {
+    "Items": [
+      {
+        "BankStatementId": 1,
+        "CashVoucherId": 1,
+        "CurrencyId": 1,
+        "DateOfPayment": "2026-09-30T14:26:53.091",
+        "DateOfVatApplication": "2026-09-30",
+        "DocumentType": 0,
+        "EetResponsibility": 0,
+        "EetStatus": 0,
+        "ExchangeRate": 4,
+        "ExchangeRateAmount": 5,
+        "Exported": 0,
+        "Id": 6,
+        "InvoiceDocumentNumber": "sample string 7",
+        "InvoiceId": 8,
+        "IsConfirmationSent": true,
+        "IsEet": true,
+        "IssuedTaxDocumentId": 1,
+        "Metadata": {
+          "DateCreated": "2026-09-30T14:26:53.093",
+          "DateLastChange": "2026-09-30T14:26:53.093",
+          "UserCreatedId": 1,
+          "UserLastChangeId": 1
+        },
+        "Partner": "sample string 11",
+        "PaymentOptionId": 12,
+        "Prices": {
+          "PaymentAmount": 1,
+          "PaymentAmountHc": 2
+        },
+        "RegisteredSale": {
+          "Bkp": "sample string 1",
+          "CancelledRegisteredSaleId": 1,
+          "CashVoucherId": 1,
+          "DateOfAnswer": "2026-09-30T14:26:53.095",
+          "DateOfSale": "2026-09-30T14:26:53.095",
+          "DateOfSend": "2026-09-30T14:26:53.095",
+          "DocumentNumber": "sample string 5",
+          "DocumentType": 0,
+          "EetRegime": 0,
+          "ErrorCode": 6,
+          "ErrorText": "sample string 7",
+          "Fik": "sample string 8",
+          "Id": 9,
+          "IsCanceled": true,
+          "IsFirstReport": true,
+          "IssuedInvoiceId": 1,
+          "IssuedInvoicePaymentId": 1,
+          "Metadata": {
+            "DateCreated": "2026-09-30T14:26:53.093",
+            "DateLastChange": "2026-09-30T14:26:53.093",
+            "UserCreatedId": 1,
+            "UserLastChangeId": 1
+          },
+          "Pkp": "sample string 12",
+          "Prices": {
+            "BaseTaxBasicRateHc": 1,
+            "BaseTaxReducedRate1Hc": 2,
+            "BaseTaxReducedRate2Hc": 3,
+            "BaseTaxZeroRateHc": 4,
+            "TaxBasicRateHc": 5,
+            "TaxReducedRate1Hc": 6,
+            "TaxReducedRate2Hc": 7,
+            "TotalAdvancePayment": 8,
+            "TotalFromAdvancePayment": 9,
+            "TotalTravelServiceHc": 10,
+            "TotalUsedGoodsBasicRateHc": 11,
+            "TotalUsedGoodsReducedRate1Hc": 12,
+            "TotalUsedGoodsReducedRate2Hc": 13,
+            "TotalWithVatHc": 14
+          },
+          "ReceiptNumber": "sample string 13",
+          "SalesOfficeDesignation": 14,
+          "SalesPosEquipmentDesignation": "sample string 15",
+          "SalesPosEquipmentId": 1,
+          "SalesReceiptId": 1,
+          "Status": 0,
+          "Uuid": "594fc098-81b8-4ab4-ae9d-6b0a0c8d6d53",
+          "VatIdentificationNumber": "sample string 17"
+        }
+      }
+    ],
+    "TotalItems": 1,
+    "TotalPages": 2
+  },
+  "ErrorCode": 0,
+  "IsSuccess": true,
+  "Message": "sample string 2",
+  "StatusCode": 100
+}

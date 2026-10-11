@@ -37,6 +37,8 @@ class InMemoryProvider implements InvoiceProvider {
   readonly source = SOURCE;
   clients: Client[] = [];
   invoices: Invoice[] = [];
+  /** Payments of invoices that do not carry them (`payments: null`). */
+  payments: InvoicePayment[] = [];
   readonly calls: { method: string; options?: ListOptions; id?: string }[] = [];
   pageSize = 2;
 
@@ -67,9 +69,13 @@ class InMemoryProvider implements InvoiceProvider {
     return this.page(this.clients, options.cursor);
   }
 
-  async listPayments() {
-    this.calls.push({ method: "listPayments" });
-    return { items: [], nextCursor: null };
+  async listPayments(options: ListOptions = {}) {
+    this.calls.push({ method: "listPayments", options });
+    const wanted = options.invoiceExternalIds;
+    const matching = this.payments.filter(
+      (payment) => wanted === undefined || wanted.includes(payment.invoiceExternalId),
+    );
+    return this.page(matching, options.cursor);
   }
 
   async getDocument() {
@@ -351,6 +357,55 @@ describe("syncInvoices", () => {
     const companies = await listCompanies(db, organizationId);
     const fourth = (await listInvoices(db, organizationId)).find((row) => row.externalId === "4");
     expect(fourth?.companyId).toBe(companies.find((row) => row.externalId === "c3")?.id);
+  });
+
+  it("fetches payments separately for invoices that come without them", async () => {
+    const { scope, organizationId } = await connected("Firma A");
+    const provider = new InMemoryProvider();
+    provider.clients = [client("c1")];
+    provider.invoices = [
+      // Nothing paid: the provider says so itself and no request is needed.
+      invoice("1"),
+      invoice("2", { payments: null }),
+      invoice("3", { payments: null, sourceStatus: "paid", paidOn: "2026-10-05" }),
+    ];
+    provider.payments = [
+      payment("p1", "2", 20_000n),
+      payment("p2", "2", 30_000n),
+      payment("p3", "2", 1_000n),
+      payment("p4", "3", 121_000n),
+      // Of an invoice nobody asked about: must not be stored.
+      payment("p9", "1", 5n),
+    ];
+
+    const first = await syncInvoices({ db, scope, provider, mode: "full", now: NOW });
+
+    expect(first.payments).toEqual({ created: 4, updated: 0, removed: 0 });
+    const stored = await listInvoicePayments(db, organizationId);
+    expect(stored.map((row) => row.externalId).sort()).toEqual(["p1", "p2", "p3", "p4"]);
+    // Only the two invoices without payments are asked about (page by page: invoice 2
+    // has three payments and the provider returns two at a time).
+    const asked = provider.calls
+      .filter((call) => call.method === "listPayments")
+      .map((call) => [...(call.options?.invoiceExternalIds ?? [])]);
+    expect(asked).toEqual([["2"], ["2"], ["3"]]);
+
+    // A payment removed at the source disappears here as well; nothing is duplicated.
+    provider.payments = provider.payments.filter((item) => item.externalId !== "p3");
+    const second = await syncInvoices({ db, scope, provider, mode: "full", now: NOW });
+
+    expect(second.payments).toMatchObject({ created: 0, removed: 1 });
+    const after = await listInvoicePayments(db, organizationId);
+    expect(after.map((row) => row.externalId).sort()).toEqual(["p1", "p2", "p4"]);
+  });
+
+  it("makes no payment request when every invoice carries its payments", async () => {
+    const { scope } = await connected("Firma A");
+    const provider = seeded();
+
+    await syncInvoices({ db, scope, provider, mode: "full", now: NOW });
+
+    expect(provider.calls.some((call) => call.method === "listPayments")).toBe(false);
   });
 
   it("does not move the cursor when the provider fails half-way", async () => {

@@ -9,6 +9,7 @@ import { ProviderPicker } from "@/components/connections/provider-picker";
 import { CompanyStep } from "@/components/onboarding/company-step";
 import { buttonVariants } from "@/components/ui/button";
 import { BRIEF_CHANNELS, BRIEF_TIMES, DEFAULT_BRIEF_TIME } from "@/lib/content";
+import { describeInvoicingSources } from "@/lib/invoicing-providers";
 import { cn } from "@/lib/utils";
 import { APP_HOME_PATH } from "@/server/access";
 import { requireRequestContext } from "@/server/context";
@@ -41,12 +42,15 @@ const fieldLabelClass = "pl-0.5 text-[15px] text-ink-2";
 async function ConnectionsStep({
   organizationId,
   outcome,
+  provider,
 }: {
   organizationId: string;
   outcome: string | undefined;
+  provider: string | undefined;
 }) {
-  const { fakturoid, fakturoidState } = await loadConnections(organizationId);
-  const connected = fakturoid !== null;
+  const { invoicing, states } = await loadConnections(organizationId);
+  const sources = describeInvoicingSources(invoicing);
+  const connected = sources !== null;
 
   return (
     <>
@@ -56,15 +60,15 @@ async function ConnectionsStep({
         text="Čím víc toho propojíš, tím přesnější bude ranní přehled. Přístup je jen pro čtení."
       />
       <div className="flex flex-col gap-3.5 rounded-[18px] border border-line bg-card p-4 shadow-soft">
-        <ConnectOutcomeNotice outcome={outcome} />
+        <ConnectOutcomeNotice outcome={outcome} provider={provider} />
         <ProviderPicker
-          fakturoid={fakturoidState}
+          states={states}
           returnTo="onboarding"
           className="grid-cols-5 sm:grid-cols-7"
         />
         {connected && (
           <div className="flex flex-col items-center gap-1 px-2 pt-2 pb-1 text-center">
-            <p className="text-[17px] font-medium">Fakturoid je propojený!</p>
+            <p className="text-[17px] font-medium">{sources.connected}!</p>
             <p className="text-[13px] leading-normal text-ink-3">
               Nastavení propojení můžeš kdykoliv změnit v Nastavení → Propojení.
             </p>
@@ -123,6 +127,7 @@ export default async function OnboardingPage(props: PageProps<"/onboarding">) {
   const query = await props.searchParams;
   const requested = query.krok;
   const outcome = typeof query.propojeni === "string" ? query.propojeni : undefined;
+  const outcomeProvider = typeof query.aplikace === "string" ? query.aplikace : undefined;
 
   // Without a company there is only step 1; with one, only steps 2 and 3 make sense.
   let step: Step = 1;
@@ -151,7 +156,11 @@ export default async function OnboardingPage(props: PageProps<"/onboarding">) {
         </>
       )}
       {step === 2 && organization !== null && (
-        <ConnectionsStep organizationId={organization.id} outcome={outcome} />
+        <ConnectionsStep
+          organizationId={organization.id}
+          outcome={outcome}
+          provider={outcomeProvider}
+        />
       )}
       {step === 3 && <BriefStep />}
     </AuthShell>

@@ -7,9 +7,9 @@ import {
   returnCookie,
   returnPath,
 } from "../server/connect-return";
-import { readFakturoidEnv, WebEnvError } from "../server/env";
+import { readFakturoidEnv, readIdokladEnv, WebEnvError } from "../server/env";
 import {
-  CONNECT_OUTCOME_TEXTS,
+  connectOutcomeNotice,
   describeConnection,
   relativeTime,
   type ConnectionSummary,
@@ -17,6 +17,7 @@ import {
 
 const NOW = new Date("2026-10-11T08:00:00Z");
 const connection = (overrides: Partial<ConnectionSummary> = {}): ConnectionSummary => ({
+  provider: "fakturoid",
   status: "connected",
   needsAccount: false,
   lastSyncAt: "2026-10-11T07:48:00Z",
@@ -98,6 +99,28 @@ describe("describeConnection", () => {
     ).toContain("zablokovaný");
   });
 
+  it("names the application the connection belongs to", () => {
+    const idoklad = (overrides: Partial<ConnectionSummary>) =>
+      describeConnection(connection({ provider: "idoklad", ...overrides }), NOW).text;
+
+    expect(idoklad({ status: "reauth_required" })).toBe(
+      "iDoklad mi přestal dávat přístup. Připoj ho prosím znovu.",
+    );
+    expect(idoklad({ status: "degraded", lastErrorCode: "rate_limited" })).toContain("iDoklad teď");
+    expect(idoklad({ status: "error", lastErrorCode: "provider_not_configured" })).toContain(
+      "z iDokladu",
+    );
+    // iDoklad refuses the API when the plan does not include it.
+    expect(idoklad({ status: "error", lastErrorCode: "account_blocked" })).toContain("tarif");
+    expect(
+      describeConnection(connection({ status: "error", lastErrorCode: "forbidden" }), NOW).text,
+    ).toBe("Tvůj účet ve Fakturoidu mi nedovolí číst faktury.");
+    // An application we have no words for is not called by a wrong name.
+    expect(
+      describeConnection(connection({ provider: "pohoda", status: "reauth_required" }), NOW).text,
+    ).toContain("Fakturační systém");
+  });
+
   it("never shows an internal error code", () => {
     const described = describeConnection(
       connection({ status: "error", lastErrorCode: "TypeError" }),
@@ -109,11 +132,15 @@ describe("describeConnection", () => {
 
 describe("returning from the provider", () => {
   it("goes back only to the two fixed pages", () => {
-    expect(returnPath("settings", "ok")).toBe("/app/nastaveni?karta=propojeni&propojeni=ok");
-    expect(returnPath("onboarding", "zamitnuto")).toBe("/onboarding?krok=2&propojeni=zamitnuto");
+    expect(returnPath("settings", "ok")).toBe(
+      "/app/nastaveni?karta=propojeni&propojeni=ok&aplikace=fakturoid",
+    );
+    expect(returnPath("onboarding", "zamitnuto", "idoklad")).toBe(
+      "/onboarding?krok=2&propojeni=zamitnuto&aplikace=idoklad",
+    );
     // The account is chosen in settings, wherever the user started.
     expect(returnPath("onboarding", "vybrat-ucet")).toBe(
-      "/app/nastaveni?karta=propojeni&propojeni=vybrat-ucet",
+      "/app/nastaveni?karta=propojeni&propojeni=vybrat-ucet&aplikace=fakturoid",
     );
     expect(parseReturnTarget("onboarding")).toBe("onboarding");
     expect(parseReturnTarget("https://evil.example")).toBe("settings");
@@ -141,12 +168,53 @@ describe("returning from the provider", () => {
       "neplatne",
       "nedostupne",
       "bez-uctu",
+      "tarif",
     ]) {
       expect(parseConnectOutcome(outcome)).toBe(outcome);
-      expect(CONNECT_OUTCOME_TEXTS[outcome]?.text.length).toBeGreaterThan(10);
+      expect(connectOutcomeNotice(outcome, "fakturoid")?.text.length).toBeGreaterThan(10);
     }
     expect(parseConnectOutcome("<script>")).toBeNull();
-    expect(CONNECT_OUTCOME_TEXTS["<script>"]).toBeUndefined();
+    expect(connectOutcomeNotice("<script>", "fakturoid")).toBeNull();
+    expect(connectOutcomeNotice(undefined, "fakturoid")).toBeNull();
+  });
+
+  it("names the application the outcome is about, and never echoes the query", () => {
+    expect(connectOutcomeNotice("ok", "fakturoid")?.text).toBe(
+      "Fakturoid je propojený. Faktury načtu během chvilky.",
+    );
+    expect(connectOutcomeNotice("ok", "idoklad")).toEqual({
+      tone: "ok",
+      text: "iDoklad je propojený. Faktury načtu během chvilky.",
+    });
+    expect(connectOutcomeNotice("bez-uctu", "idoklad")?.text).toContain("U iDokladu");
+    expect(connectOutcomeNotice("tarif", "idoklad")?.text).toContain("tarif");
+    const forged = connectOutcomeNotice("ok", "<script>alert(1)</script>");
+    expect(forged?.text).toBe("Fakturační systém je propojený. Faktury načtu během chvilky.");
+  });
+});
+
+describe("readIdokladEnv", () => {
+  const complete = { IDOKLAD_CLIENT_ID: "idoklad-id", IDOKLAD_CLIENT_SECRET: "idoklad-secret" };
+
+  it("is off when nothing is set and on when both variables are", () => {
+    expect(readIdokladEnv({})).toBeNull();
+    const settings = readIdokladEnv(complete);
+    expect(settings?.clientId).toBe("idoklad-id");
+    expect(settings?.clientSecret.reveal()).toBe("idoklad-secret");
+    expect(settings?.baseUrl).toBeUndefined();
+    expect(settings?.identityBaseUrl).toBeUndefined();
+    expect(JSON.stringify(settings)).not.toContain("idoklad-secret");
+  });
+
+  it("refuses a half-finished configuration", () => {
+    expect(() => readIdokladEnv({ IDOKLAD_CLIENT_ID: "idoklad-id" })).toThrow(WebEnvError);
+    expect(() => readIdokladEnv({ IDOKLAD_CLIENT_SECRET: "idoklad-secret" })).toThrow(WebEnvError);
+    expect(() => readIdokladEnv({ ...complete, IDOKLAD_BASE_URL: "not a url" })).toThrow(
+      WebEnvError,
+    );
+    expect(() => readIdokladEnv({ ...complete, IDOKLAD_IDENTITY_BASE_URL: "nope" })).toThrow(
+      WebEnvError,
+    );
   });
 });
 

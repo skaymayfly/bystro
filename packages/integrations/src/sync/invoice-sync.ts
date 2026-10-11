@@ -1,4 +1,11 @@
-import { todayInPrague, type DateOnly, type Invoice, type InvoiceProvider } from "@bystro/core";
+import {
+  ProviderError,
+  todayInPrague,
+  type DateOnly,
+  type Invoice,
+  type InvoicePayment,
+  type InvoiceProvider,
+} from "@bystro/core";
 import {
   findUnknownCompanyExternalIds,
   getSyncCursor,
@@ -34,6 +41,8 @@ export const INVOICE_SYNC_LOOKBACK_MONTHS = 12;
 const INCREMENTAL_OVERLAP_MS = 5 * 60 * 1000;
 /** Safety stop for a provider that keeps returning a next page. */
 const MAX_PAGES = 500;
+/** How many invoices' payments are asked for in one request (the ids go into the address). */
+const PAYMENT_LOOKUP_BATCH = 20;
 
 const CURSOR_RESOURCE = "invoices";
 
@@ -96,8 +105,46 @@ export async function syncInvoices(input: InvoiceSyncInput): Promise<InvoiceSync
     }
   }
 
+  /**
+   * Some systems (iDoklad) do not send payments inside invoices. For those invoices the
+   * payments are fetched separately, so that every stored invoice carries its complete list.
+   */
+  async function withPayments(invoices: readonly Invoice[]): Promise<readonly Invoice[]> {
+    const missing = invoices
+      .filter((invoice) => invoice.payments === null)
+      .map((invoice) => invoice.externalId);
+    if (missing.length === 0) {
+      return invoices;
+    }
+    const found = new Map<string, InvoicePayment[]>();
+    for (let start = 0; start < missing.length; start += PAYMENT_LOOKUP_BATCH) {
+      const invoiceExternalIds = missing.slice(start, start + PAYMENT_LOOKUP_BATCH);
+      let next: string | null = null;
+      let page = 0;
+      do {
+        if (page >= MAX_PAGES) {
+          // An incomplete list would look like payments were removed: stop instead.
+          throw new ProviderError("invalid_response");
+        }
+        const batch = await provider.listPayments({ cursor: next, invoiceExternalIds });
+        for (const payment of batch.items) {
+          const list = found.get(payment.invoiceExternalId) ?? [];
+          list.push(payment);
+          found.set(payment.invoiceExternalId, list);
+        }
+        next = batch.nextCursor;
+        page += 1;
+      } while (next !== null);
+    }
+    return invoices.map((invoice) =>
+      invoice.payments === null
+        ? { ...invoice, payments: found.get(invoice.externalId) ?? [] }
+        : invoice,
+    );
+  }
+
   async function store(invoices: readonly Invoice[]): Promise<void> {
-    const written = await upsertInvoices(db, scope, invoices);
+    const written = await upsertInvoices(db, scope, await withPayments(invoices));
     add(result.invoices, written.invoices);
     add(result.payments, written.payments);
   }

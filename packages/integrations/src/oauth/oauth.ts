@@ -26,6 +26,8 @@ export interface OAuthProviderConfig {
   clientAuthentication: "basic" | "body";
   /** Extra query parameters some providers require on the authorization URL. */
   extraAuthorizationParams?: Readonly<Record<string, string>>;
+  /** Extra body parameters some providers document for token requests (e.g. `scope`). */
+  tokenRequestParams?: Readonly<Record<string, string>>;
   /** Extra headers some providers require on token requests (e.g. User-Agent). */
   tokenRequestHeaders?: Readonly<Record<string, string>>;
 }
@@ -206,7 +208,7 @@ async function requestTokens(
   options: { fetch?: typeof fetch; now?: Date },
   failure: "token_exchange_failed" | "reauthorization_required",
 ): Promise<OAuthTokens> {
-  const body = new URLSearchParams(grant);
+  const body = new URLSearchParams({ ...config.tokenRequestParams, ...grant });
   const headers: Record<string, string> = {
     ...config.tokenRequestHeaders,
     Accept: "application/json",

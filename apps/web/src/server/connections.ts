@@ -25,13 +25,23 @@ import {
   FAKTUROID_SOURCE,
   FakturoidClient,
   fakturoidOAuthConfig,
+  getIdokladAgenda,
   hashOAuthState,
+  IDOKLAD_SCOPES,
+  IDOKLAD_SOURCE,
+  IdokladClient,
+  idokladOAuthConfig,
   listFakturoidAccounts,
   OAuthError,
   revokeFakturoidAccess,
+  revokeIdokladAccess,
   verifyCallback,
   type FakturoidAccount,
   type FakturoidAppCredentials,
+  type IdokladAgenda,
+  type IdokladAppCredentials,
+  type OAuthProviderConfig,
+  type OAuthTokens,
 } from "@bystro/integrations";
 
 /**
@@ -41,6 +51,7 @@ import {
  */
 
 export const FAKTUROID_CALLBACK_PATH = "/api/integrations/fakturoid/callback";
+export const IDOKLAD_CALLBACK_PATH = "/api/integrations/idoklad/callback";
 
 /** How often a user may ask for a sync by hand; the provider's request allowance is small. */
 export const MANUAL_SYNC_INTERVAL_MS = 5 * 60 * 1000;
@@ -53,7 +64,9 @@ export type ConnectionFlowErrorCode =
   /** The provider did not give us tokens or did not answer. */
   | "provider_unavailable"
   /** The user has no account at the provider that may read invoices. */
-  | "no_account";
+  | "no_account"
+  /** The provider refuses the API for this account (e.g. a plan without API access). */
+  | "account_blocked";
 
 /** A failed connection attempt. Carries a code for the UI and never any secret. */
 export class ConnectionFlowError extends Error {
@@ -64,18 +77,24 @@ export class ConnectionFlowError extends Error {
   }
 }
 
-export interface FlowDeps {
+interface BaseFlowDeps {
   db: Db;
   encryptionKey: Buffer;
-  fakturoid: FakturoidAppCredentials;
   /** Public URL of the web app; the callback address is derived from it. */
   appBaseUrl: string;
   /** Injectable for tests. */
   fetch?: typeof fetch;
 }
 
-const callbackUri = (deps: FlowDeps) =>
-  new URL(FAKTUROID_CALLBACK_PATH, deps.appBaseUrl).toString();
+export interface FlowDeps extends BaseFlowDeps {
+  fakturoid: FakturoidAppCredentials;
+}
+
+export interface IdokladFlowDeps extends BaseFlowDeps {
+  idoklad: IdokladAppCredentials;
+}
+
+const callbackUri = (deps: BaseFlowDeps, path: string) => new URL(path, deps.appBaseUrl).toString();
 const fetchOption = (deps: { fetch?: typeof fetch }) =>
   deps.fetch === undefined ? {} : { fetch: deps.fetch };
 
@@ -109,8 +128,23 @@ export async function startFakturoidConnection(
   deps: FlowDeps,
   who: { organizationId: string; userId: string },
 ): Promise<string> {
-  const redirectUri = callbackUri(deps);
-  const request = createAuthorizationRequest(fakturoidOAuthConfig(deps.fakturoid), {
+  return startAuthorization(
+    deps,
+    fakturoidOAuthConfig(deps.fakturoid),
+    FAKTUROID_CALLBACK_PATH,
+    who,
+  );
+}
+
+/** Remembers an authorization request (with its PKCE verifier, encrypted) and returns its URL. */
+async function startAuthorization(
+  deps: BaseFlowDeps,
+  config: OAuthProviderConfig,
+  callbackPath: string,
+  who: { organizationId: string; userId: string },
+): Promise<string> {
+  const redirectUri = callbackUri(deps, callbackPath);
+  const request = createAuthorizationRequest(config, {
     redirectUri,
     allowedRedirectUris: [redirectUri],
   });
@@ -144,47 +178,15 @@ export interface CompletedConnection {
 export async function completeFakturoidConnection(
   deps: FlowDeps,
   who: { organization: { id: string; ico: string }; userId: string },
-  params: { state: string | null; code: string | null; error: string | null },
+  params: CallbackParams,
 ): Promise<CompletedConnection> {
-  const config = fakturoidOAuthConfig(deps.fakturoid);
-  const allowedRedirectUris = [callbackUri(deps)];
-  const stored =
-    params.state === null || params.state === ""
-      ? null
-      : await findOAuthRequest(
-          deps.db,
-          who.organization.id,
-          { stateHash: hashOAuthState(params.state), userId: who.userId },
-          deps.encryptionKey,
-        );
-
-  let code: string;
-  try {
-    ({ code } = verifyCallback(config, { params, stored, allowedRedirectUris }));
-  } catch (error) {
-    if (error instanceof OAuthError) {
-      throw new ConnectionFlowError(error.code === "provider_denied" ? "denied" : "invalid_state");
-    }
-    throw error;
-  }
-  // Of two requests with the same state only one gets past this point.
-  if (stored === null || !(await consumeOAuthRequest(deps.db, who.organization.id, stored.id))) {
-    throw new ConnectionFlowError("invalid_state");
-  }
-
-  let tokens;
-  try {
-    tokens = await exchangeAuthorizationCode(
-      config,
-      { code, stored, allowedRedirectUris },
-      fetchOption(deps),
-    );
-  } catch (error) {
-    if (error instanceof OAuthError) {
-      throw new ConnectionFlowError("provider_unavailable");
-    }
-    throw error;
-  }
+  const tokens = await finishAuthorization(
+    deps,
+    fakturoidOAuthConfig(deps.fakturoid),
+    FAKTUROID_CALLBACK_PATH,
+    { organizationId: who.organization.id, userId: who.userId },
+    params,
+  );
 
   const accounts = await invoicingAccounts(deps, fakturoidClient(deps, tokens.accessToken));
   if (accounts.length === 0) {
@@ -220,6 +222,138 @@ export async function completeFakturoidConnection(
     deps.encryptionKey,
   );
   return { connection, needsAccountChoice: chosen === undefined };
+}
+
+export interface CallbackParams {
+  state: string | null;
+  code: string | null;
+  error: string | null;
+}
+
+/**
+ * The provider-independent part of coming back: checks the `state` against a request of
+ * this user in this organization, uses the request up and exchanges the code for tokens.
+ */
+async function finishAuthorization(
+  deps: BaseFlowDeps,
+  config: OAuthProviderConfig,
+  callbackPath: string,
+  who: { organizationId: string; userId: string },
+  params: CallbackParams,
+): Promise<OAuthTokens> {
+  const allowedRedirectUris = [callbackUri(deps, callbackPath)];
+  const stored =
+    params.state === null || params.state === ""
+      ? null
+      : await findOAuthRequest(
+          deps.db,
+          who.organizationId,
+          { stateHash: hashOAuthState(params.state), userId: who.userId },
+          deps.encryptionKey,
+        );
+
+  let code: string;
+  try {
+    ({ code } = verifyCallback(config, { params, stored, allowedRedirectUris }));
+  } catch (error) {
+    if (error instanceof OAuthError) {
+      throw new ConnectionFlowError(error.code === "provider_denied" ? "denied" : "invalid_state");
+    }
+    throw error;
+  }
+  // Of two requests with the same state only one gets past this point.
+  if (stored === null || !(await consumeOAuthRequest(deps.db, who.organizationId, stored.id))) {
+    throw new ConnectionFlowError("invalid_state");
+  }
+
+  try {
+    return await exchangeAuthorizationCode(
+      config,
+      { code, stored, allowedRedirectUris },
+      fetchOption(deps),
+    );
+  } catch (error) {
+    if (error instanceof OAuthError) {
+      throw new ConnectionFlowError("provider_unavailable");
+    }
+    throw error;
+  }
+}
+
+// ---------------------------------------------------------------------------------------
+// iDoklad
+// ---------------------------------------------------------------------------------------
+
+/**
+ * Starts connecting iDoklad: remembers the request on the server (a hash of the `state`
+ * and the encrypted PKCE verifier) and returns the address at iDoklad's identity server.
+ */
+export async function startIdokladConnection(
+  deps: IdokladFlowDeps,
+  who: { organizationId: string; userId: string },
+): Promise<string> {
+  return startAuthorization(deps, idokladOAuthConfig(deps.idoklad), IDOKLAD_CALLBACK_PATH, who);
+}
+
+/**
+ * Finishes connecting iDoklad. The token belongs to one agenda (the company the user chose
+ * while signing in at iDoklad), so there is no account to pick: the agenda is read and
+ * saved with the connection. When it cannot be read, the grant is given back.
+ */
+export async function completeIdokladConnection(
+  deps: IdokladFlowDeps,
+  who: { organization: { id: string }; userId: string },
+  params: CallbackParams,
+): Promise<CompletedConnection> {
+  const tokens = await finishAuthorization(
+    deps,
+    idokladOAuthConfig(deps.idoklad),
+    IDOKLAD_CALLBACK_PATH,
+    { organizationId: who.organization.id, userId: who.userId },
+    params,
+  );
+
+  let agenda: IdokladAgenda;
+  try {
+    agenda = await getIdokladAgenda(
+      new IdokladClient({
+        accessToken: tokens.accessToken,
+        ...(deps.idoklad.baseUrl === undefined ? {} : { baseUrl: deps.idoklad.baseUrl }),
+        ...fetchOption(deps),
+      }),
+    );
+  } catch (error) {
+    if (error instanceof ProviderError) {
+      if (tokens.refreshToken !== null) {
+        await revokeIdokladAccess(deps.idoklad, tokens.refreshToken, fetchOption(deps));
+      }
+      throw new ConnectionFlowError(
+        error.code === "account_blocked" ? "account_blocked" : "provider_unavailable",
+      );
+    }
+    throw error;
+  }
+
+  const connection = await saveConnection(
+    deps.db,
+    who.organization.id,
+    {
+      provider: IDOKLAD_SOURCE,
+      category: "invoicing",
+      externalAccountId: agenda.id,
+      displayName: agenda.name,
+      scopes: tokens.scopes ?? [...IDOKLAD_SCOPES],
+      tokens: {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresAt: tokens.expiresAt,
+      },
+      userId: who.userId,
+      source: "web",
+    },
+    deps.encryptionKey,
+  );
+  return { connection, needsAccountChoice: false };
 }
 
 /** Accounts to offer when the connection has none chosen yet. */
@@ -345,6 +479,7 @@ export async function disconnect(
     db: Db;
     encryptionKey: Buffer;
     fakturoid: FakturoidAppCredentials | null;
+    idoklad: IdokladAppCredentials | null;
     fetch?: typeof fetch;
   },
   who: { organizationId: string; connectionId: string; userId: string },
@@ -367,6 +502,14 @@ export async function disconnect(
       tokens.refreshToken !== null
     ) {
       await revokeFakturoidAccess(deps.fakturoid, tokens.refreshToken, fetchOption(deps));
+    }
+    if (
+      connection.provider === IDOKLAD_SOURCE &&
+      deps.idoklad !== null &&
+      tokens !== null &&
+      tokens.refreshToken !== null
+    ) {
+      await revokeIdokladAccess(deps.idoklad, tokens.refreshToken, fetchOption(deps));
     }
     try {
       await disconnectConnection(deps.db, who.organizationId, who.connectionId, {

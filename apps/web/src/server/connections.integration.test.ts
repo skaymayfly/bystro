@@ -17,12 +17,15 @@ import { afterAll, describe, expect, it } from "vitest";
 import {
   chooseFakturoidAccount,
   completeFakturoidConnection,
+  completeIdokladConnection,
   ConnectionFlowError,
   disconnect,
   enqueueInitialSync,
   requestManualSync,
   startFakturoidConnection,
+  startIdokladConnection,
   type FlowDeps,
+  type IdokladFlowDeps,
 } from "./connections";
 
 const { db, close } = createDb(readTestDatabase().url);
@@ -83,7 +86,7 @@ function fakeFakturoid(overrides: Partial<FakeFakturoid> = {}) {
   return { state, fetchFn };
 }
 
-function flow(fetchFn: typeof fetch): FlowDeps {
+function flow(fetchFn: typeof fetch): FlowDeps & { idoklad: null } {
   return {
     db,
     encryptionKey: key,
@@ -94,6 +97,64 @@ function flow(fetchFn: typeof fetch): FlowDeps {
       clientSecret: new Secret("client-secret"),
       userAgent: "Bystro (vyvoj@bystro.example)",
     },
+    idoklad: null,
+  };
+}
+
+interface FakeIdoklad {
+  /** HTTP status of GET /Account/CurrentAgenda. */
+  agendaStatus: number;
+  tokenStatus: number;
+  requests: { method: string; url: URL; body: string; authorization: string | null }[];
+}
+
+/** A stand-in for iDoklad's identity server and the one API endpoint the flow calls. */
+function fakeIdoklad(overrides: Partial<FakeIdoklad> = {}) {
+  const state: FakeIdoklad = { agendaStatus: 200, tokenStatus: 200, requests: [], ...overrides };
+  const fetchFn = (async (input: string | URL | Request, init?: RequestInit) => {
+    const url = new URL(String(input));
+    state.requests.push({
+      method: init?.method ?? "GET",
+      url,
+      body: String(init?.body ?? ""),
+      authorization: new Headers(init?.headers).get("authorization"),
+    });
+    if (url.pathname.endsWith("/connect/token")) {
+      return state.tokenStatus === 200
+        ? Response.json({
+            access_token: "idoklad-access-plain",
+            token_type: "Bearer",
+            expires_in: 6000,
+            refresh_token: "idoklad-refresh-plain",
+          })
+        : Response.json({ error: "invalid_grant" }, { status: state.tokenStatus });
+    }
+    if (url.pathname.endsWith("/connect/revocation")) {
+      return new Response(null, { status: 200 });
+    }
+    if (url.pathname.endsWith("/Account/CurrentAgenda")) {
+      return state.agendaStatus === 200
+        ? Response.json({
+            Data: { Id: 4321, Name: "Dvořák Interiéry", Contact: { IdentificationNumber: "1" } },
+            ErrorCode: 0,
+            IsSuccess: true,
+            StatusCode: 200,
+          })
+        : new Response(null, { status: state.agendaStatus });
+    }
+    return new Response(null, { status: 404 });
+  }) as typeof fetch;
+  return { state, fetchFn };
+}
+
+function idokladFlow(fetchFn: typeof fetch): IdokladFlowDeps & { fakturoid: null } {
+  return {
+    db,
+    encryptionKey: key,
+    appBaseUrl: APP_URL,
+    fetch: fetchFn,
+    idoklad: { clientId: "idoklad-client-id", clientSecret: new Secret("idoklad-client-secret") },
+    fakturoid: null,
   };
 }
 
@@ -344,6 +405,166 @@ async function connectedCompany() {
   };
 }
 
+describe("connecting iDoklad", () => {
+  async function startedIdoklad(deps: IdokladFlowDeps, who: Awaited<ReturnType<typeof company>>) {
+    const url = new URL(
+      await startIdokladConnection(deps, {
+        organizationId: who.organization.id,
+        userId: who.userId,
+      }),
+    );
+    return { url, state: url.searchParams.get("state") as string };
+  }
+
+  it("sends the user to iDoklad with scopes, a PKCE challenge and nothing secret", async () => {
+    const { fetchFn } = fakeIdoklad();
+    const who = await company();
+    const { url, state } = await startedIdoklad(idokladFlow(fetchFn), who);
+
+    expect(`${url.origin}${url.pathname}`).toBe(
+      "https://identity.idoklad.cz/server/connect/authorize",
+    );
+    expect(url.searchParams.get("client_id")).toBe("idoklad-client-id");
+    expect(url.searchParams.get("response_type")).toBe("code");
+    expect(url.searchParams.get("scope")).toBe("idoklad_api offline_access");
+    expect(url.searchParams.get("redirect_uri")).toBe(
+      `${APP_URL}/api/integrations/idoklad/callback`,
+    );
+    expect(url.searchParams.get("code_challenge_method")).toBe("S256");
+    expect(url.searchParams.get("code_challenge")).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(state.length).toBeGreaterThan(30);
+    expect(url.toString()).not.toContain("idoklad-client-secret");
+  });
+
+  it("saves the connection with encrypted tokens and the agenda the token belongs to", async () => {
+    const { state: idoklad, fetchFn } = fakeIdoklad();
+    const deps = idokladFlow(fetchFn);
+    const who = await company();
+    const { state } = await startedIdoklad(deps, who);
+
+    const { connection, needsAccountChoice } = await completeIdokladConnection(
+      deps,
+      who,
+      callback(state),
+    );
+
+    expect(needsAccountChoice).toBe(false);
+    expect(connection).toMatchObject({
+      provider: "idoklad",
+      category: "invoicing",
+      status: "connected",
+      externalAccountId: "4321",
+      displayName: "Dvořák Interiéry",
+      scopes: ["idoklad_api", "offline_access"],
+    });
+    expect(JSON.stringify(connection)).not.toMatch(/idoklad-access-plain|idoklad-refresh-plain/);
+    const tokens = await readConnectionTokens(db, who.organization.id, connection.id, key);
+    expect(tokens?.accessToken.reveal()).toBe("idoklad-access-plain");
+    expect(tokens?.refreshToken?.reveal()).toBe("idoklad-refresh-plain");
+
+    // The code is exchanged with the client secret and the PKCE verifier, server to server.
+    const exchange = idoklad.requests.find((request) =>
+      request.url.pathname.endsWith("/connect/token"),
+    );
+    const body = new URLSearchParams(exchange?.body);
+    expect(body.get("grant_type")).toBe("authorization_code");
+    expect(body.get("code")).toBe("auth-code");
+    expect(body.get("client_id")).toBe("idoklad-client-id");
+    expect(body.get("client_secret")).toBe("idoklad-client-secret");
+    expect(body.get("scope")).toBe("idoklad_api offline_access");
+    expect(body.get("code_verifier")).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    const agenda = idoklad.requests.find((request) =>
+      request.url.pathname.endsWith("/Account/CurrentAgenda"),
+    );
+    expect(agenda?.authorization).toBe("Bearer idoklad-access-plain");
+  });
+
+  it("can be connected next to Fakturoid: each has its own connection", async () => {
+    const who = await company();
+    const fakturoidDeps = flow(fakeFakturoid().fetchFn);
+    const first = await started(fakturoidDeps, who);
+    await completeFakturoidConnection(fakturoidDeps, who, callback(first.state));
+
+    const deps = idokladFlow(fakeIdoklad().fetchFn);
+    const second = await startedIdoklad(deps, who);
+    await completeIdokladConnection(deps, who, callback(second.state));
+
+    const connections = await listConnections(db, who.organization.id);
+    expect(connections.map((connection) => connection.provider).sort()).toEqual([
+      "fakturoid",
+      "idoklad",
+    ]);
+    expect(connections.every((connection) => connection.status === "connected")).toBe(true);
+  });
+
+  it("refuses a state from Fakturoid's flow, someone else's or an already used one", async () => {
+    const deps = idokladFlow(fakeIdoklad().fetchFn);
+    const who = await company();
+    const other = await company("Firma B", "25596641");
+
+    // A request started for Fakturoid cannot be finished at iDoklad's callback.
+    const fakturoidState = (await started(flow(fakeFakturoid().fetchFn), who)).state;
+    expect(await flowError(completeIdokladConnection(deps, who, callback(fakturoidState)))).toBe(
+      "invalid_state",
+    );
+
+    const { state } = await startedIdoklad(deps, who);
+    expect(await flowError(completeIdokladConnection(deps, other, callback(state)))).toBe(
+      "invalid_state",
+    );
+    expect(await flowError(completeIdokladConnection(deps, who, callback("made-up")))).toBe(
+      "invalid_state",
+    );
+    await completeIdokladConnection(deps, who, callback(state));
+    expect(await flowError(completeIdokladConnection(deps, who, callback(state)))).toBe(
+      "invalid_state",
+    );
+    expect(await listConnections(db, other.organization.id)).toHaveLength(0);
+  });
+
+  it("stores nothing when the user says no or iDoklad gives no tokens", async () => {
+    const who = await company();
+    const refusing = idokladFlow(fakeIdoklad({ tokenStatus: 400 }).fetchFn);
+
+    const denied = await startedIdoklad(refusing, who);
+    expect(
+      await flowError(
+        completeIdokladConnection(
+          refusing,
+          who,
+          callback(denied.state, { code: null, error: "access_denied" }),
+        ),
+      ),
+    ).toBe("denied");
+
+    const failed = await startedIdoklad(refusing, who);
+    expect(await flowError(completeIdokladConnection(refusing, who, callback(failed.state)))).toBe(
+      "provider_unavailable",
+    );
+    expect(await listConnections(db, who.organization.id)).toHaveLength(0);
+  });
+
+  it("gives the access back when the plan at iDoklad does not allow the API", async () => {
+    for (const [agendaStatus, code] of [
+      [402, "account_blocked"],
+      [500, "provider_unavailable"],
+    ] as const) {
+      const { state: idoklad, fetchFn } = fakeIdoklad({ agendaStatus });
+      const deps = idokladFlow(fetchFn);
+      const who = await company();
+      const { state } = await startedIdoklad(deps, who);
+
+      expect(await flowError(completeIdokladConnection(deps, who, callback(state)))).toBe(code);
+
+      expect(await listConnections(db, who.organization.id)).toHaveLength(0);
+      const revocation = idoklad.requests.find((request) =>
+        request.url.pathname.endsWith("/connect/revocation"),
+      );
+      expect(new URLSearchParams(revocation?.body).get("token")).toBe("idoklad-refresh-plain");
+    }
+  });
+});
+
 describe("requestManualSync", () => {
   it("enqueues one sync and then makes the user wait five minutes", async () => {
     const { organizationId, connectionId } = await connectedCompany();
@@ -447,6 +668,43 @@ describe("disconnect", () => {
       await disconnect({ ...deps, fetch: offline }, { organizationId, connectionId, userId }),
     ).toBe(true);
     expect(await readConnectionTokens(db, organizationId, connectionId, key)).toBeNull();
+  });
+
+  it("revokes the access at iDoklad when an iDoklad connection is disconnected", async () => {
+    const { state: idoklad, fetchFn } = fakeIdoklad();
+    const deps = idokladFlow(fetchFn);
+    const who = await company();
+    const url = new URL(
+      await startIdokladConnection(deps, {
+        organizationId: who.organization.id,
+        userId: who.userId,
+      }),
+    );
+    const { connection } = await completeIdokladConnection(
+      deps,
+      who,
+      callback(url.searchParams.get("state")),
+    );
+    const where = { organizationId: who.organization.id, connectionId: connection.id };
+    await upsertInvoices(db, where, [{ ...invoice, source: "idoklad", externalId: "invoice-1" }]);
+    idoklad.requests.length = 0;
+
+    expect(await disconnect(deps, { ...where, userId: who.userId })).toBe(true);
+
+    expect(idoklad.requests.map((request) => request.url.pathname)).toEqual([
+      "/server/connect/revocation",
+    ]);
+    expect(Object.fromEntries(new URLSearchParams(idoklad.requests[0]?.body))).toMatchObject({
+      token: "idoklad-refresh-plain",
+      token_type_hint: "refresh_token",
+    });
+    expect(
+      await readConnectionTokens(db, where.organizationId, where.connectionId, key),
+    ).toBeNull();
+    expect((await getConnection(db, where.organizationId, where.connectionId))?.status).toBe(
+      "revoked",
+    );
+    expect(await listInvoices(db, where.organizationId)).toHaveLength(0);
   });
 
   it("cannot touch a connection of another company", async () => {

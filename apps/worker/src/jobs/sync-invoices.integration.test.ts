@@ -230,6 +230,27 @@ describe("syncInvoicesHandler", () => {
     expect(await statusOf(organizationId, connectionId)).toBe("connected");
   });
 
+  it("stores the new refresh token of a provider that rotates them", async () => {
+    const { data, organizationId, connectionId } = await connected({
+      expiresAt: new Date("2026-10-11T08:02:00Z"),
+    });
+    // iDoklad: every token response carries a new refresh token; the old one stops working.
+    const fetchFn = (async () =>
+      Response.json({
+        access_token: "access-new",
+        token_type: "Bearer",
+        expires_in: 6000,
+        refresh_token: "refresh-rotated",
+      })) as typeof fetch;
+
+    await run(data, { fetch: fetchFn });
+
+    const stored = await readConnectionTokens(db, organizationId, connectionId, key);
+    expect(stored?.accessToken.reveal()).toBe("access-new");
+    expect(stored?.refreshToken?.reveal()).toBe("refresh-rotated");
+    expect(stored?.expiresAt).toEqual(new Date("2026-10-11T09:40:00Z"));
+  });
+
   it("asks the user to reconnect when the provider rejects the refresh token", async () => {
     const { data, organizationId, connectionId } = await connected({
       expiresAt: new Date("2026-10-11T07:00:00Z"),

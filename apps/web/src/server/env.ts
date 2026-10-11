@@ -1,5 +1,9 @@
 import { Secret } from "@bystro/core";
-import { fakturoidUserAgent, type FakturoidAppCredentials } from "@bystro/integrations";
+import {
+  fakturoidUserAgent,
+  type FakturoidAppCredentials,
+  type IdokladAppCredentials,
+} from "@bystro/integrations";
 
 /** Thrown for missing or invalid web configuration. The message never contains the value. */
 export class WebEnvError extends Error {
@@ -95,6 +99,39 @@ export function readFakturoidEnv(env: Env = process.env): FakturoidAppCredential
     clientSecret: new Secret(clientSecret),
     userAgent,
     ...(baseUrl === undefined ? {} : { baseUrl }),
+  };
+}
+
+/**
+ * iDoklad OAuth application (registered at developer.idoklad.cz), or `null` when it is not
+ * configured: the app then shows iDoklad as not available yet. Setting only one of the two
+ * variables is an error. IDOKLAD_BASE_URL and IDOKLAD_IDENTITY_BASE_URL exist for E2E tests
+ * only (a local stand-in for the API and the identity server).
+ */
+export function readIdokladEnv(env: Env = process.env): IdokladAppCredentials | null {
+  const clientId = optional(env, "IDOKLAD_CLIENT_ID");
+  const clientSecret = optional(env, "IDOKLAD_CLIENT_SECRET");
+  if (clientId === undefined && clientSecret === undefined) {
+    return null;
+  }
+  if (clientId === undefined || clientSecret === undefined) {
+    throw new WebEnvError("Set both IDOKLAD_CLIENT_ID and IDOKLAD_CLIENT_SECRET, or neither.");
+  }
+  const baseUrl = optional(env, "IDOKLAD_BASE_URL");
+  const identityBaseUrl = optional(env, "IDOKLAD_IDENTITY_BASE_URL");
+  for (const [name, value] of [
+    ["IDOKLAD_BASE_URL", baseUrl],
+    ["IDOKLAD_IDENTITY_BASE_URL", identityBaseUrl],
+  ] as const) {
+    if (value !== undefined && !URL.canParse(value)) {
+      throw new WebEnvError(`${name} must be a URL.`);
+    }
+  }
+  return {
+    clientId,
+    clientSecret: new Secret(clientSecret),
+    ...(baseUrl === undefined ? {} : { baseUrl }),
+    ...(identityBaseUrl === undefined ? {} : { identityBaseUrl }),
   };
 }
 

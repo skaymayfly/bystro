@@ -23,6 +23,7 @@ import {
   parseSort,
   SORT_OPTIONS,
 } from "@/lib/invoice-labels";
+import { describeInvoicingSources } from "@/lib/invoicing-providers";
 import { initials } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 import { requireRequestContext } from "@/server/context";
@@ -45,12 +46,13 @@ interface Stat {
 /** Faktury: the prototype's list with sums, filters, search and sorting. */
 export default async function InvoicesPage(props: PageProps<"/app/faktury">) {
   const { organization } = await requireRequestContext();
-  const { fakturoid, fakturoidAvailable } =
+  const { invoicing, invoicingAvailable } =
     organization === null
-      ? { fakturoid: null, fakturoidAvailable: false }
+      ? { invoicing: [], invoicingAvailable: false }
       : await loadConnections(organization.id);
+  const sources = describeInvoicingSources(invoicing);
 
-  if (organization === null || fakturoid === null) {
+  if (organization === null || sources === null) {
     return (
       <div className="flex flex-col gap-[22px]">
         <PageHeader title="Faktury" text="Fakturace není propojená" />
@@ -60,7 +62,7 @@ export default async function InvoicesPage(props: PageProps<"/app/faktury">) {
           text="Propoj svůj fakturační systém. Načtu faktury za poslední rok a začnu hlídat splatnosti."
         >
           <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-            <InvoicingCta available={fakturoidAvailable} />
+            <InvoicingCta available={invoicingAvailable} />
           </div>
         </ScreenEmpty>
       </div>
@@ -71,20 +73,20 @@ export default async function InvoicesPage(props: PageProps<"/app/faktury">) {
   const { rows, summary } = await loadInvoiceOverview(organization.id, now);
 
   if (rows.length === 0) {
-    const loading = fakturoid.lastSyncAt === null;
+    const { loading } = sources;
     return (
       <div className="flex flex-col gap-[22px]">
-        <PageHeader title="Faktury" text="Fakturoid je propojený" />
+        <PageHeader title="Faktury" text={sources.connected} />
         <ScreenEmpty
           icon={<FileText aria-hidden size={28} strokeWidth={1.6} />}
-          title={loading ? "Faktury se načítají" : "Ve Fakturoidu zatím žádné faktury nevidím"}
+          title={loading ? "Faktury se načítají" : `${sources.inside} zatím žádné faktury nevidím`}
           text={
             loading
-              ? "Fakturoid je propojený a faktury z něj právě stahuju. Za chvíli stránku obnov."
+              ? `${sources.connected} a faktury právě stahuju. Za chvíli stránku obnov.`
               : "Načítám faktury vystavené za poslední rok. Jakmile nějakou vystavíš, do hodiny se tu objeví."
           }
         />
-        <SourceNote lastSyncAt={fakturoid.lastSyncAt} now={now} />
+        <SourceNote source={sources.names} lastSyncAt={sources.lastSyncAt} now={now} />
       </div>
     );
   }
@@ -270,7 +272,7 @@ export default async function InvoicesPage(props: PageProps<"/app/faktury">) {
       </Card>
 
       <div className="flex flex-col gap-1">
-        <SourceNote lastSyncAt={fakturoid.lastSyncAt} now={now} />
+        <SourceNote source={sources.names} lastSyncAt={sources.lastSyncAt} now={now} />
         {summary.otherCurrencyCount > 0 && (
           <p className="text-xs text-ink-3">
             {invoiceCountLabel(summary.otherCurrencyCount)} v jiné měně do součtů v korunách

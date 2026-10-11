@@ -9,6 +9,7 @@ import {
   type ConnectionSummary,
   type ConnectionTone,
 } from "@/lib/connection-status";
+import { parseInvoicingProvider } from "@/lib/invoicing-providers";
 import { cn } from "@/lib/utils";
 
 import { ConnectForm, type ConnectReturnTarget } from "./connect-form";
@@ -21,6 +22,7 @@ export interface ConnectionItem extends ConnectionSummary {
 
 const PROVIDER_NAMES: Record<string, { name: string; category: string }> = {
   fakturoid: { name: "Fakturoid", category: "Fakturace" },
+  idoklad: { name: "iDoklad", category: "Fakturace" },
 };
 
 const TONE_CLASSES: Record<ConnectionTone, string> = {
@@ -138,6 +140,7 @@ export function ConnectionsList({
           category: "Aplikace",
         };
         const state = describeConnection(connection, now);
+        const reconnect = parseInvoicingProvider(connection.provider);
         const canSync =
           !connection.needsAccount &&
           (connection.status === "connected" ||
@@ -176,8 +179,13 @@ export function ConnectionsList({
                   Aktualizovat
                 </Button>
               )}
-              {connection.status === "reauth_required" && (
-                <ConnectForm returnTo={returnTo} label="Znovu připojit" size="sm" />
+              {connection.status === "reauth_required" && reconnect !== null && (
+                <ConnectForm
+                  provider={reconnect}
+                  returnTo={returnTo}
+                  label="Znovu připojit"
+                  size="sm"
+                />
               )}
               <Button
                 variant="outline"

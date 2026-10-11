@@ -57,6 +57,8 @@ export interface Provider {
   color: string;
   /** Official logo shown instead of the letter mark, where we have one and may use it. */
   logo?: "fakturoid";
+  /** Set for applications that can be connected: the id of their connection flow. */
+  connect?: "fakturoid" | "idoklad";
 }
 
 /** Provider tiles of the prototype's app picker, in its order. */
@@ -69,8 +71,15 @@ export const PROVIDERS: readonly Provider[] = [
   { name: "ČSOB", mark: "Č", background: "#0D3B85", color: "#FFFFFF" },
   { name: "Komerční banka", mark: "KB", background: "#E2001A", color: "#FFFFFF" },
   { name: "Air Bank", mark: "A", background: "#7AB929", color: "#0B1A00" },
-  { name: "Fakturoid", mark: "F", background: "#19B394", color: "#FFFFFF", logo: "fakturoid" },
-  { name: "iDoklad", mark: "iD", background: "#0A6CFF", color: "#FFFFFF" },
+  {
+    name: "Fakturoid",
+    mark: "F",
+    background: "#19B394",
+    color: "#FFFFFF",
+    logo: "fakturoid",
+    connect: "fakturoid",
+  },
+  { name: "iDoklad", mark: "iD", background: "#0A6CFF", color: "#FFFFFF", connect: "idoklad" },
   { name: "Pohoda", mark: "P", background: "#F2C200", color: "#1A1400" },
   { name: "Pipedrive", mark: "P", background: "#111111", color: "#FFFFFF" },
   { name: "Raynet", mark: "R", background: "#F29100", color: "#1A0F00" },

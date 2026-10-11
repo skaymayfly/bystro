@@ -1,11 +1,17 @@
 import { syncInvoicesJob } from "@bystro/core";
 import { readEncryptionKey, type IntegrationConnection } from "@bystro/db";
-import type { FakturoidAppCredentials } from "@bystro/integrations";
+import type { FakturoidAppCredentials, IdokladAppCredentials } from "@bystro/integrations";
 import { createProducerConnection, createQueues, enqueue, type Queues } from "@bystro/queue";
 
-import type { EnqueueSync, FlowDeps } from "./connections";
+import type { EnqueueSync, FlowDeps, IdokladFlowDeps } from "./connections";
 import { getDb } from "./db";
-import { readAuthEnv, readFakturoidEnv, readQueuePrefix, readRedisUrl } from "./env";
+import {
+  readAuthEnv,
+  readFakturoidEnv,
+  readIdokladEnv,
+  readQueuePrefix,
+  readRedisUrl,
+} from "./env";
 
 /** Runtime wiring of the connection flows: configuration, database and job queue. */
 
@@ -38,6 +44,25 @@ export function getFakturoidFlow(): FlowDeps | null {
     db: getDb(),
     encryptionKey: readEncryptionKey(),
     fakturoid,
+    appBaseUrl: readAuthEnv().baseUrl,
+  };
+}
+
+/** The configured iDoklad application, or `null` when this environment has none. */
+export function getIdoklad(): IdokladAppCredentials | null {
+  return readIdokladEnv();
+}
+
+/** Everything the iDoklad connection flow needs, or `null` when iDoklad is not configured. */
+export function getIdokladFlow(): IdokladFlowDeps | null {
+  const idoklad = getIdoklad();
+  if (idoklad === null) {
+    return null;
+  }
+  return {
+    db: getDb(),
+    encryptionKey: readEncryptionKey(),
+    idoklad,
     appBaseUrl: readAuthEnv().baseUrl,
   };
 }

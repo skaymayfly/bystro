@@ -1,6 +1,10 @@
+import { providerWording, type ProviderWording } from "./invoicing-providers";
+
 /** Texts for the state of a connection, as shown in Nastavení → Propojení. No I/O. */
 
 export interface ConnectionSummary {
+  /** Provider id, e.g. `fakturoid`; decides how the texts name the application. */
+  provider?: string;
   status: "connected" | "syncing" | "degraded" | "reauth_required" | "revoked" | "error";
   needsAccount: boolean;
   lastSyncAt: string | null;
@@ -44,18 +48,36 @@ export function relativeTime(then: Date, now: Date): string {
 /** The first load normally takes seconds; after this long something is wrong. */
 const FIRST_LOAD_PATIENCE_MS = 3 * MINUTE;
 
-const ERROR_TEXTS: Record<string, string> = {
-  provider_not_configured:
-    "Načítání z Fakturoidu u nás zatím není zapnuté. Dáme to do pořádku; kdyby to trvalo, napiš nám.",
-  credentials_missing: "Chybí mi přístup k Fakturoidu. Odpoj ho prosím a připoj znovu.",
-  account_blocked: "Fakturoid má tvůj účet zablokovaný. Vyřeš to u nich a pak dej Aktualizovat.",
-  forbidden: "Tvůj účet ve Fakturoidu mi nedovolí číst faktury.",
-};
+/** iDoklad answers this way when the user's plan does not include the API. */
+const blockedText = (provider: string | undefined, app: ProviderWording) =>
+  provider === "idoklad"
+    ? "iDoklad mi teď nedovolí číst data: tvůj tarif u nich vypršel nebo nestačí. Vyřeš to u nich a pak dej Aktualizovat."
+    : `${app.name} má tvůj účet zablokovaný. Vyřeš to u nich a pak dej Aktualizovat.`;
+
+function errorText(
+  code: string | null,
+  provider: string | undefined,
+  app: ProviderWording,
+): string | undefined {
+  switch (code) {
+    case "provider_not_configured":
+      return `Načítání z ${app.of} u nás zatím není zapnuté. Dáme to do pořádku; kdyby to trvalo, napiš nám.`;
+    case "credentials_missing":
+      return `Chybí mi přístup k ${app.of}. Odpoj ho prosím a připoj znovu.`;
+    case "account_blocked":
+      return blockedText(provider, app);
+    case "forbidden":
+      return `Tvůj účet ${app.inside} mi nedovolí číst faktury.`;
+    default:
+      return undefined;
+  }
+}
 
 export function describeConnection(
   connection: ConnectionSummary,
   now: Date,
 ): ConnectionDescription {
+  const app = providerWording(connection.provider);
   const updated =
     connection.lastSyncAt === null
       ? null
@@ -65,7 +87,7 @@ export function describeConnection(
     return {
       tone: "warn",
       label: "Vyber účet",
-      text: "Máš u Fakturoidu víc účtů. Vyber, který mám číst.",
+      text: `Máš u ${app.of} víc účtů. Vyber, který mám číst.`,
       busy: false,
     };
   }
@@ -95,7 +117,7 @@ export function describeConnection(
         label: "Připojeno",
         text:
           connection.lastErrorCode === "rate_limited"
-            ? "Fakturoid teď nepřijímá další dotazy. Zkusím to za chvíli."
+            ? `${app.name} teď nepřijímá další dotazy. Zkusím to za chvíli.`
             : "Poslední aktualizace se nepovedla. Zkusím to znovu.",
         busy: false,
       };
@@ -103,7 +125,7 @@ export function describeConnection(
       return {
         tone: "error",
         label: "Je potřeba znovu připojit",
-        text: "Fakturoid mi přestal dávat přístup. Připoj ho prosím znovu.",
+        text: `${app.name} mi přestal dávat přístup. Připoj ho prosím znovu.`,
         busy: false,
       };
     case "error":
@@ -111,7 +133,7 @@ export function describeConnection(
         tone: "error",
         label: "Něco se nepovedlo",
         text:
-          ERROR_TEXTS[connection.lastErrorCode ?? ""] ??
+          errorText(connection.lastErrorCode, connection.provider, app) ??
           "Zkus to prosím později. Kdyby to trvalo, napiš nám.",
         busy: false,
       };
@@ -120,15 +142,42 @@ export function describeConnection(
   }
 }
 
-/** Sentence shown after coming back from the provider; keyed by the `propojeni` query value. */
-export const CONNECT_OUTCOME_TEXTS: Record<string, { tone: "ok" | "error"; text: string }> = {
-  ok: { tone: "ok", text: "Fakturoid je propojený. Faktury načtu během chvilky." },
-  "vybrat-ucet": { tone: "ok", text: "Skoro hotovo. Ještě vyber, který účet mám číst." },
-  zamitnuto: { tone: "error", text: "Propojení jsi nepovolil, takže nic nečtu." },
-  neplatne: { tone: "error", text: "Tenhle odkaz už neplatí. Zkus to prosím znovu." },
-  nedostupne: { tone: "error", text: "Fakturoid teď neodpovídá. Zkus to prosím za chvíli." },
-  "bez-uctu": {
-    tone: "error",
-    text: "U Fakturoidu jsem nenašel účet, ze kterého můžu číst faktury.",
-  },
-};
+export interface ConnectOutcomeNotice {
+  tone: "ok" | "error";
+  text: string;
+}
+
+/**
+ * Sentence shown after coming back from the provider, by the `propojeni` and `aplikace`
+ * query values. `null` for an outcome that does not exist.
+ */
+export function connectOutcomeNotice(
+  outcome: string | undefined,
+  provider: string | undefined,
+): ConnectOutcomeNotice | null {
+  const app = providerWording(provider);
+  switch (outcome) {
+    case "ok":
+      return { tone: "ok", text: `${app.name} je propojený. Faktury načtu během chvilky.` };
+    case "vybrat-ucet":
+      return { tone: "ok", text: "Skoro hotovo. Ještě vyber, který účet mám číst." };
+    case "zamitnuto":
+      return { tone: "error", text: "Propojení jsi nepovolil, takže nic nečtu." };
+    case "neplatne":
+      return { tone: "error", text: "Tenhle odkaz už neplatí. Zkus to prosím znovu." };
+    case "nedostupne":
+      return { tone: "error", text: `${app.name} teď neodpovídá. Zkus to prosím za chvíli.` };
+    case "bez-uctu":
+      return {
+        tone: "error",
+        text: `U ${app.of} jsem nenašel účet, ze kterého můžu číst faktury.`,
+      };
+    case "tarif":
+      return {
+        tone: "error",
+        text: `${app.name} mi nedovolí číst data: tvůj tarif u nich vypršel nebo nestačí. Vyřeš to u nich a zkus to znovu.`,
+      };
+    default:
+      return null;
+  }
+}
