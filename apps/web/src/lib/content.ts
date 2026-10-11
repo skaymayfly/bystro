@@ -55,6 +55,8 @@ export interface Provider {
   mark: string;
   background: string;
   color: string;
+  /** Official logo shown instead of the letter mark, where we have one and may use it. */
+  logo?: "fakturoid";
 }
 
 /** Provider tiles of the prototype's app picker, in its order. */
@@ -67,7 +69,7 @@ export const PROVIDERS: readonly Provider[] = [
   { name: "ČSOB", mark: "Č", background: "#0D3B85", color: "#FFFFFF" },
   { name: "Komerční banka", mark: "KB", background: "#E2001A", color: "#FFFFFF" },
   { name: "Air Bank", mark: "A", background: "#7AB929", color: "#0B1A00" },
-  { name: "Fakturoid", mark: "F", background: "#19B394", color: "#FFFFFF" },
+  { name: "Fakturoid", mark: "F", background: "#19B394", color: "#FFFFFF", logo: "fakturoid" },
   { name: "iDoklad", mark: "iD", background: "#0A6CFF", color: "#FFFFFF" },
   { name: "Pohoda", mark: "P", background: "#F2C200", color: "#1A1400" },
   { name: "Pipedrive", mark: "P", background: "#111111", color: "#FFFFFF" },
