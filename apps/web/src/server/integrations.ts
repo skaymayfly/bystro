@@ -52,6 +52,7 @@ export interface ConnectionView {
   needsAccount: boolean;
   lastSyncAt: string | null;
   lastErrorCode: string | null;
+  updatedAt: string | null;
 }
 
 export function toConnectionView(connection: IntegrationConnection): ConnectionView {
@@ -63,5 +64,6 @@ export function toConnectionView(connection: IntegrationConnection): ConnectionV
     needsAccount: connection.externalAccountId === null && connection.status !== "revoked",
     lastSyncAt: connection.lastSyncAt?.toISOString() ?? null,
     lastErrorCode: connection.lastErrorCode,
+    updatedAt: connection.updatedAt.toISOString(),
   };
 }

@@ -345,11 +345,18 @@ describe("syncInvoicesHandler", () => {
     expect(await listInvoices(db, organizationId)).toHaveLength(2);
   });
 
-  it("fails for good without touching the status when it cannot even start", async () => {
+  it("shows on the connection that the sync could not even start", async () => {
     const unconfigured = await connected();
     await expect(run(unconfigured.data, { setup: null })).rejects.toMatchObject({
       code: "provider_not_configured",
     });
+    // Not left as "connected, waiting for the first load" forever.
+    expect(
+      await getConnection(db, unconfigured.organizationId, unconfigured.connectionId),
+    ).toMatchObject({ status: "error", lastErrorCode: "provider_not_configured" });
+
+    // Once the provider is configured, the next run recovers.
+    await run(unconfigured.data);
     expect(await statusOf(unconfigured.organizationId, unconfigured.connectionId)).toBe(
       "connected",
     );
