@@ -6,8 +6,11 @@ import Link from "next/link";
 import { Panel, PanelEmpty, SoonBadge } from "@/components/bits";
 import { loadConnections } from "@/components/connections/connections-tab";
 import { InvoicingCta } from "@/components/connections/invoicing-cta";
+import { OverduePanel } from "@/components/invoices/overdue-panel";
 import { Button } from "@/components/ui/button";
+import { overdueSentence } from "@/lib/invoice-labels";
 import { requireRequestContext } from "@/server/context";
+import { loadInvoiceOverview } from "@/server/invoices";
 
 export const metadata: Metadata = { title: "Přehled – Bystro" };
 
@@ -24,6 +27,10 @@ export default async function DashboardPage() {
     organization === null
       ? { fakturoid: null, fakturoidAvailable: false }
       : await loadConnections(organization.id);
+  const invoices =
+    organization === null || fakturoid === null
+      ? null
+      : await loadInvoiceOverview(organization.id, now);
 
   return (
     <div className="flex max-w-[1240px] flex-col">
@@ -33,7 +40,9 @@ export default async function DashboardPage() {
       </p>
       <h1 className="mt-2.5 text-[30px] font-semibold tracking-[-0.025em]">Přehled</h1>
       <p className="mt-2 text-base leading-normal text-ink-3">
-        E-mail zatím nevidím, faktury nevidím a banku taky ne.
+        E-mail zatím nevidím,{" "}
+        {invoices === null ? "faktury nevidím" : overdueSentence(invoices.summary.overdue.count)} a
+        banku taky ne.
       </p>
 
       <div className="mt-7 flex flex-wrap items-stretch gap-4">
@@ -79,7 +88,7 @@ export default async function DashboardPage() {
             </Link>
           }
         >
-          {fakturoid === null ? (
+          {fakturoid === null || invoices === null ? (
             <PanelEmpty
               title="Faktury zatím nevidím"
               text="Propoj Fakturoid, iDoklad nebo Pohodu a pohlídám ti splatnosti."
@@ -87,9 +96,11 @@ export default async function DashboardPage() {
               <InvoicingCta available={fakturoidAvailable} size="sm" />
             </PanelEmpty>
           ) : (
-            <PanelEmpty
-              title="Fakturace je propojená"
-              text="Faktury z Fakturoidu načítám na pozadí. Přehled splatností sem brzy přidáme."
+            <OverduePanel
+              rows={invoices.rows}
+              summary={invoices.summary}
+              lastSyncAt={fakturoid.lastSyncAt}
+              now={now}
             />
           )}
         </Panel>

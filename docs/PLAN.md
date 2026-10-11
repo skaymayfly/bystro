@@ -246,7 +246,7 @@ Výsledek fáze: uživatel připojí Fakturoid nebo iDoklad a vidí své skuteč
 
 **Hotovo když:** E2E s mockovaným OAuth serverem: připojení → stav → odpojení; po odpojení v DB nejsou tokeny.
 
-### - [ ] 2.7 Obrazovka Faktury a karta na Přehledu
+### - [x] 2.7 Obrazovka Faktury a karta na Přehledu
 
 **Cíl:** uživatel vidí své faktury.
 
