@@ -426,7 +426,7 @@ describe("connecting iDoklad", () => {
     return { url, state: url.searchParams.get("state") as string };
   }
 
-  it("sends the user to iDoklad with scopes, a PKCE challenge and nothing secret", async () => {
+  it("sends the user to iDoklad with scopes, a state and nothing secret", async () => {
     const { fetchFn } = fakeIdoklad();
     const who = await company();
     const { url, state } = await startedIdoklad(idokladFlow(fetchFn), who);
@@ -440,8 +440,8 @@ describe("connecting iDoklad", () => {
     expect(url.searchParams.get("redirect_uri")).toBe(
       `${APP_URL}/api/integrations/idoklad/callback`,
     );
-    expect(url.searchParams.get("code_challenge_method")).toBe("S256");
-    expect(url.searchParams.get("code_challenge")).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    // No PKCE: iDoklad refuses it for applications with the plain AuthorizationCode flow.
+    expect(url.searchParams.has("code_challenge")).toBe(false);
     expect(state.length).toBeGreaterThan(30);
     expect(url.toString()).not.toContain("idoklad-client-secret");
   });
@@ -472,7 +472,8 @@ describe("connecting iDoklad", () => {
     expect(tokens?.accessToken.reveal()).toBe("idoklad-access-plain");
     expect(tokens?.refreshToken?.reveal()).toBe("idoklad-refresh-plain");
 
-    // The code is exchanged with the client secret and the PKCE verifier, server to server.
+    // The code is exchanged with the client secret, server to server, and without a
+    // PKCE verifier (iDoklad answers invalid_grant to one).
     const exchange = idoklad.requests.find((request) =>
       request.url.pathname.endsWith("/connect/token"),
     );
@@ -482,7 +483,8 @@ describe("connecting iDoklad", () => {
     expect(body.get("client_id")).toBe("idoklad-client-id");
     expect(body.get("client_secret")).toBe("idoklad-client-secret");
     expect(body.get("scope")).toBe("idoklad_api offline_access");
-    expect(body.get("code_verifier")).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(body.has("code_verifier")).toBe(false);
+    expect(body.get("redirect_uri")).toBe(`${APP_URL}/api/integrations/idoklad/callback`);
     const agenda = idoklad.requests.find((request) =>
       request.url.pathname.endsWith("/Account/CurrentAgenda"),
     );

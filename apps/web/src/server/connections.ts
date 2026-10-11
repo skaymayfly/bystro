@@ -143,7 +143,10 @@ export async function startFakturoidConnection(
   );
 }
 
-/** Remembers an authorization request (with its PKCE verifier, encrypted) and returns its URL. */
+/**
+ * Remembers an authorization request (with its PKCE verifier, encrypted, for providers that
+ * use PKCE) and returns its URL.
+ */
 async function startAuthorization(
   deps: BaseFlowDeps,
   config: OAuthProviderConfig,
@@ -293,7 +296,7 @@ async function finishAuthorization(
 
 /**
  * Starts connecting iDoklad: remembers the request on the server (a hash of the `state`
- * and the encrypted PKCE verifier) and returns the address at iDoklad's identity server.
+ * only) and returns the address at iDoklad's identity server.
  */
 export async function startIdokladConnection(
   deps: IdokladFlowDeps,

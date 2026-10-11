@@ -136,8 +136,8 @@ test("iDoklad jde připojit vedle Fakturoidu a odpojit zvlášť", async ({ page
   // Nothing else is connected, so there is nothing to warn about.
   await expect(page.getByText("počítal dvakrát")).toHaveCount(0);
 
-  // Off to (the stand-in for) iDoklad and back. The stand-in gives tokens only for a
-  // request with a PKCE challenge and the matching verifier.
+  // Off to (the stand-in for) iDoklad and back. Like the real server, the stand-in gives
+  // tokens only once per code and refuses a request with a PKCE verifier.
   await page.getByRole("button", { name: "Propojit" }).click();
   await expect(page).toHaveURL("/app/nastaveni?karta=propojeni&propojeni=ok&aplikace=idoklad");
   await expect(page.getByText("iDoklad je propojený. Faktury načtu během chvilky.")).toBeVisible();

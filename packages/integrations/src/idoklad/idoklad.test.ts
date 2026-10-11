@@ -167,7 +167,7 @@ const errorCode = (map: () => unknown) => {
 };
 
 describe("idokladOAuthConfig", () => {
-  it("follows the documented authorization code flow, with PKCE", () => {
+  it("follows the documented authorization code flow, without PKCE", () => {
     const config = idokladOAuthConfig(CREDENTIALS);
 
     expect(config.authorizationEndpoint).toBe(
@@ -175,7 +175,7 @@ describe("idokladOAuthConfig", () => {
     );
     expect(config.tokenEndpoint).toBe("https://identity.idoklad.cz/server/connect/token");
     expect(config.clientAuthentication).toBe("body");
-    expect(config.pkce).toBe("S256");
+    expect(config.pkce).toBe("none");
 
     const redirectUri = "https://bystro.example/api/integrations/idoklad/callback";
     const request = createAuthorizationRequest(config, {
@@ -185,7 +185,12 @@ describe("idokladOAuthConfig", () => {
     const url = new URL(request.url);
     expect(url.searchParams.get("scope")).toBe("idoklad_api offline_access");
     expect(url.searchParams.get("response_type")).toBe("code");
-    expect(url.searchParams.get("code_challenge_method")).toBe("S256");
+    // iDoklad refuses the token request of a plain "AuthorizationCode" application
+    // when PKCE is used.
+    expect(url.searchParams.has("code_challenge")).toBe(false);
+    expect(url.searchParams.has("code_challenge_method")).toBe(false);
+    expect(request.codeVerifier).toBeNull();
+    expect(url.searchParams.get("state")?.length).toBeGreaterThan(30);
     expect(request.url).not.toContain("client-secret-plaintext");
   });
 
