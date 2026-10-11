@@ -111,15 +111,6 @@ export function syncInvoicesHandler(deps: SyncInvoicesDeps): JobHandler<SyncInvo
       return;
     }
 
-    const setup = deps.resolveProvider(connection);
-    if (setup === null) {
-      throw new PermanentJobError("provider_not_configured");
-    }
-    const tokens = await readConnectionTokens(db, organizationId, connectionId, deps.encryptionKey);
-    if (tokens === null) {
-      throw new PermanentJobError("credentials_missing");
-    }
-
     if (connection.status === "syncing") {
       const startedAt = connection.lastSyncStartedAt?.getTime() ?? 0;
       if (now().getTime() - startedAt < STALE_SYNC_MS) {
@@ -135,6 +126,19 @@ export function syncInvoicesHandler(deps: SyncInvoicesDeps): JobHandler<SyncInvo
 
     const fail = (event: "sync_degraded" | "sync_failed" | "auth_failed", errorCode: string) =>
       applyConnectionEvent(db, organizationId, connectionId, event, { ...SYSTEM, errorCode });
+
+    // Checked after the sync is marked as started, so that a sync which cannot even begin
+    // shows on the connection as an error instead of leaving it "waiting" forever.
+    const setup = deps.resolveProvider(connection);
+    if (setup === null) {
+      await fail("sync_failed", "provider_not_configured");
+      throw new PermanentJobError("provider_not_configured");
+    }
+    const tokens = await readConnectionTokens(db, organizationId, connectionId, deps.encryptionKey);
+    if (tokens === null) {
+      await fail("sync_failed", "credentials_missing");
+      throw new PermanentJobError("credentials_missing");
+    }
 
     try {
       const current = await freshTokens(connection, setup, tokens);

@@ -21,6 +21,7 @@ const connection = (overrides: Partial<ConnectionSummary> = {}): ConnectionSumma
   needsAccount: false,
   lastSyncAt: "2026-10-11T07:48:00Z",
   lastErrorCode: null,
+  updatedAt: "2026-10-11T07:59:30Z",
   ...overrides,
 });
 
@@ -56,6 +57,24 @@ describe("describeConnection", () => {
       label: "Čekám na první načtení",
       busy: true,
     });
+  });
+
+  it("stops pretending to wait when the first load takes too long", () => {
+    const late = describeConnection(
+      connection({ lastSyncAt: null, updatedAt: "2026-10-11T07:50:00Z" }),
+      NOW,
+    );
+    expect(late).toMatchObject({ tone: "warn", label: "Načtení se zdrželo", busy: false });
+    expect(late.text).toContain("Aktualizovat");
+  });
+
+  it("explains a sync that could not start", () => {
+    expect(
+      describeConnection(
+        connection({ status: "error", lastErrorCode: "provider_not_configured" }),
+        NOW,
+      ).text,
+    ).toContain("zatím není zapnuté");
   });
 
   it("asks for an account before anything else", () => {

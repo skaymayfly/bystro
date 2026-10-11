@@ -18,7 +18,12 @@ import {
   startWorkers,
   type Workers,
 } from "./processing";
-import { enqueue, registerSchedules } from "@bystro/queue";
+import {
+  enqueue,
+  readWorkerHeartbeat,
+  registerSchedules,
+  writeWorkerHeartbeat,
+} from "@bystro/queue";
 import { createRateLimiter } from "./rate-limiter";
 import { createTestQueues, eventually, silentLogger, type TestQueues } from "./test/redis";
 
@@ -247,6 +252,22 @@ describe("rate limiter", () => {
     for (const jobId of ids) {
       expect((await test.queues.processed.sync.getJob(jobId))?.attemptsMade).toBe(1);
     }
+  });
+});
+
+describe("worker heartbeat", () => {
+  it("is absent until a worker beats, then says when it last did", async () => {
+    const { connection, prefix } = test.queues;
+    expect(await readWorkerHeartbeat(connection, prefix)).toBeNull();
+
+    const at = new Date("2026-10-11T12:00:00Z");
+    await writeWorkerHeartbeat(connection, prefix, at);
+
+    expect(await readWorkerHeartbeat(connection, prefix)).toEqual(at);
+    // It expires by itself, so a dead worker is noticed.
+    const ttl = await connection.ttl(`${prefix}:worker:heartbeat`);
+    expect(ttl).toBeGreaterThan(30);
+    expect(ttl).toBeLessThanOrEqual(90);
   });
 });
 

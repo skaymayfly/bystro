@@ -95,6 +95,15 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 
 ## Záznamy
 
+## 2026-10-11 — oprava: je vidět, když se synchronizace nerozběhne
+
+- Důvod: uživateli po připojení Fakturoidu zůstalo trvale „Čekám na první načtení“. Aplikace neuměla říct, že worker neběží nebo nemá nastavení, a zvenku to nešlo zjistit.
+- `GET /api/health` nově vrací i `worker: "ok" | "down"`. Worker každých 30 s zapíše do Redisu značku s platností 90 s (`packages/queue`: `writeWorkerHeartbeat`, `readWorkerHeartbeat`); web ji čte. Stav workeru je informativní a nemění stavový kód, aby výpadek workeru neshodil nasazení webu.
+- Synchronizace, která nemůže ani začít (`provider_not_configured`, `credentials_missing`), teď přepne připojení do stavu `error` s kódem. Dřív úloha skončila v dead-letter a připojení zůstalo „připojeno“.
+- Obrazovka Propojení: když se první načtení nestihne do 3 minut od připojení, místo „Čekám na první načtení“ ukáže „Načtení se zdrželo“ s radou zkusit Aktualizovat; pro oba nové kódy chyby má vlastní text.
+- Testy: značka workeru proti Redisu, stav připojení po nerozběhnuté synchronizaci a jeho zotavení, texty stavů, health s vypnutým workerem.
+- Otevřené: příčinu u uživatele (nejspíš chybějící proměnné nebo neběžící worker na Railway) ověřit po nasazení přes `/api/health`.
+
 ## 2026-10-11 — krok 2.7 Obrazovka Faktury a karta na Přehledu
 
 - Hotovo: obrazovka Faktury podle v4 (souhrnné dlaždice Po splatnosti / Čeká na platbu / Zaplaceno, filtry, hledání, řazení, tabulka); detail faktury (`/app/faktury/{id}`: částka k úhradě, vystaveno, splatnost, variabilní symbol, kontakt, položky, historie); karta „Po splatnosti“ na Přehledu (součet, počet, nejstarší, tři nejstarší faktury) a věta v úvodu Přehledu; čtení z databáze (`listInvoiceOverview`, `getInvoiceDetail`); logika seznamu v `packages/core/src/invoice-overview.ts`; `formatMoney`.

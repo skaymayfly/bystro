@@ -131,7 +131,7 @@ Worker si při startu sám založí opakované úlohy v našem čase: noční ú
 ## 7. Kontrola po nasazení
 
 1. Obě služby mají poslední nasazení ve stavu úspěšně dokončeno.
-2. `https://<doména>/api/health` vrátí `{"status":"ok","database":"ok","redis":"ok"}`.
+2. `https://<doména>/api/health` vrátí `{"status":"ok","database":"ok","redis":"ok","worker":"ok"}`. Když je `worker` `down`, služba worker neběží (nebo nemá stejný Redis): web funguje, ale nic se nesynchronizuje. Podívej se do logu služby worker.
 3. V logu služby `worker` je řádek `Bystro worker: ready`.
 4. V logu nasazení webu je před startem řádek `Migrations applied.`
 5. Ruční průchod: registrace → zadání IČO → založení firmy → Přehled. Pak odhlášení a přihlášení, případně přes Google.

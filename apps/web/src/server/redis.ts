@@ -1,6 +1,8 @@
 import { Redis } from "ioredis";
 
-import { readRedisUrl } from "./env";
+import { readWorkerHeartbeat } from "@bystro/queue";
+
+import { readQueuePrefix, readRedisUrl } from "./env";
 
 const globalForRedis = globalThis as typeof globalThis & { __bystroRedis?: Redis };
 
@@ -30,6 +32,19 @@ export async function pingRedis(): Promise<boolean> {
       await redis.connect();
     }
     return (await redis.ping()) === "PONG";
+  } catch {
+    return false;
+  }
+}
+
+/** Resolves `true` when a worker said it was alive within the last minute and a half. */
+export async function isWorkerAlive(): Promise<boolean> {
+  try {
+    const redis = getRedis();
+    if (redis.status === "wait" || redis.status === "end") {
+      await redis.connect();
+    }
+    return (await readWorkerHeartbeat(redis, readQueuePrefix())) !== null;
   } catch {
     return false;
   }

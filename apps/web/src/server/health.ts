@@ -4,6 +4,11 @@ export interface HealthReport {
   status: ComponentStatus;
   database: ComponentStatus;
   redis: ComponentStatus;
+  /**
+   * Whether a worker reported itself alive recently. Informational: the web app answers
+   * requests without it, so it does not change `status`, but nothing gets synced.
+   */
+  worker: ComponentStatus;
 }
 
 const DEFAULT_TIMEOUT_MS = 2_000;
@@ -28,12 +33,17 @@ async function probe(check: () => Promise<boolean>, timeoutMs: number): Promise<
  * up or down: no addresses, versions or error messages, because the endpoint is public.
  */
 export async function checkHealth(
-  checks: { database: () => Promise<boolean>; redis: () => Promise<boolean> },
+  checks: {
+    database: () => Promise<boolean>;
+    redis: () => Promise<boolean>;
+    worker: () => Promise<boolean>;
+  },
   timeoutMs = DEFAULT_TIMEOUT_MS,
 ): Promise<HealthReport> {
-  const [database, redis] = await Promise.all([
+  const [database, redis, worker] = await Promise.all([
     probe(checks.database, timeoutMs),
     probe(checks.redis, timeoutMs),
+    probe(checks.worker, timeoutMs),
   ]);
-  return { status: database === "ok" && redis === "ok" ? "ok" : "down", database, redis };
+  return { status: database === "ok" && redis === "ok" ? "ok" : "down", database, redis, worker };
 }

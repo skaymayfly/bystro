@@ -43,6 +43,37 @@ export function createProducerConnection(url: string): Redis {
   });
 }
 
+/** How often a running worker says it is alive, and how long that statement holds. */
+export const WORKER_HEARTBEAT_INTERVAL_MS = 30_000;
+const WORKER_HEARTBEAT_TTL_SECONDS = 90;
+
+const heartbeatKey = (prefix: string) => `${prefix}:worker:heartbeat`;
+
+/**
+ * Called by the worker every {@link WORKER_HEARTBEAT_INTERVAL_MS}. The key expires by
+ * itself, so a worker that crashed or never started is noticed without anyone reporting it.
+ */
+export async function writeWorkerHeartbeat(
+  connection: Redis,
+  prefix = DEFAULT_QUEUE_PREFIX,
+  now: Date = new Date(),
+): Promise<void> {
+  await connection.set(heartbeatKey(prefix), now.toISOString(), "EX", WORKER_HEARTBEAT_TTL_SECONDS);
+}
+
+/** When a worker last said it was alive, or `null` when none did recently. */
+export async function readWorkerHeartbeat(
+  connection: Redis,
+  prefix = DEFAULT_QUEUE_PREFIX,
+): Promise<Date | null> {
+  const value = await connection.get(heartbeatKey(prefix));
+  if (value === null) {
+    return null;
+  }
+  const at = new Date(value);
+  return Number.isNaN(at.getTime()) ? null : at;
+}
+
 export interface Queues {
   connection: Redis;
   prefix: string;

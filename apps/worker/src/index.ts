@@ -13,6 +13,8 @@ import {
   createRedisConnection,
   enqueue,
   registerSchedules,
+  WORKER_HEARTBEAT_INTERVAL_MS,
+  writeWorkerHeartbeat,
   type Queues,
 } from "@bystro/queue";
 import { createRateLimiter } from "./rate-limiter";
@@ -74,10 +76,19 @@ async function start(): Promise<void> {
     reportError: captureError,
   });
 
+  // Lets the web app (and its health check) see that jobs are being processed.
+  const beat = () =>
+    writeWorkerHeartbeat(connection, queues.prefix).catch(() => {
+      // Redis is unreachable for a moment; the next beat tries again.
+    });
+  await beat();
+  const heartbeat = setInterval(() => void beat(), WORKER_HEARTBEAT_INTERVAL_MS);
+
   running = {
     workers,
     queues,
     async closeConnections() {
+      clearInterval(heartbeat);
       await queues.close();
       await connection.quit();
       await closeDb();

@@ -5,6 +5,8 @@ export interface ConnectionSummary {
   needsAccount: boolean;
   lastSyncAt: string | null;
   lastErrorCode: string | null;
+  /** When the connection was last (re)connected or changed. */
+  updatedAt: string | null;
 }
 
 export type ConnectionTone = "ok" | "busy" | "warn" | "error";
@@ -39,7 +41,13 @@ export function relativeTime(then: Date, now: Date): string {
   return days === 1 ? "včera" : `před ${days} dny`;
 }
 
+/** The first load normally takes seconds; after this long something is wrong. */
+const FIRST_LOAD_PATIENCE_MS = 3 * MINUTE;
+
 const ERROR_TEXTS: Record<string, string> = {
+  provider_not_configured:
+    "Načítání z Fakturoidu u nás zatím není zapnuté. Dáme to do pořádku; kdyby to trvalo, napiš nám.",
+  credentials_missing: "Chybí mi přístup k Fakturoidu. Odpoj ho prosím a připoj znovu.",
   account_blocked: "Fakturoid má tvůj účet zablokovaný. Vyřeš to u nich a pak dej Aktualizovat.",
   forbidden: "Tvůj účet ve Fakturoidu mi nedovolí číst faktury.",
 };
@@ -64,10 +72,23 @@ export function describeConnection(
   switch (connection.status) {
     case "syncing":
       return { tone: "busy", label: "Synchronizuji…", text: null, busy: true };
-    case "connected":
-      return updated === null
+    case "connected": {
+      if (updated !== null) {
+        return { tone: "ok", label: "Připojeno", text: updated, busy: false };
+      }
+      const waitingMs =
+        connection.updatedAt === null
+          ? 0
+          : now.getTime() - new Date(connection.updatedAt).getTime();
+      return waitingMs < FIRST_LOAD_PATIENCE_MS
         ? { tone: "busy", label: "Čekám na první načtení", text: null, busy: true }
-        : { tone: "ok", label: "Připojeno", text: updated, busy: false };
+        : {
+            tone: "warn",
+            label: "Načtení se zdrželo",
+            text: "Faktury se zatím nenačetly. Zkus Aktualizovat; kdyby to nepomohlo, napiš nám.",
+            busy: false,
+          };
+    }
     case "degraded":
       return {
         tone: "warn",
