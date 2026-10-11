@@ -9,6 +9,7 @@ import Link from "next/link";
 
 import { PanelEmpty } from "@/components/bits";
 import { daysLabel, invoiceCountLabel } from "@/lib/invoice-labels";
+import type { InvoicingSources } from "@/lib/invoicing-providers";
 
 import { SourceNote } from "./invoice-bits";
 
@@ -21,14 +22,16 @@ const SHOWN = 3;
 export function OverduePanel({
   rows,
   summary,
-  lastSyncAt,
+  sources,
   now,
 }: {
   rows: readonly InvoiceRow[];
   summary: InvoiceSummary;
-  lastSyncAt: string | null;
+  /** The connected invoicing systems the figures come from. */
+  sources: InvoicingSources;
   now: Date;
 }) {
+  const note = <SourceNote source={sources.names} lastSyncAt={sources.lastSyncAt} now={now} />;
   const { overdue, oldestOverdue } = summary;
   if (overdue.count === 0 || oldestOverdue === null) {
     return (
@@ -37,11 +40,11 @@ export function OverduePanel({
           title="Nic po splatnosti"
           text={
             rows.length === 0
-              ? "Ve Fakturoidu zatím žádné faktury nevidím."
+              ? `${sources.inside} zatím žádné faktury nevidím.`
               : "Všechny faktury jsou zaplacené nebo v termínu."
           }
         />
-        <SourceNote lastSyncAt={lastSyncAt} now={now} />
+        {note}
       </>
     );
   }
@@ -88,7 +91,7 @@ export function OverduePanel({
           A další {invoiceCountLabel(overdueRows.length - SHOWN)}
         </Link>
       )}
-      <SourceNote lastSyncAt={lastSyncAt} now={now} />
+      {note}
     </>
   );
 }

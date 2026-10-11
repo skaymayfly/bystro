@@ -258,7 +258,7 @@ Výsledek fáze: uživatel připojí Fakturoid nebo iDoklad a vidí své skuteč
 
 **Hotovo když:** s reálným testovacím Fakturoidem vidíš správné faktury a součty sedí s Fakturoidem.
 
-### - [ ] 2.8 Adapter iDoklad
+### - [x] 2.8 Adapter iDoklad
 
 **Cíl:** druhý fakturační systém přes stejné rozhraní jako Fakturoid.
 

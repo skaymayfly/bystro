@@ -59,25 +59,27 @@ Tyto hodnoty jsou zapsané i v `apps/web/railway.json`. Pokud Railway u služby 
 
 Zadej je v záložce proměnných služby `web`. Hodnoty označené jako tajné ulož jako zapečetěné (sealed), pokud to Railway nabízí.
 
-| Proměnná                     | Hodnota                              | Poznámka                                                          |
-| ---------------------------- | ------------------------------------ | ----------------------------------------------------------------- |
-| `RAILWAY_DOCKERFILE_PATH`    | `apps/web/Dockerfile`                | říká Railway, který Dockerfile použít                             |
-| `PORT`                       | `3000`                               | port, na kterém web poslouchá; musí sedět s cílovým portem domény |
-| `DATABASE_URL`               | `${{Postgres.DATABASE_URL}}`         | odkaz na službu Postgres                                          |
-| `REDIS_URL`                  | `${{Redis.REDIS_URL}}`               | odkaz na službu Redis                                             |
-| `BETTER_AUTH_SECRET`         | první vygenerovaný klíč              | **tajné**                                                         |
-| `BETTER_AUTH_URL`            | `https://${{RAILWAY_PUBLIC_DOMAIN}}` | veřejná adresa webu; musí sedět s adresou v prohlížeči            |
-| `ENCRYPTION_KEY`             | druhý vygenerovaný klíč              | **tajné**; šifruje tokeny propojení, stejný musí mít i worker     |
-| `FAKTUROID_CLIENT_ID`        | Client ID integrace ve Fakturoidu    | nepovinné; bez něj je Fakturoid v aplikaci „Připravujeme“         |
-| `FAKTUROID_CLIENT_SECRET`    | Client Secret integrace              | **tajné**; nepovinné                                              |
-| `INTEGRATIONS_CONTACT_EMAIL` | kontaktní e-mail                     | jde do hlavičky `User-Agent`, kterou Fakturoid vyžaduje           |
-| `RESEND_API_KEY`             | nový klíč z Resendu                  | **tajné**                                                         |
-| `EMAIL_FROM`                 | `Bystro <onboarding@resend.dev>`     | zkušební odesílatel; doručí jen na e-mail tvého účtu u Resendu    |
-| `GOOGLE_CLIENT_ID`           | Client ID z Google Cloud Console     |                                                                   |
-| `GOOGLE_CLIENT_SECRET`       | nový Client secret                   | **tajné**                                                         |
-| `SENTRY_DSN`                 | DSN ze Sentry                        | stejná hodnota jako v lokálním `.env`                             |
-| `NEXT_PUBLIC_SENTRY_DSN`     | stejné DSN                           | použije se při sestavení pro hlášení chyb z prohlížeče            |
-| `SENTRY_ENVIRONMENT`         | `staging`                            | aby šly chyby z testovacího prostředí odlišit                     |
+| Proměnná                     | Hodnota                                         | Poznámka                                                          |
+| ---------------------------- | ----------------------------------------------- | ----------------------------------------------------------------- |
+| `RAILWAY_DOCKERFILE_PATH`    | `apps/web/Dockerfile`                           | říká Railway, který Dockerfile použít                             |
+| `PORT`                       | `3000`                                          | port, na kterém web poslouchá; musí sedět s cílovým portem domény |
+| `DATABASE_URL`               | `${{Postgres.DATABASE_URL}}`                    | odkaz na službu Postgres                                          |
+| `REDIS_URL`                  | `${{Redis.REDIS_URL}}`                          | odkaz na službu Redis                                             |
+| `BETTER_AUTH_SECRET`         | první vygenerovaný klíč                         | **tajné**                                                         |
+| `BETTER_AUTH_URL`            | `https://${{RAILWAY_PUBLIC_DOMAIN}}`            | veřejná adresa webu; musí sedět s adresou v prohlížeči            |
+| `ENCRYPTION_KEY`             | druhý vygenerovaný klíč                         | **tajné**; šifruje tokeny propojení, stejný musí mít i worker     |
+| `FAKTUROID_CLIENT_ID`        | Client ID integrace ve Fakturoidu               | nepovinné; bez něj je Fakturoid v aplikaci „Připravujeme“         |
+| `FAKTUROID_CLIENT_SECRET`    | Client Secret integrace                         | **tajné**; nepovinné                                              |
+| `INTEGRATIONS_CONTACT_EMAIL` | kontaktní e-mail                                | jde do hlavičky `User-Agent`, kterou Fakturoid vyžaduje           |
+| `IDOKLAD_CLIENT_ID`          | Client Id aplikace z Developer portálu iDokladu | nepovinné; bez něj je iDoklad v aplikaci „Připravujeme“           |
+| `IDOKLAD_CLIENT_SECRET`      | Client secret aplikace                          | **tajné**; nepovinné                                              |
+| `RESEND_API_KEY`             | nový klíč z Resendu                             | **tajné**                                                         |
+| `EMAIL_FROM`                 | `Bystro <onboarding@resend.dev>`                | zkušební odesílatel; doručí jen na e-mail tvého účtu u Resendu    |
+| `GOOGLE_CLIENT_ID`           | Client ID z Google Cloud Console                |                                                                   |
+| `GOOGLE_CLIENT_SECRET`       | nový Client secret                              | **tajné**                                                         |
+| `SENTRY_DSN`                 | DSN ze Sentry                                   | stejná hodnota jako v lokálním `.env`                             |
+| `NEXT_PUBLIC_SENTRY_DSN`     | stejné DSN                                      | použije se při sestavení pro hlášení chyb z prohlížeče            |
+| `SENTRY_ENVIRONMENT`         | `staging`                                       | aby šly chyby z testovacího prostředí odlišit                     |
 
 Nepovinné, pro čitelné chyby v Sentry (nahrání zdrojových map): `SENTRY_AUTH_TOKEN` (**tajné**), `SENTRY_ORG`, `SENTRY_PROJECT`. Bez nich nasazení funguje stejně, jen chyby z produkčního sestavení mají hůř čitelný výpis.
 
@@ -102,6 +104,17 @@ Adresu pro `localhost` tam nech, ať funguje i lokální vývoj.
 3. Client ID a Client Secret zadej do proměnných služby **web** i **worker** spolu s `INTEGRATIONS_CONTACT_EMAIL`. Na obou službách musí být stejné hodnoty.
 4. Po nasazení je v aplikaci v Nastavení → Propojení u Fakturoidu tlačítko „Propojit“.
 
+### iDoklad
+
+1. Zaregistruj se na Developer portálu iDokladu: <https://developer.idoklad.cz>. Účet na portálu je něco jiného než účet v iDokladu, i když mají stejný e-mail.
+2. V **Nová aplikace** zadej jméno `Bystro`, Flow **AuthorizationCode** a ulož. (Flow `ClientCredentials` je jen pro práci s jedním vlastním účtem; pro zákazníky Bystra nestačí.)
+3. V seznamu aplikací je ve sloupci **Client Id** první hodnota. Po kliknutí na **Podrobnosti** je v záložce **Client secret** druhá hodnota; novou vytvoříš přes „Nový client secret“, starou smažeš přes „Smazat“.
+4. V záložce **Redirect uri** přidej přesně `https://<veřejná doména webu>/api/integrations/idoklad/callback`.
+5. `IDOKLAD_CLIENT_ID` a `IDOKLAD_CLIENT_SECRET` zadej do proměnných služby **web** i **worker**. Na obou službách musí být stejné hodnoty.
+6. Po nasazení je v Nastavení → Propojení dlaždice iDokladu s tlačítkem „Propojit“.
+
+iDoklad povoluje API jen na některých tarifech (dokumentace uvádí měsíční limity pro tarify Oblíbený a Prémiový). Účtu s nedostatečným tarifem API odpovídá `402`; Bystro pak při připojování napíše, že tarif nestačí, a nic neuloží.
+
 ## 6. Služba worker
 
 1. Přidej druhou službu ze stejného repozitáře a větve. Pojmenuj ji `worker`.
@@ -118,6 +131,8 @@ Adresu pro `localhost` tam nech, ať funguje i lokální vývoj.
 | `FAKTUROID_CLIENT_ID`        | Client ID integrace ve Fakturoidu; nepovinné                               |
 | `FAKTUROID_CLIENT_SECRET`    | Client Secret integrace; **tajné**, nepovinné                              |
 | `INTEGRATIONS_CONTACT_EMAIL` | kontaktní e-mail, který Fakturoid uvidí v hlavičce `User-Agent`; nepovinné |
+| `IDOKLAD_CLIENT_ID`          | Client Id aplikace z Developer portálu iDokladu; nepovinné                 |
+| `IDOKLAD_CLIENT_SECRET`      | Client secret aplikace; **tajné**, nepovinné                               |
 | `SENTRY_DSN`                 | DSN ze Sentry                                                              |
 | `SENTRY_ENVIRONMENT`         | `staging`                                                                  |
 | `WORKER_CONCURRENCY`         | nepovinné; kolik úloh jedné fronty běží najednou (výchozí 5)               |

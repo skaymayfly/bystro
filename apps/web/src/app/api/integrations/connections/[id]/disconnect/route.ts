@@ -4,7 +4,7 @@ import { json } from "@/server/api";
 import { connectionRequest } from "@/server/connection-route";
 import { disconnect } from "@/server/connections";
 import { getDb } from "@/server/db";
-import { getFakturoid } from "@/server/integrations";
+import { getFakturoid, getIdoklad } from "@/server/integrations";
 import { logger } from "@/server/logger";
 
 /**
@@ -19,7 +19,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   const done = await disconnect(
-    { db: getDb(), encryptionKey: readEncryptionKey(), fakturoid: getFakturoid() },
+    {
+      db: getDb(),
+      encryptionKey: readEncryptionKey(),
+      fakturoid: getFakturoid(),
+      idoklad: getIdoklad(),
+    },
     input,
   );
   if (!done) {

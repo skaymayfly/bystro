@@ -9,6 +9,7 @@ import { InvoicingCta } from "@/components/connections/invoicing-cta";
 import { OverduePanel } from "@/components/invoices/overdue-panel";
 import { Button } from "@/components/ui/button";
 import { overdueSentence } from "@/lib/invoice-labels";
+import { describeInvoicingSources } from "@/lib/invoicing-providers";
 import { requireRequestContext } from "@/server/context";
 import { loadInvoiceOverview } from "@/server/invoices";
 
@@ -23,12 +24,13 @@ const detailLinkClass = "text-[13px] text-ink-3 hover:text-ink";
 export default async function DashboardPage() {
   const { organization } = await requireRequestContext();
   const now = new Date();
-  const { fakturoid, fakturoidAvailable } =
+  const { invoicing, invoicingAvailable } =
     organization === null
-      ? { fakturoid: null, fakturoidAvailable: false }
+      ? { invoicing: [], invoicingAvailable: false }
       : await loadConnections(organization.id);
+  const sources = describeInvoicingSources(invoicing);
   const invoices =
-    organization === null || fakturoid === null
+    organization === null || sources === null
       ? null
       : await loadInvoiceOverview(organization.id, now);
 
@@ -88,18 +90,18 @@ export default async function DashboardPage() {
             </Link>
           }
         >
-          {fakturoid === null || invoices === null ? (
+          {sources === null || invoices === null ? (
             <PanelEmpty
               title="Faktury zatím nevidím"
               text="Propoj Fakturoid, iDoklad nebo Pohodu a pohlídám ti splatnosti."
             >
-              <InvoicingCta available={fakturoidAvailable} size="sm" />
+              <InvoicingCta available={invoicingAvailable} size="sm" />
             </PanelEmpty>
           ) : (
             <OverduePanel
               rows={invoices.rows}
               summary={invoices.summary}
-              lastSyncAt={fakturoid.lastSyncAt}
+              sources={sources}
               now={now}
             />
           )}

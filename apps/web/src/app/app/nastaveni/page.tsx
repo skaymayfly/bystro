@@ -176,6 +176,7 @@ export default async function SettingsPage(props: PageProps<"/app/nastaveni">) {
   const query = await props.searchParams;
   const requested = query.karta;
   const outcome = typeof query.propojeni === "string" ? query.propojeni : undefined;
+  const outcomeProvider = typeof query.aplikace === "string" ? query.aplikace : undefined;
   const active: TabKey = TABS.find((tab) => tab.key === requested)?.key ?? "profil";
 
   return (
@@ -206,7 +207,11 @@ export default async function SettingsPage(props: PageProps<"/app/nastaveni">) {
         <div className="flex min-w-0 flex-[999_1_520px] flex-col gap-3.5">
           {active === "profil" && <ProfileTab context={context} />}
           {active === "propojeni" && context.organization !== null && (
-            <ConnectionsTab organizationId={context.organization.id} outcome={outcome} />
+            <ConnectionsTab
+              organizationId={context.organization.id}
+              outcome={outcome}
+              provider={outcomeProvider}
+            />
           )}
           {active === "upozorneni" && <NotificationsTab />}
         </div>

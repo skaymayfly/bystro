@@ -1,0 +1,144 @@
+{
+  "Data": {
+    "Agreements": [
+      {
+        "Version": "sample string 1",
+        "AgreementType": 0,
+        "Status": 1
+      }
+    ],
+    "AllowEditExported": true,
+    "AutomaticPairPaymentsSettings": {
+      "BankStatementMail": "sample string 1",
+      "HasAutomaticPairPayments": true
+    },
+    "BankAccounts": [
+      {
+        "AccountNumber": "sample string 1",
+        "BankId": 1,
+        "CurrencyId": 1,
+        "DateInitialState": "2026-09-30",
+        "Iban": "sample string 2",
+        "Id": 3,
+        "InitialState": 1,
+        "IsDefault": true,
+        "Metadata": {
+          "DateCreated": "2026-09-30T14:26:49.753",
+          "DateLastChange": "2026-09-30T14:26:49.753",
+          "UserCreatedId": 1,
+          "UserLastChangeId": 1
+        },
+        "Name": "sample string 5",
+        "Swift": "sample string 6"
+      }
+    ],
+    "CashRegisters": [
+      {
+        "CurrencyId": 1,
+        "DateInitialState": "2026-09-30",
+        "Id": 2,
+        "InitialState": 1,
+        "IsDefault": true,
+        "IsEet": true,
+        "Metadata": {
+          "DateCreated": "2026-09-30T14:26:49.753",
+          "DateLastChange": "2026-09-30T14:26:49.753",
+          "UserCreatedId": 1,
+          "UserLastChangeId": 1
+        },
+        "Name": "sample string 5"
+      }
+    ],
+    "Contact": {
+      "City": "sample string 1",
+      "CountryId": 2,
+      "Email": "sample string 3",
+      "Fax": "sample string 4",
+      "HasNoIdentificationNumber": true,
+      "IdentificationNumber": "sample string 6",
+      "Mobile": "sample string 7",
+      "Phone": "sample string 8",
+      "PostalCode": "sample string 9",
+      "Street": "sample string 10",
+      "VatIdentificationNumber": "sample string 11",
+      "VatIdentificationNumberSk": "sample string 12",
+      "Www": "sample string 13"
+    },
+    "CountOfDecimalsForAmount": 2,
+    "CountOfDecimalsForPrice": 3,
+    "CswCustomerGuid": "cb6ba7e0-79b7-4c55-a3ab-bb87bc7186f7",
+    "CswCustomerPin": "sample string 4",
+    "DefaultCurrencyId": 5,
+    "IsActiveStorePayment": true,
+    "DefaultSendMethod": 0,
+    "DeleteStatus": 0,
+    "EetRegime": 0,
+    "HasFirstInvoice": true,
+    "HasVatCode": true,
+    "HasVatRegimeOss": true,
+    "Id": 10,
+    "IsPriceWithVat": true,
+    "IsRegisteredForVat": true,
+    "Inbox": {
+      "HasInbox": true,
+      "HasActiveExternalEmails": true,
+      "InboxEmail": "sample string 3",
+      "HasUnpaidProformaForAiCredits": true
+    },
+    "AiCredits": {
+      "AiCreditCount": 1,
+      "StartAiCreditCount": 2,
+      "ExpiringAiCreditCount": 3,
+      "DateExpiringAiCredit": "2026-09-30"
+    },
+    "HasActiveWebRecurringPayments": true,
+    "IsRegisteredForVatOnPay": true,
+    "IsSendPaymentConfirmation": true,
+    "Metadata": {
+      "DateCreated": "2026-09-30T14:26:49.753",
+      "DateLastChange": "2026-09-30T14:26:49.753",
+      "UserCreatedId": 1,
+      "UserLastChangeId": 1
+    },
+    "Name": "sample string 16",
+    "PreferredPriceType": 0,
+    "PreferredVatRate": 0,
+    "PurchaseSettings": {
+      "DefaultPriceType": 0,
+      "DefaultVatCodeId": 1,
+      "DefaultVatRate": 0
+    },
+    "RegisterRecord": "sample string 17",
+    "RoundingDifference": 0,
+    "SalesSettings": {
+      "DefaultInvoiceMaturity": 1,
+      "DefaultPriceType": 0,
+      "DefaultVatCodeId": 1,
+      "DefaultVatRate": 0,
+      "ItemsTextPrefix": "sample string 2",
+      "ItemsTextSuffix": "sample string 3",
+      "ProformaItemsPrefixText": "sample string 4",
+      "ProformaItemsSuffixText": "sample string 5"
+    },
+    "SendReminderSettings": {
+      "IsSendReminder": true,
+      "NextReminderIntervalInDays": 2,
+      "ReminderDaysAfterMaturity": 3,
+      "ReminderMinValue": 4
+    },
+    "Subscription": {
+      "DateFrom": "2026-09-30T14:26:49.754",
+      "DateTo": "2026-09-30T14:26:49.754",
+      "IsTrial": true,
+      "MobileStoreType": 0,
+      "Type": 0
+    },
+    "TaxSubjectType": 0,
+    "VatPeriod": 1,
+    "VatRegistrationType": 0
+  },
+  "ErrorCode": 0,
+  "IsSuccess": true,
+  "Message": "sample string 2",
+  "StatusCode": 100
+}

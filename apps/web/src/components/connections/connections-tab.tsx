@@ -3,35 +3,68 @@ import type { FakturoidAccount } from "@bystro/integrations";
 
 import { SoonBadge } from "@/components/bits";
 import { Button } from "@/components/ui/button";
-import { CONNECT_OUTCOME_TEXTS } from "@/lib/connection-status";
+import { connectOutcomeNotice } from "@/lib/connection-status";
 import { PROVIDERS } from "@/lib/content";
+import { parseInvoicingProvider } from "@/lib/invoicing-providers";
 import { cn } from "@/lib/utils";
 import { ConnectionFlowError, listSelectableFakturoidAccounts } from "@/server/connections";
 import { getDb } from "@/server/db";
-import { getFakturoidFlow, toConnectionView, type ConnectionView } from "@/server/integrations";
+import {
+  getFakturoidFlow,
+  getIdoklad,
+  toConnectionView,
+  type ConnectionView,
+} from "@/server/integrations";
 
 import { ConnectionsList } from "./connections-list";
-import { ProviderPicker, type FakturoidState } from "./provider-picker";
+import { ProviderPicker, type ProviderState, type ProviderStates } from "./provider-picker";
 
 const panelClass = "min-w-0 rounded-[18px] border border-line bg-card shadow-soft";
 
-/** Connections of a company and whether Fakturoid can be connected in this environment. */
+/**
+ * Connections of a company, the invoicing systems among them, and which invoicing systems
+ * can be connected in this environment.
+ */
 export async function loadConnections(organizationId: string) {
   const all = await listConnections(getDb(), organizationId);
   const connections = all
     .filter((connection) => connection.status !== "revoked")
     .map(toConnectionView);
-  const fakturoid = connections.find((connection) => connection.provider === "fakturoid") ?? null;
+  const invoicing = connections.filter(
+    (connection) => parseInvoicingProvider(connection.provider) !== null,
+  );
+  const state = (provider: string, configured: boolean): ProviderState =>
+    invoicing.some((connection) => connection.provider === provider)
+      ? "connected"
+      : configured
+        ? "connect"
+        : "unavailable";
   const fakturoidAvailable = getFakturoidFlow() !== null;
-  const fakturoidState: FakturoidState =
-    fakturoid !== null ? "connected" : fakturoidAvailable ? "connect" : "unavailable";
-  return { connections, fakturoid, fakturoidAvailable, fakturoidState };
+  const idokladAvailable = getIdoklad() !== null;
+  const states: ProviderStates = {
+    fakturoid: state("fakturoid", fakturoidAvailable),
+    idoklad: state("idoklad", idokladAvailable),
+  };
+  return {
+    connections,
+    invoicing,
+    states,
+    /** Some invoicing system can be connected here. */
+    invoicingAvailable: fakturoidAvailable || idokladAvailable,
+  };
 }
 
 /** The sentence shown after coming back from the provider. */
-export function ConnectOutcomeNotice({ outcome }: { outcome: string | undefined }) {
-  const notice = outcome === undefined ? undefined : CONNECT_OUTCOME_TEXTS[outcome];
-  if (notice === undefined) {
+export function ConnectOutcomeNotice({
+  outcome,
+  provider,
+}: {
+  outcome: string | undefined;
+  /** The `aplikace` query value: which application the outcome is about. */
+  provider: string | undefined;
+}) {
+  const notice = connectOutcomeNotice(outcome, provider);
+  if (notice === null) {
     return null;
   }
   return (
@@ -116,17 +149,21 @@ function AccountChooser({
 export async function ConnectionsTab({
   organizationId,
   outcome,
+  provider,
 }: {
   organizationId: string;
   outcome: string | undefined;
+  provider: string | undefined;
 }) {
-  const { connections, fakturoid, fakturoidAvailable, fakturoidState } =
-    await loadConnections(organizationId);
+  const { connections, states, invoicingAvailable } = await loadConnections(organizationId);
+  // Only Fakturoid lets one user into several accounts; at iDoklad the user picks the
+  // company while signing in.
+  const fakturoid = connections.find((connection) => connection.provider === "fakturoid") ?? null;
   const accounts = fakturoid === null ? [] : await selectableAccounts(fakturoid, organizationId);
 
   return (
     <>
-      <ConnectOutcomeNotice outcome={outcome} />
+      <ConnectOutcomeNotice outcome={outcome} provider={provider} />
       {fakturoid?.needsAccount === true && (
         <AccountChooser connectionId={fakturoid.id} accounts={accounts} />
       )}
@@ -142,10 +179,10 @@ export async function ConnectionsTab({
               <h2 className="text-[17px] font-medium">Přidat aplikaci</h2>
               <p className="mt-[3px] text-sm text-ink-3">Přístup je vždy jen pro čtení.</p>
             </div>
-            {!fakturoidAvailable && <SoonBadge />}
+            {!invoicingAvailable && <SoonBadge />}
           </div>
-          <ProviderPicker fakturoid={fakturoidState} returnTo="settings" className="grid-cols-5" />
-          {fakturoidAvailable && (
+          <ProviderPicker states={states} returnTo="settings" className="grid-cols-5" />
+          {invoicingAvailable && (
             <p className="text-xs text-ink-3">Ostatní aplikace teprve chystáme.</p>
           )}
         </section>

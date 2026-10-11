@@ -106,6 +106,11 @@ export interface ListOptions {
   updatedSince?: Date;
   /** Only objects created since this moment (limits how far back a full sync reaches). */
   createdSince?: Date;
+  /**
+   * Only for `listPayments`: just the payments of these invoices (external ids). Used for
+   * invoices whose payments do not come with them.
+   */
+  invoiceExternalIds?: readonly string[];
 }
 
 export interface InvoiceDocument {

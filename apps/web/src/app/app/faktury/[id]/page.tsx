@@ -15,6 +15,7 @@ import { Card } from "@/components/bits";
 import { loadConnections } from "@/components/connections/connections-tab";
 import { SourceNote, StatusPill } from "@/components/invoices/invoice-bits";
 import { formatQuantity, invoiceStatusLabel, type InvoiceTone } from "@/lib/invoice-labels";
+import { providerWording } from "@/lib/invoicing-providers";
 import { cn } from "@/lib/utils";
 import { requireRequestContext } from "@/server/context";
 import { getDb } from "@/server/db";
@@ -57,7 +58,9 @@ export default async function InvoiceDetailPage(props: PageProps<"/app/faktury/[
   const { invoice, company, lines, payments } = detail;
   const now = new Date();
   const today = todayInPrague(now);
-  const { fakturoid } = await loadConnections(organization.id);
+  // The note names the system this very invoice came from.
+  const { invoicing } = await loadConnections(organization.id);
+  const origin = invoicing.find((connection) => connection.provider === invoice.source) ?? null;
 
   const paidMinor = payments
     .filter((payment) => payment.currency === invoice.currency)
@@ -216,7 +219,11 @@ export default async function InvoiceDetailPage(props: PageProps<"/app/faktury/[
         </Card>
       </div>
 
-      <SourceNote lastSyncAt={fakturoid?.lastSyncAt ?? null} now={now} />
+      <SourceNote
+        source={providerWording(invoice.source).name}
+        lastSyncAt={origin?.lastSyncAt ?? null}
+        now={now}
+      />
     </div>
   );
 }

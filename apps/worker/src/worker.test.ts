@@ -30,7 +30,7 @@ describe("readWorkerEnv", () => {
       databaseUrl: valid.DATABASE_URL,
       encryptionKey: key,
       concurrency: 5,
-      providers: { fakturoid: null },
+      providers: { fakturoid: null, idoklad: null },
     });
     expect(readWorkerEnv({ ...valid, WORKER_CONCURRENCY: "12" }).concurrency).toBe(12);
   });
@@ -48,6 +48,21 @@ describe("readWorkerEnv", () => {
     });
     expect(JSON.stringify(env.providers)).not.toContain("client-secret-value");
     expect(env.providers.fakturoid?.clientSecret.reveal()).toBe("client-secret-value");
+  });
+
+  it("reads iDoklad when both of its variables are set, and refuses a half of them", () => {
+    const env = readWorkerEnv({
+      ...valid,
+      IDOKLAD_CLIENT_ID: " idoklad-id ",
+      IDOKLAD_CLIENT_SECRET: "idoklad-secret-value",
+    });
+    expect(env.providers.idoklad?.clientId).toBe("idoklad-id");
+    expect(env.providers.idoklad?.clientSecret.reveal()).toBe("idoklad-secret-value");
+    expect(JSON.stringify(env.providers)).not.toContain("idoklad-secret-value");
+
+    expect(() => readWorkerEnv({ ...valid, IDOKLAD_CLIENT_ID: "idoklad-id" })).toThrow(
+      /IDOKLAD_CLIENT_ID and IDOKLAD_CLIENT_SECRET/,
+    );
   });
 
   it("refuses a half-configured Fakturoid or a contact that is not an e-mail", () => {

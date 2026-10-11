@@ -14,6 +14,7 @@ export const CONNECT_OUTCOMES = [
   "neplatne",
   "nedostupne",
   "bez-uctu",
+  "tarif",
 ] as const;
 export type ConnectOutcome = (typeof CONNECT_OUTCOMES)[number];
 
@@ -28,14 +29,25 @@ export function parseConnectOutcome(value: unknown): ConnectOutcome | null {
   return CONNECT_OUTCOMES.find((outcome) => outcome === value) ?? null;
 }
 
-/** Path of the page to return to, with the outcome in the query. */
-export function returnPath(target: ReturnTarget, outcome: ConnectOutcome): string {
+/** Applications that can be connected through these routes. */
+export const CONNECT_PROVIDERS = ["fakturoid", "idoklad"] as const;
+export type ConnectProvider = (typeof CONNECT_PROVIDERS)[number];
+
+/**
+ * Path of the page to return to, with the outcome and the application it is about in the
+ * query (`propojeni`, `aplikace`).
+ */
+export function returnPath(
+  target: ReturnTarget,
+  outcome: ConnectOutcome,
+  provider: ConnectProvider = "fakturoid",
+): string {
   // Choosing an account happens in settings, wherever the user started.
   const page =
     target === "onboarding" && outcome !== "vybrat-ucet"
       ? "/onboarding?krok=2"
       : "/app/nastaveni?karta=propojeni";
-  return `${page}&propojeni=${outcome}`;
+  return `${page}&propojeni=${outcome}&aplikace=${provider}`;
 }
 
 /** `Set-Cookie` value remembering the return page while the user is at the provider. */

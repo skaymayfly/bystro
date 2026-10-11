@@ -10,6 +10,8 @@ import {
   E2E_PORT,
   FAKTUROID_STUB_PORT,
   FAKTUROID_STUB_URL,
+  IDOKLAD_STUB_PORT,
+  IDOKLAD_STUB_URL,
 } from "./e2e/config";
 
 loadRootEnv();
@@ -58,6 +60,13 @@ export default defineConfig({
       env: { FAKTUROID_STUB_PORT: String(FAKTUROID_STUB_PORT) },
     },
     {
+      // Stands in for iDoklad's identity server and API; E2E never calls the real ones.
+      command: "node e2e/idoklad-stub.mjs",
+      url: `${IDOKLAD_STUB_URL}/health`,
+      reuseExistingServer: false,
+      env: { IDOKLAD_STUB_PORT: String(IDOKLAD_STUB_PORT) },
+    },
+    {
       command: `pnpm exec next build && pnpm exec next start --port ${PORT}`,
       url: baseURL,
       timeout: 180_000,
@@ -74,6 +83,11 @@ export default defineConfig({
         FAKTUROID_CLIENT_ID: "e2e-client-id",
         FAKTUROID_CLIENT_SECRET: "e2e-client-secret",
         INTEGRATIONS_CONTACT_EMAIL: "e2e@bystro.example",
+        // The same for iDoklad.
+        IDOKLAD_BASE_URL: `${IDOKLAD_STUB_URL}/v3`,
+        IDOKLAD_IDENTITY_BASE_URL: `${IDOKLAD_STUB_URL}/server`,
+        IDOKLAD_CLIENT_ID: "e2e-idoklad-id",
+        IDOKLAD_CLIENT_SECRET: "e2e-idoklad-secret",
         ENCRYPTION_KEY: E2E_ENCRYPTION_KEY,
         // Jobs added by E2E go to their own queues, away from a locally running worker.
         QUEUE_PREFIX: "bystro-e2e",

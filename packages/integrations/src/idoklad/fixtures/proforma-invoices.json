@@ -1,0 +1,173 @@
+{
+  "Data": {
+    "Items": [
+      {
+        "Attachments": [
+          {
+            "FileName": "sample string 1",
+            "Id": 2
+          }
+        ],
+        "AccountedByInvoiceId": 1,
+        "ConstantSymbolId": 1,
+        "IssuedTaxDocumentIds": [1],
+        "CurrencyId": 1,
+        "DateOfAccountingEvent": "2026-09-30",
+        "DateOfIssue": "2026-09-30",
+        "DateOfLastReminder": "2026-09-30",
+        "DateOfMaturity": "2026-09-30",
+        "DateOfPayment": "2026-09-30",
+        "DateOfTaxing": "2026-09-30",
+        "DateOfVatApplication": "2026-09-30",
+        "DeliveryAddress": {
+          "ContactDeliveryAddressId": 1,
+          "City": "sample string 1",
+          "Name": "sample string 2",
+          "CountryId": 3,
+          "PostalCode": "sample string 4",
+          "Street": "sample string 5"
+        },
+        "Description": "sample string 9",
+        "DocumentNumber": "sample string 10",
+        "DocumentSerialNumber": 11,
+        "EetResponsibility": 0,
+        "ExchangeRate": 12,
+        "ExchangeRateAmount": 13,
+        "Exported": 0,
+        "Id": 14,
+        "IsEet": true,
+        "IsIncomeTax": true,
+        "IsProformaTaxed": true,
+        "IsSentToAccountant": true,
+        "IsSentToPurchaser": 0,
+        "Items": [
+          {
+            "Amount": 1,
+            "Code": "sample string 2",
+            "Id": 3,
+            "IsTaxMovement": true,
+            "ItemType": 0,
+            "Name": "sample string 5",
+            "PriceListItemId": 1,
+            "Prices": {
+              "TotalWithoutVat": 1,
+              "TotalWithoutVatHc": 2,
+              "TotalWithVat": 3,
+              "TotalWithVatHc": 4,
+              "UnitPrice": 5,
+              "TotalVat": 6,
+              "TotalVatHc": 7
+            },
+            "PriceType": 0,
+            "Unit": "sample string 6",
+            "VatCodeId": 1,
+            "VatRate": 7,
+            "VatRateType": 0
+          }
+        ],
+        "ItemsTextPrefix": "sample string 18",
+        "ItemsTextSuffix": "sample string 19",
+        "Metadata": {
+          "DateCreated": "2026-09-30T14:26:54.891",
+          "DateLastChange": "2026-09-30T14:26:54.891",
+          "UserCreatedId": 1,
+          "UserLastChangeId": 1
+        },
+        "MyAddress": {
+          "AccountNumber": "sample string 1",
+          "BankCode": "sample string 2",
+          "BankName": "sample string 3",
+          "City": "sample string 4",
+          "CountryId": 5,
+          "CountryName": "sample string 6",
+          "Email": "sample string 7",
+          "Fax": "sample string 8",
+          "Firstname": "sample string 9",
+          "Iban": "sample string 10",
+          "IdentificationNumber": "sample string 11",
+          "Mobile": "sample string 12",
+          "NickName": "sample string 13",
+          "Phone": "sample string 14",
+          "PostalCode": "sample string 15",
+          "Street": "sample string 16",
+          "Surname": "sample string 17",
+          "Swift": "sample string 18",
+          "Title": "sample string 19",
+          "VatIdentificationNumber": "sample string 20",
+          "VatIdentificationNumberSk": "sample string 21",
+          "Www": "sample string 22"
+        },
+        "Note": "sample string 20",
+        "OrderNumber": "sample string 21",
+        "PartnerAddress": {
+          "AccountNumber": "sample string 1",
+          "BankCode": "sample string 2",
+          "BankName": "sample string 3",
+          "City": "sample string 4",
+          "CountryId": 5,
+          "CountryName": "sample string 6",
+          "Email": "sample string 7",
+          "Fax": "sample string 8",
+          "Firstname": "sample string 9",
+          "Iban": "sample string 10",
+          "IdentificationNumber": "sample string 11",
+          "Mobile": "sample string 12",
+          "NickName": "sample string 13",
+          "Phone": "sample string 14",
+          "PostalCode": "sample string 15",
+          "Street": "sample string 16",
+          "Surname": "sample string 17",
+          "Swift": "sample string 18",
+          "Title": "sample string 19",
+          "VatIdentificationNumber": "sample string 20",
+          "VatIdentificationNumberSk": "sample string 21",
+          "Www": "sample string 22"
+        },
+        "PartnerId": 22,
+        "PaymentOptionId": 23,
+        "PaymentStatus": 0,
+        "Prices": {
+          "TotalPaid": 1,
+          "TotalPaidHc": 2,
+          "VatRateSummary": [
+            {
+              "VatRate": 1,
+              "VatRateType": 0,
+              "TotalVat": 2,
+              "TotalVatHc": 3,
+              "TotalWithoutVat": 4,
+              "TotalWithoutVatHc": 5,
+              "TotalWithVat": 6,
+              "TotalWithVatHc": 7
+            }
+          ],
+          "TotalVat": 3,
+          "TotalVatHc": 4,
+          "TotalWithoutVat": 5,
+          "TotalWithoutVatHc": 6,
+          "TotalWithVat": 7,
+          "TotalWithVatHc": 8
+        },
+        "ReminderCount": 24,
+        "ReportLanguage": 1,
+        "RecurringInvoiceId": 1,
+        "SalesOrderId": 1,
+        "SalesPosEquipmentId": 1,
+        "Tags": [
+          {
+            "TagId": 1
+          }
+        ],
+        "VariableSymbol": "sample string 25",
+        "VatOnPayStatus": 0,
+        "VatRegime": 0
+      }
+    ],
+    "TotalItems": 1,
+    "TotalPages": 2
+  },
+  "ErrorCode": 0,
+  "IsSuccess": true,
+  "Message": "sample string 2",
+  "StatusCode": 100
+}

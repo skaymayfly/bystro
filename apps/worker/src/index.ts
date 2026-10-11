@@ -99,6 +99,7 @@ async function start(): Promise<void> {
       sentryEnabled,
       concurrency: env.concurrency,
       fakturoidConfigured: env.providers.fakturoid !== null,
+      idokladConfigured: env.providers.idoklad !== null,
     },
     READY_MESSAGE,
   );
