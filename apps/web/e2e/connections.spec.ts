@@ -60,6 +60,11 @@ test("připojení Fakturoidu → stav → odpojení; po odpojení nejsou v datab
   await expect(page.getByText("Právo číst faktury a kontakty")).toBeVisible();
   const revokedBefore = await revocations(page);
 
+  // Clicking the Fakturoid logo leads to the box with the button.
+  await page.getByRole("link", { name: "Propojit Fakturoid" }).click();
+  await expect(page).toHaveURL("/app/nastaveni?karta=propojeni#propojit-fakturoid");
+  await expect(page.getByRole("button", { name: "Propojit" })).toBeInViewport();
+
   // Off to (the stand-in for) Fakturoid and back.
   await page.getByRole("button", { name: "Propojit" }).click();
   await expect(page).toHaveURL("/app/nastaveni?karta=propojeni&propojeni=ok");
@@ -73,8 +78,9 @@ test("připojení Fakturoidu → stav → odpojení; po odpojení nejsou v datab
   await expect(
     page.getByRole("status").filter({ hasText: "Čekám na první načtení" }),
   ).toBeVisible();
-  // Connected once: the offer to connect is gone.
+  // Connected once: the offer to connect is gone and the logo is no longer a link.
   await expect(page.getByRole("button", { name: "Propojit" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Propojit Fakturoid" })).toHaveCount(0);
 
   // The tokens are in the database (encrypted), and nowhere in what the browser received.
   const connected = await storedConnections(userId);

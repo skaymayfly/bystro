@@ -6,6 +6,7 @@ import { AuthHeading, AuthShell, authStyles } from "@/components/auth-shell";
 import { PillOptions, ProviderTiles, SoonBadge } from "@/components/bits";
 import {
   ConnectOutcomeNotice,
+  FAKTUROID_CONNECT_ANCHOR,
   FakturoidConnectBox,
   loadConnections,
 } from "@/components/connections/connections-tab";
@@ -60,7 +61,13 @@ async function ConnectionsStep({
       />
       <div className="flex flex-col gap-3.5 rounded-[18px] border border-line bg-card p-4 shadow-soft">
         <ConnectOutcomeNotice outcome={outcome} />
-        <ProviderTiles providers={PROVIDERS} className="grid-cols-5 sm:grid-cols-7" />
+        <ProviderTiles
+          providers={PROVIDERS}
+          className="grid-cols-5 sm:grid-cols-7"
+          fakturoidHref={
+            !connected && fakturoidAvailable ? `#${FAKTUROID_CONNECT_ANCHOR}` : undefined
+          }
+        />
         {connected && (
           <div className="flex flex-col items-center gap-1 px-2 pt-2 pb-1 text-center">
             <p className="text-[17px] font-medium">Fakturoid je propojený!</p>

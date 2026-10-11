@@ -53,10 +53,19 @@ export function ConnectOutcomeNotice({ outcome }: { outcome: string | undefined 
   );
 }
 
-/** The box offering to connect Fakturoid, with the prototype's list of requirements. */
+/** Anchor of the connect box; the Fakturoid tile links to it. */
+export const FAKTUROID_CONNECT_ANCHOR = "propojit-fakturoid";
+
+/**
+ * The box offering to connect Fakturoid, with the prototype's list of requirements.
+ * Clicking the Fakturoid tile jumps here and the box lights up, so it is clear where to go on.
+ */
 export function FakturoidConnectBox({ returnTo }: { returnTo: ConnectReturnTarget }) {
   return (
-    <div className="flex flex-col gap-3 border-t border-line-soft pt-3.5">
+    <div
+      id={FAKTUROID_CONNECT_ANCHOR}
+      className="-mx-2 flex scroll-mt-24 flex-col gap-3 rounded-box border-t border-line-soft px-2 pt-3.5 pb-2 transition-shadow target:border-transparent target:shadow-[0_0_0_2px_var(--color-ink)]"
+    >
       <p className="text-[15px] font-medium">Fakturoid</p>
       <p className="text-sm text-ink-3">Požadavky:</p>
       <ul className="flex flex-col gap-2 pl-0.5">
@@ -166,7 +175,13 @@ export async function ConnectionsTab({
             </div>
             {!fakturoidAvailable && <SoonBadge />}
           </div>
-          <ProviderTiles providers={PROVIDERS} className="grid-cols-5" />
+          <ProviderTiles
+            providers={PROVIDERS}
+            className="grid-cols-5"
+            fakturoidHref={
+              fakturoidAvailable && fakturoid === null ? `#${FAKTUROID_CONNECT_ANCHOR}` : undefined
+            }
+          />
           {fakturoidAvailable && fakturoid === null && <FakturoidConnectBox returnTo="settings" />}
           {fakturoidAvailable && (
             <p className="text-xs text-ink-3">Ostatní aplikace teprve chystáme.</p>
