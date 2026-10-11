@@ -257,14 +257,28 @@ export function PillOptions({
   );
 }
 
-/** Grid of provider tiles from the prototype's "add an app" picker. Not interactive yet. */
+/**
+ * Grid of provider tiles from the prototype's "add an app" picker. Only a provider that can
+ * be connected is clickable: `fakturoidHref` makes the Fakturoid tile a link (to the box
+ * with the "Propojit" button).
+ */
 export function ProviderTiles({
   providers,
   className,
+  fakturoidHref,
 }: {
   providers: readonly Provider[];
   className?: string;
+  fakturoidHref?: string | undefined;
 }) {
+  const fakturoidLogoImage = (name: string) => (
+    <Image
+      src={fakturoidLogo}
+      alt={name}
+      unoptimized
+      className="h-auto max-h-full w-full max-w-[132px] min-w-[88px]"
+    />
+  );
   return (
     <>
       <ul className={cn("grid gap-2", className)}>
@@ -277,14 +291,21 @@ export function ProviderTiles({
             <li
               key={provider.name}
               title={provider.name}
-              className="col-span-2 flex items-center justify-center rounded-xl border border-line bg-white px-1"
+              className="col-span-2 flex rounded-xl border border-line bg-white transition-colors has-[a:hover]:border-ink-2"
             >
-              <Image
-                src={fakturoidLogo}
-                alt={provider.name}
-                unoptimized
-                className="h-auto max-h-full w-full max-w-[132px] min-w-[88px]"
-              />
+              {fakturoidHref === undefined ? (
+                <span className="flex flex-1 items-center justify-center px-1">
+                  {fakturoidLogoImage(provider.name)}
+                </span>
+              ) : (
+                <a
+                  href={fakturoidHref}
+                  aria-label={`Propojit ${provider.name}`}
+                  className="flex flex-1 items-center justify-center rounded-xl px-1 outline-none focus-visible:shadow-focus"
+                >
+                  {fakturoidLogoImage(provider.name)}
+                </a>
+              )}
             </li>
           ) : (
             <li

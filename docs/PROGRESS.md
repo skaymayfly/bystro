@@ -92,6 +92,11 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 
 ## Záznamy
 
+## 2026-10-11 — dlaždice Fakturoidu vede k tlačítku „Propojit“ (drobná úprava po kroku 2.6)
+
+- Uživatel při prvním pokusu klikal na dlaždici s logem, která nic nedělala (v prototypu v4 se na dlaždice kliká). Když jde Fakturoid připojit, je teď jeho dlaždice odkaz na rámeček s požadavky a tlačítkem „Propojit“; rámeček se po kliknutí zvýrazní. Po připojení a bez nastavení Fakturoidu dlaždice odkazem není. Platí v Nastavení → Propojení i v onboardingu.
+- Test: E2E připojení kliká nejdřív na logo a ověřuje, že je tlačítko vidět.
+
 ## 2026-10-11 — krok 2.6 Obrazovka Propojení
 
 - Hotovo: připojení Fakturoidu přes OAuth (`POST /api/integrations/fakturoid/connect`, `GET /api/integrations/fakturoid/callback`), stav připojení (`GET /api/integrations/connections`), ruční aktualizace, odpojení a výběr účtu (`POST /api/integrations/connections/{id}/sync|disconnect|account`); logika v `apps/web/src/server/connections.ts`; obrazovka Nastavení → Propojení podle v4 se stavy a tlačítky; onboarding krok 2 nabízí Fakturoid; tlačítka „Připojit fakturaci“ na Přehledu a ve Fakturách vedou na Propojení; nový balíček `packages/queue` (fronty společné pro web a worker); synchronizace se zařadí hned po připojení.
