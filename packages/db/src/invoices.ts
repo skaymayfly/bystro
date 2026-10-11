@@ -5,7 +5,7 @@ import { and, asc, eq, gte, inArray, isNull, notInArray, sql } from "drizzle-orm
 
 import type { Db, DbTransaction } from "./client";
 import { requireUuid } from "./ids";
-import { companies, invoiceLines, invoicePayments, invoices } from "./schema";
+import { companies, invoiceLines, invoicePayments, invoices, syncCursors } from "./schema";
 
 /**
  * Invoices, their clients and payments as synced from invoicing systems. Every function
@@ -464,6 +464,51 @@ export async function markInvoicesDeleted(
     )
     .returning({ id: invoices.id });
   return marked.length;
+}
+
+/**
+ * Hides everything synced through a connection (after the user disconnects it), so that
+ * Bystro does not keep showing receivables it can no longer check. Rows are marked deleted,
+ * not removed, and the sync position is forgotten: connecting again runs a full sync,
+ * which brings back whatever still exists at the source.
+ */
+export async function hideSyncedData(db: Db, scope: SyncScope): Promise<{ invoices: number }> {
+  const { organizationId, connectionId } = validScope(scope);
+  const now = new Date();
+  return db.transaction(async (tx) => {
+    const hidden = await tx
+      .update(invoices)
+      .set({ deletedAt: now })
+      .where(
+        and(
+          eq(invoices.organizationId, organizationId),
+          eq(invoices.connectionId, connectionId),
+          isNull(invoices.deletedAt),
+        ),
+      )
+      .returning({ id: invoices.id });
+    for (const table of [invoiceLines, invoicePayments, companies]) {
+      await tx
+        .update(table)
+        .set({ deletedAt: now })
+        .where(
+          and(
+            eq(table.organizationId, organizationId),
+            eq(table.connectionId, connectionId),
+            isNull(table.deletedAt),
+          ),
+        );
+    }
+    await tx
+      .delete(syncCursors)
+      .where(
+        and(
+          eq(syncCursors.organizationId, organizationId),
+          eq(syncCursors.connectionId, connectionId),
+        ),
+      );
+    return { invoices: hidden.length };
+  });
 }
 
 // ---------------------------------------------------------------------------------------

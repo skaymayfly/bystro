@@ -27,29 +27,29 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **Kontrola členství u nových API:** `getRequestContext()` vrací jen organizaci, ve které je uživatel členem. Každý nový route handler ji musí použít; automatické testy izolace endpointů jsou až v kroku 7.3.
 - **Stahování Chromia pro Playwright** na vývojovém počítači vyprší (CDN je dostupná, stahovač Playwrightu ne). Lokálně se používá nainstalovaný Chrome přes `E2E_BROWSER_CHANNEL=chrome`; v CI (krok 1.7) ověřit běžnou instalaci.
 - **Agentní soubory generované nástroji:** `next dev` vytváří a obnovuje `apps/web/AGENTS.md` a `apps/web/CLAUDE.md` (jsou v repozitáři od kroku 1.4). Závazné instrukce jsou jen v kořenovém `CLAUDE.md`.
-- **Rámec pro integrace zatím nemá žádné HTTP cesty ani obrazovku:** zahájení OAuth, návrat od poskytovatele a obrazovka Propojení vzniknou v krocích 2.4 a 2.6. Návratová cesta musí ověřit přihlášeného uživatele a organizaci, najít požadavek přes `findOAuthRequest`, zavolat `verifyCallback`, pak `consumeOAuthRequest` a teprve potom vyměnit kód.
-- **Zařazování úloh z webu:** fronty a funkce `enqueue` jsou zatím jen ve workeru. Web začne úlohy zařazovat v kroku 2.6 (start synchronizace po připojení) a 5.2 (provedení schválené akce); tehdy se společná část přesune tam, kde na ni dosáhnou obě aplikace.
 - **Limity poskytovatelů nejsou nikde nastavené:** omezovač bere limit jako parametr. Konkrétní čísla doplní adaptéry podle dokumentace poskytovatele (Fakturoid v kroku 2.4, Fio v kroku 3.2).
 - **Dead-letter fronta se jen plní:** nikdo ji nečte a nic z ní neubývá. Záznam jde zároveň do logu a do Sentry; upozornění a postup, jak úlohu pustit znovu, patří do kroku 9.4.
-- **Úklid `oauth_requests` se nezapisuje do audit logu:** maže napříč organizacemi jen vypršelé technické záznamy (otisk `state`, zašifrovaný PKCE ověřovač), ne data firem, a audit je vedený po organizacích. Počet smazaných řádků je v logu workeru. Potvrdit, že to takhle stačí.
 - **Idempotence přes `jobId` platí jen po dobu, co fronta úlohu drží** (dokončené 24 hodin nebo posledních 1000, neúspěšné 7 dní). Proto musí být idempotentní i samotné handlery (upsert); `jobId` má obsahovat časové okno.
 - **Více instancí workeru** je možné (plánovač i omezovač jsou sdílené přes Redis), ale nevyzkoušené; na Railway běží jedna.
 - **Redis na Railway** by měl mít zapnuté ukládání na disk a `maxmemory-policy noeviction`, jinak může při nedostatku paměti zahodit úlohy. Ověřit v nastavení služby před betou.
 - **Faktury v cizí měně** se ukládají v původní měně. Součty v korunách (Přehled, Hlídač peněz) zatím půjdou počítat jen z CZK faktur; přepočet kurzem (např. ČNB) není v plánu. Rozhodnout nejpozději v kroku 2.7.
 - **Přijaté faktury:** model a tabulky umí směr `received`, ale synchronizace v kroku 2.5 bude načítat jen vydané. Přijaté (výdaje) přidat, až je bude potřebovat Hlídač peněz (fáze 4).
-- **Data po odpojení fakturace:** synchronizované firmy, kontakty a faktury odkazují na připojení. Co s nimi při odpojení (smazat, nebo nechat jako historii) rozhodnout v kroku 2.6; úplné smazání organizace je krok 7.4.
-- **Testy Fakturoidu stojí zatím na příkladech z dokumentace.** Účet uživatele je schválený a API odpovídá podle dokumentace (ověřeno 2026-10-11 nahrávacím skriptem), ale je prázdný. Až v něm budou vymyšlené faktury (zaplacená, po splatnosti, částečně zaplacená, zálohová, opravná, stornovaná), spustit `pnpm --filter @bystro/integrations record:fakturoid`, zkontrolovat a commitnout `src/fakturoid/fixtures/recorded/`.
+- **Nahrané odpovědi Fakturoidu pokrývají jen dvě otevřené faktury** (`src/fakturoid/fixtures/recorded/`, nahráno 2026-10-11 z účtu uživatele, anonymizováno). Ostatní případy (zaplacená, částečně zaplacená, zálohová, opravná, stornovaná, cizí měna) stojí na příkladech z dokumentace; až je uživatel v účtu vytvoří, nahrát znovu skriptem `record:fakturoid`.
 - **Fakturoid a hlavička Basic:** dokumentace píše o URL-safe Base64, OAuth helper kóduje běžným Base64. S údaji uživatele vydal Fakturoid token při obou kódováních (2026-10-11); u hodnot ze samých šestnáctkových znaků se obě kódování liší jen výjimečně. Znovu ověřit při prvním připojení přes OAuth v kroku 2.6.
-- **Fakturoid nepovoluje `localhost` jako návratovou adresu OAuth.** Testovací integrace má adresu nasazeného prostředí (`https://bystro-production.up.railway.app/api/integrations/fakturoid/callback`). Jak připojovat při lokálním vývoji (vlastní doména v souboru hosts), vyřešit v kroku 2.6.
 - **Platby z Fakturoidu se načítají přes faktury** (samostatný seznam plateb API nemá). Předpokládáme, že přidání platby změní `updated_at` faktury, takže ji přírůstkový sync (`updated_since`) zachytí. Ověřit na testovacím účtu v kroku 2.5.
 - **Přijaté faktury z Fakturoidu** (náklady, endpoint expenses) adaptér nenačítá; přidat s fází 4.
 - **Měsíční limit požadavků Fakturoidu:** účet uživatele má 1 500 API požadavků za měsíc (vidět v Nastavení → Napojení na jiné aplikace; dokumentace API ho neuvádí a jinde může být jiný). Synchronizace je proto hodinová jen přes den (zhruba 450 požadavků měsíčně, když se nic nemění) a úplné porovnání týdenní. Nevíme, jak API odpoví po vyčerpání limitu, ani jak zbývající počet zjistit; sledovat při prvním provozu a případně počítat požadavky u nás.
 - **Smazaná faktura se v Bystru projeví až při týdenním úplném porovnání** (neděle 2:30), změny a platby do hodiny. Rychlejší by byly webhooky; ty Fakturoid nabízí jen na placených tarifech a pro OAuth aplikace až po domluvě s podporou (jinak 403).
-- **Synchronizaci zatím nic nespouští hned po připojení ani ručně:** první načtení proběhne při nejbližším hodinovém běhu. Okamžité spuštění po připojení a tlačítko „Aktualizovat“ patří do kroku 2.6.
 - **Poskytovatelé bez plateb uvnitř faktury:** synchronizace bere platby z faktury (`Invoice.payments`). Pro systém, který je vrací zvlášť (`payments: null`), je potřeba doplnit načtení přes `listPayments`; řešit s iDokladem v kroku 2.8.
-- **Synchronizace skutečného Fakturoidu od začátku do konce** (připojení přes OAuth → worker → data v databázi) zatím neproběhla; čeká na krok 2.6 a faktury v testovacím účtu.
-- **Client ID a Secret Fakturoidu prošly chatem** (2026-10-11). Jsou jen v lokálním `.env`; před betou je ve Fakturoidu vygenerovat znovu a zadat přímo do Railway.
-- **Proměnné workeru na Railway pro krok 2.5:** `ENCRYPTION_KEY` je nově povinný (bez něj worker nenastartuje); `FAKTUROID_CLIENT_ID`, `FAKTUROID_CLIENT_SECRET` a `INTEGRATIONS_CONTACT_EMAIL` je potřeba doplnit, až se bude Fakturoid připojovat (viz `docs/deploy.md`, část 6).
+- **Skutečné připojení Fakturoidu od začátku do konce** (přihlášení u Fakturoidu → návrat → worker → faktury v databázi) jde vyzkoušet jen na nasazené adrese a zatím neproběhlo. Udělat hned po nasazení kroku 2.6: na Railway doplnit proměnné Fakturoidu do webu i workeru a v Nastavení → Propojení kliknout na „Propojit“. Při tom ověřit i kódování hlavičky Basic a to, že nová platba změní `updated_at` faktury.
+- **Údaje Fakturoidu prošly chatem** (2026-10-11): Client Credentials uživatelského účtu i Client ID a Secret OAuth integrace. Jsou jen v lokálním `.env`; před betou je ve Fakturoidu vygenerovat znovu a zadat přímo do Railway.
+- **Proměnné na Railway pro Fakturoid:** `FAKTUROID_CLIENT_ID`, `FAKTUROID_CLIENT_SECRET` a `INTEGRATIONS_CONTACT_EMAIL` musí být na službě web i worker (stejné hodnoty), `ENCRYPTION_KEY` na obou stejný. Postup je v `docs/deploy.md`.
+- **Lokální vývoj a Fakturoid:** Fakturoid nedovolí `localhost` jako návratovou adresu, takže skutečné připojení jde jen na nasazené adrese; lokálně a v E2E běží proti napodobenému serveru (`apps/web/e2e/fakturoid-stub.mjs`, přes `FAKTUROID_BASE_URL`). Kdyby bylo potřeba ladit skutečné připojení lokálně, založit druhou integraci s doménou namapovanou v souboru hosts.
+- **Výběr účtu Fakturoidu** (uživatel s více účty, žádný se neshoduje podle IČO) je pokrytý integračními testy, ne E2E; ve skutečném provozu ho vyzkoušet s účtem účetní, až bude příležitost.
+- **Obrazovka Faktury po připojení** ukazuje jen „Fakturace je propojená“; seznam faktur a karta na Přehledu jsou krok 2.7.
+- **Stav připojení se v prohlížeči obnovuje dotazováním** (každé 4 s, nejdéle 3 minuty, jen když se čeká na synchronizaci). Stačí to; server-sent events zvážit, až bude stavů víc.
+- **Odpojení při výpadku Fakturoidu:** tokeny se u nás smažou vždy, ale odvolání přístupu u Fakturoidu se nemusí povést (zkouší se jednou). Uživatel si může přístup zrušit i přímo ve Fakturoidu; opakované odvolání na pozadí zatím neděláme.
+- **`QUEUE_PREFIX`** existuje jen kvůli E2E (aby jejich úlohy nezpracoval lokálně běžící worker). Worker předponu nečte; kdyby se měla měnit i v provozu, musí ji začít číst oba.
 - **Jedno připojení na poskytovatele a organizaci** (unikátní klíč). Dva účty u téhož poskytovatele v jedné firmě zatím nejdou.
 - **`last_error_code`** je krátký strojový kód, který volí náš kód; texty chyb od poskytovatele se neukládají. Od kroku 2.4 platí společné kódy `ProviderError` z `packages/core` (`reauth_required`, `forbidden`, `account_blocked`, `rate_limited`, `provider_unavailable`, `invalid_response`).
 - **Rotace `ENCRYPTION_KEY`** stále nemá postup; od tohoto kroku se jím skutečně šifrují tokeny a PKCE ověřovače.
@@ -91,6 +91,27 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 ---
 
 ## Záznamy
+
+## 2026-10-11 — krok 2.6 Obrazovka Propojení
+
+- Hotovo: připojení Fakturoidu přes OAuth (`POST /api/integrations/fakturoid/connect`, `GET /api/integrations/fakturoid/callback`), stav připojení (`GET /api/integrations/connections`), ruční aktualizace, odpojení a výběr účtu (`POST /api/integrations/connections/{id}/sync|disconnect|account`); logika v `apps/web/src/server/connections.ts`; obrazovka Nastavení → Propojení podle v4 se stavy a tlačítky; onboarding krok 2 nabízí Fakturoid; tlačítka „Připojit fakturaci“ na Přehledu a ve Fakturách vedou na Propojení; nový balíček `packages/queue` (fronty společné pro web a worker); synchronizace se zařadí hned po připojení.
+- Rozhodnutí (schváleno uživatelem):
+  - Nový balíček `packages/queue`: přesunutý kód front z workeru, web přes něj jen zařazuje úlohy. Struktura v `CLAUDE.md` je doplněná.
+  - Po odpojení se faktury, položky, platby a klienti z daného připojení skryjí (`deleted_at`) a zapomene se pozice synchronizace; po opětovném připojení je úplná synchronizace vrátí.
+  - Skutečné připojení jde jen na nasazené adrese (Fakturoid nedovolí `localhost`); lokálně a v E2E běží napodobený server.
+  - Úklid `oauth_requests` se do audit logu nezapisuje, stačí log workeru (uživatel na opakovaný dotaz nenamítal).
+  - Zahájení připojení je POST formulář s kontrolou hlavičky `Origin`; `state` je vázaný na uživatele a firmu, platí 10 minut a jde použít jednou (z kroku 2.1). Kód se mění za tokeny jen na serveru.
+  - Kam se po návratu jít (Nastavení nebo onboarding) si pamatuje krátká `HttpOnly` cookie se dvěma povolenými hodnotami; výsledek se stránce předává slovem v adrese (`propojeni=ok|vybrat-ucet|zamitnuto|neplatne|nedostupne|bez-uctu`), nikdy textem od poskytovatele.
+  - Účet ve Fakturoidu: jediný účet s právem na faktury se použije rovnou; z více účtů ten se stejným IČO jako firma; jinak uživatel vybírá a volba se ověří proti tomu, co vrací Fakturoid. Uživatel bez použitelného účtu se nepřipojí a přístup se hned odvolá.
+  - Ruční „Aktualizovat“ jde jednou za 5 minut (měsíční limit Fakturoidu); `jobId` nese pětiminutové okno.
+  - Odpojení: odvolání u Fakturoidu (`POST /oauth/revoke`, jednou, bez blokování), smazání tokenů, stav `revoked`, audit, skrytí dat. Opakované odpojení nic nerozbije.
+  - Odpověď `GET /api/integrations/connections` obsahuje jen stav, název účtu, čas poslední synchronizace a strojový kód chyby. Texty stavů skládá web z kódů; neznámý kód se uživateli neukáže.
+  - Bez nastavení Fakturoidu (tři proměnné) zůstává všude „Připravujeme“.
+- Testy: 13 integračních testů logiky připojení proti databázi (parametry adresy, šifrované tokeny, výběr účtu, cizí, chybějící, vymyšlený a použitý `state`, odmítnutí uživatelem, chyba výměny kódu, uživatel bez účtu, ruční aktualizace a její omezení, odpojení včetně výpadku Fakturoidu a cizí firmy); unit testy textů stavů, návratových adres a nastavení; E2E s napodobeným Fakturoidem: připojení → stav → odpojení s kontrolou, že po odpojení nejsou v databázi tokeny a že se tokeny nikdy nedostaly do prohlížeče, onboarding, podvržený návrat, ochrana cest (bez přihlášení 401, cizí původ 403, cizí nebo neplatné ID 404).
+- Nahrané odpovědi ze skutečného účtu Fakturoidu (2 faktury, 2 klienti) jsou v testech adaptéru.
+- 👤 Po mergi: na Railway doplnit do služeb web i worker `FAKTUROID_CLIENT_ID`, `FAKTUROID_CLIENT_SECRET`, `INTEGRATIONS_CONTACT_EMAIL` (`docs/deploy.md`), pak v aplikaci Nastavení → Propojení → „Propojit“.
+- Otevřené body: zkouška skutečného připojení, lokální vývoj, výběr účtu v provozu, obrazovka Faktury, obnovování stavu, odvolání při výpadku, `QUEUE_PREFIX` (viz sekce výše).
+- Další krok: 2.7 Obrazovka Faktury a karta na Přehledu
 
 ## 2026-10-11 — krok 2.5 Synchronizace faktur
 

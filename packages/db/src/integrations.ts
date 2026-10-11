@@ -402,6 +402,41 @@ export async function applyConnectionEvent(
 }
 
 /**
+ * Sets which account at the provider the connection reads (e.g. the Fakturoid account a
+ * user with several of them chose). With an audit record.
+ */
+export async function setConnectionAccount(
+  db: Db,
+  organizationId: string,
+  connectionId: string,
+  account: { externalAccountId: string; displayName: string | null },
+  context: { userId: string; source: AuditSource },
+): Promise<IntegrationConnection> {
+  const orgId = requireUuid(organizationId, "organizationId");
+  const userId = requireUuid(context.userId, "userId");
+
+  return db.transaction(async (tx) => {
+    const current = await requireConnection(tx, orgId, connectionId, { lock: true });
+    const [updated] = await tx
+      .update(integrationConnections)
+      .set({ externalAccountId: account.externalAccountId, displayName: account.displayName })
+      .where(eq(integrationConnections.id, current.id))
+      .returning();
+    if (updated === undefined) {
+      throw new Error("Connection update returned no row.");
+    }
+    await writeAudit(tx, orgId, {
+      actor: { type: "user", userId },
+      action: "integration.account_selected",
+      target: { type: "integration_connection", id: current.id },
+      source: context.source,
+      metadata: { provider: current.provider },
+    });
+    return updated;
+  });
+}
+
+/**
  * Disconnects: the connection becomes `revoked` and its tokens are deleted in the same
  * transaction. Revoking the grant at the provider is the caller's job, done first.
  */

@@ -1,3 +1,6 @@
+import { Secret } from "@bystro/core";
+import { fakturoidUserAgent, type FakturoidAppCredentials } from "@bystro/integrations";
+
 /** Thrown for missing or invalid web configuration. The message never contains the value. */
 export class WebEnvError extends Error {
   override name = "WebEnvError";
@@ -53,6 +56,56 @@ export function readRedisUrl(env: Env = process.env): string {
   const value = optional(env, "REDIS_URL");
   if (value === undefined || !(value.startsWith("redis://") || value.startsWith("rediss://"))) {
     throw new WebEnvError("REDIS_URL must be a redis:// or rediss:// connection string.");
+  }
+  return value;
+}
+
+const FAKTUROID_VARIABLES = [
+  "FAKTUROID_CLIENT_ID",
+  "FAKTUROID_CLIENT_SECRET",
+  "INTEGRATIONS_CONTACT_EMAIL",
+] as const;
+
+/**
+ * Fakturoid OAuth application, or `null` when it is not configured: the app then shows
+ * Fakturoid as not available yet. Setting only some of the variables is an error.
+ * FAKTUROID_BASE_URL exists for E2E tests only (a local stand-in for the API).
+ */
+export function readFakturoidEnv(env: Env = process.env): FakturoidAppCredentials | null {
+  const values = FAKTUROID_VARIABLES.map((name) => optional(env, name));
+  const [clientId, clientSecret, contactEmail] = values;
+  if (clientId === undefined && clientSecret === undefined && contactEmail === undefined) {
+    return null;
+  }
+  if (clientId === undefined || clientSecret === undefined || contactEmail === undefined) {
+    throw new WebEnvError(`Set all of ${FAKTUROID_VARIABLES.join(", ")} or none of them.`);
+  }
+  let userAgent: string;
+  try {
+    userAgent = fakturoidUserAgent(contactEmail);
+  } catch {
+    throw new WebEnvError("INTEGRATIONS_CONTACT_EMAIL must be an e-mail address.");
+  }
+  const baseUrl = optional(env, "FAKTUROID_BASE_URL");
+  if (baseUrl !== undefined && !URL.canParse(baseUrl)) {
+    throw new WebEnvError("FAKTUROID_BASE_URL must be a URL.");
+  }
+  return {
+    clientId,
+    clientSecret: new Secret(clientSecret),
+    userAgent,
+    ...(baseUrl === undefined ? {} : { baseUrl }),
+  };
+}
+
+/**
+ * Namespace of the job queues in Redis. Must be the same as the worker's (the default);
+ * only E2E tests set another one, to keep their jobs away from a running worker.
+ */
+export function readQueuePrefix(env: Env = process.env): string | undefined {
+  const value = optional(env, "QUEUE_PREFIX");
+  if (value !== undefined && !/^[a-z0-9-]+$/.test(value)) {
+    throw new WebEnvError("QUEUE_PREFIX may contain only lower-case letters, digits and dashes.");
   }
   return value;
 }

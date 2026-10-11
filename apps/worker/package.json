@@ -16,6 +16,7 @@
     "@bystro/db": "workspace:*",
     "@bystro/integrations": "workspace:*",
     "@bystro/observability": "workspace:*",
+    "@bystro/queue": "workspace:*",
     "@sentry/node": "^11.4.0",
     "bullmq": "^6.3.11",
     "drizzle-orm": "^0.45.3",

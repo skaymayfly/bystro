@@ -4,6 +4,11 @@ import { redirect } from "next/navigation";
 
 import { AuthHeading, AuthShell, authStyles } from "@/components/auth-shell";
 import { PillOptions, ProviderTiles, SoonBadge } from "@/components/bits";
+import {
+  ConnectOutcomeNotice,
+  FakturoidConnectBox,
+  loadConnections,
+} from "@/components/connections/connections-tab";
 import { CompanyStep } from "@/components/onboarding/company-step";
 import { buttonVariants } from "@/components/ui/button";
 import { BRIEF_CHANNELS, BRIEF_TIMES, DEFAULT_BRIEF_TIME, PROVIDERS } from "@/lib/content";
@@ -35,8 +40,17 @@ function StepHeading({ step, title, text }: { step: Step; title: string; text: s
 
 const fieldLabelClass = "pl-0.5 text-[15px] text-ink-2";
 
-/** Step 2 from the prototype; connecting sources arrives with steps 2.6 and 3.3. */
-function ConnectionsStep() {
+/** Step 2 from the prototype: connect the invoicing system (the bank comes with step 3.3). */
+async function ConnectionsStep({
+  organizationId,
+  outcome,
+}: {
+  organizationId: string;
+  outcome: string | undefined;
+}) {
+  const { fakturoid, fakturoidAvailable } = await loadConnections(organizationId);
+  const connected = fakturoid !== null;
+
   return (
     <>
       <StepHeading
@@ -45,16 +59,28 @@ function ConnectionsStep() {
         text="Čím víc toho propojíš, tím přesnější bude ranní přehled. Přístup je jen pro čtení."
       />
       <div className="flex flex-col gap-3.5 rounded-[18px] border border-line bg-card p-4 shadow-soft">
+        <ConnectOutcomeNotice outcome={outcome} />
         <ProviderTiles providers={PROVIDERS} className="grid-cols-5 sm:grid-cols-7" />
-        <div className="flex flex-col items-center gap-1.5 px-2 pt-2 pb-1 text-center">
-          <SoonBadge />
-          <p className="text-[13px] leading-normal text-ink-3">
-            Propojení teprve chystáme. Zatím můžeš pokračovat bez něj.
-          </p>
-        </div>
+        {connected && (
+          <div className="flex flex-col items-center gap-1 px-2 pt-2 pb-1 text-center">
+            <p className="text-[17px] font-medium">Fakturoid je propojený!</p>
+            <p className="text-[13px] leading-normal text-ink-3">
+              Nastavení propojení můžeš kdykoliv změnit v Nastavení → Propojení.
+            </p>
+          </div>
+        )}
+        {!connected && fakturoidAvailable && <FakturoidConnectBox returnTo="onboarding" />}
+        {!fakturoidAvailable && (
+          <div className="flex flex-col items-center gap-1.5 px-2 pt-2 pb-1 text-center">
+            <SoonBadge />
+            <p className="text-[13px] leading-normal text-ink-3">
+              Propojení teprve chystáme. Zatím můžeš pokračovat bez něj.
+            </p>
+          </div>
+        )}
       </div>
       <Link href="/onboarding?krok=3" className={cn(buttonVariants({ size: "form" }), "mt-[34px]")}>
-        Teď přeskočit
+        {connected ? "Pokračovat" : "Teď přeskočit"}
       </Link>
     </>
   );
@@ -102,7 +128,9 @@ function BriefStep() {
 
 export default async function OnboardingPage(props: PageProps<"/onboarding">) {
   const { user, organization } = await requireRequestContext();
-  const requested = (await props.searchParams).krok;
+  const query = await props.searchParams;
+  const requested = query.krok;
+  const outcome = typeof query.propojeni === "string" ? query.propojeni : undefined;
 
   // Without a company there is only step 1; with one, only steps 2 and 3 make sense.
   let step: Step = 1;
@@ -130,7 +158,9 @@ export default async function OnboardingPage(props: PageProps<"/onboarding">) {
           <CompanyStep />
         </>
       )}
-      {step === 2 && <ConnectionsStep />}
+      {step === 2 && organization !== null && (
+        <ConnectionsStep organizationId={organization.id} outcome={outcome} />
+      )}
       {step === 3 && <BriefStep />}
     </AuthShell>
   );

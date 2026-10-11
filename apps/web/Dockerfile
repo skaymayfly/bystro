@@ -16,6 +16,7 @@ COPY packages/core/package.json packages/core/
 COPY packages/db/package.json packages/db/
 COPY packages/integrations/package.json packages/integrations/
 COPY packages/observability/package.json packages/observability/
+COPY packages/queue/package.json packages/queue/
 RUN pnpm install --frozen-lockfile
 
 # ---- build ----

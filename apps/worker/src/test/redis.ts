@@ -4,7 +4,7 @@ import { loadRootEnv } from "@bystro/db/testing";
 import { createLogger } from "@bystro/observability";
 
 import { readRedisUrl } from "../env";
-import { createQueues, createRedisConnection, type Queues } from "../queues";
+import { createQueues, createRedisConnection, type Queues } from "@bystro/queue";
 
 export const silentLogger = createLogger({ service: "worker-test", level: "silent" });
 

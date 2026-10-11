@@ -11,7 +11,7 @@ import {
 import type { Logger } from "@bystro/observability";
 import { DelayedError, UnrecoverableError, Worker, type Job } from "bullmq";
 
-import type { Queues } from "./queues";
+import type { Queues } from "@bystro/queue";
 import { RateLimitedError } from "./rate-limiter";
 
 export interface JobContext<TData> {

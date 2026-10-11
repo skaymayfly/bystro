@@ -25,6 +25,7 @@ const nextConfig: NextConfig = {
     "@bystro/integrations",
     "@bystro/ai",
     "@bystro/observability",
+    "@bystro/queue",
   ],
   ...(standalone ? { output: "standalone" as const, outputFileTracingRoot: repositoryRoot } : {}),
 };

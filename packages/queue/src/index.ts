@@ -1,3 +1,7 @@
+/**
+ * Job queues on Redis (BullMQ), shared by the worker, which processes jobs, and the web
+ * app, which only adds them. Job contracts themselves live in @bystro/core.
+ */
 import {
   JOB_SCHEDULES,
   QUEUE_NAMES,
@@ -22,6 +26,21 @@ const DAY_SECONDS = 24 * 60 * 60;
  */
 export function createRedisConnection(url: string): Redis {
   return new Redis(url, { maxRetriesPerRequest: null, family: 0 });
+}
+
+/**
+ * Connection for a process that only adds jobs (the web app). Unlike the worker's, it gives
+ * up quickly: a request must not hang because Redis is unreachable.
+ */
+export function createProducerConnection(url: string): Redis {
+  return new Redis(url, {
+    maxRetriesPerRequest: 2,
+    connectTimeout: 2_000,
+    enableOfflineQueue: false,
+    family: 0,
+  }).on("error", () => {
+    // Failures surface through the command that hit them.
+  });
 }
 
 export interface Queues {

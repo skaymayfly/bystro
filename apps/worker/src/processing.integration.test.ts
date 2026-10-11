@@ -18,7 +18,7 @@ import {
   startWorkers,
   type Workers,
 } from "./processing";
-import { enqueue, registerSchedules } from "./queues";
+import { enqueue, registerSchedules } from "@bystro/queue";
 import { createRateLimiter } from "./rate-limiter";
 import { createTestQueues, eventually, silentLogger, type TestQueues } from "./test/redis";
 

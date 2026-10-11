@@ -9,6 +9,7 @@ import {
   mapFakturoidInvoice,
   mapFakturoidPayments,
   mapFakturoidSubject,
+  revokeFakturoidAccess,
 } from "./fakturoid";
 // Example responses copied from the Fakturoid API v3 documentation on 2026-10-11
 // (invoices index, subjects index, current user, invoice payment). Variants used below are
@@ -444,5 +445,56 @@ describe("fakturoidUserAgent and fakturoidOAuthConfig", () => {
       tokenRequestHeaders: { "User-Agent": USER_AGENT },
     });
     expect(JSON.stringify(config)).not.toContain("client-secret");
+  });
+
+  it("points at another base URL only when a test asks for it", () => {
+    const config = fakturoidOAuthConfig({
+      clientId: "client-id",
+      clientSecret: new Secret("client-secret"),
+      userAgent: USER_AGENT,
+      baseUrl: "http://localhost:3102",
+    });
+    expect(config.authorizationEndpoint).toBe("http://localhost:3102/oauth");
+    expect(config.tokenEndpoint).toBe("http://localhost:3102/oauth/token");
+  });
+});
+
+describe("revokeFakturoidAccess", () => {
+  const credentials = {
+    clientId: "client-id",
+    clientSecret: new Secret("client-secret"),
+    userAgent: USER_AGENT,
+  };
+
+  it("posts the refresh token to the documented endpoint with Basic authentication", async () => {
+    const { calls, fetchFn } = fakeFetch(() => ({ status: 200, body: {} }));
+    const bodies: string[] = [];
+    const recording = (async (input: string | URL | Request, init?: RequestInit) => {
+      bodies.push(String(init?.body));
+      return fetchFn(input, init);
+    }) as typeof fetch;
+
+    expect(
+      await revokeFakturoidAccess(credentials, new Secret("refresh-1"), { fetch: recording }),
+    ).toBe(true);
+    expect(calls[0]?.url.toString()).toBe("https://app.fakturoid.cz/api/v3/oauth/revoke");
+    expect(calls[0]?.headers.get("authorization")).toBe(
+      `Basic ${Buffer.from("client-id:client-secret").toString("base64url")}`,
+    );
+    expect(calls[0]?.headers.get("user-agent")).toBe(USER_AGENT);
+    expect(JSON.parse(bodies[0] ?? "{}")).toEqual({ token: "refresh-1" });
+  });
+
+  it("reports failure instead of throwing, so disconnecting can go on", async () => {
+    const refused = fakeFetch(() => ({ status: 401 }));
+    expect(
+      await revokeFakturoidAccess(credentials, new Secret("x"), { fetch: refused.fetchFn }),
+    ).toBe(false);
+    const offline = (async () => {
+      throw new TypeError("fetch failed");
+    }) as typeof fetch;
+    expect(await revokeFakturoidAccess(credentials, new Secret("x"), { fetch: offline })).toBe(
+      false,
+    );
   });
 });

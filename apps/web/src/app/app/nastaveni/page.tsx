@@ -3,14 +3,8 @@ import { Bell, Link2, User } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import {
-  Card,
-  CardTitle,
-  PageHeader,
-  PillOptions,
-  ProviderTiles,
-  SoonBadge,
-} from "@/components/bits";
+import { Card, CardTitle, PageHeader, PillOptions, SoonBadge } from "@/components/bits";
+import { ConnectionsTab } from "@/components/connections/connections-tab";
 import { Input } from "@/components/ui/input";
 import {
   BRIEF_CHANNELS,
@@ -19,7 +13,6 @@ import {
   CASH_THRESHOLDS_MINOR,
   DEFAULT_BRIEF_TIME,
   DEFAULT_TONE,
-  PROVIDERS,
   TONE_OPTIONS,
 } from "@/lib/content";
 import { initials, roleLabel } from "@/lib/navigation";
@@ -114,40 +107,6 @@ function ProfileTab({ context }: { context: RequestContext }) {
   );
 }
 
-const connectionPanelClass = "min-w-0 rounded-[18px] border border-line bg-card shadow-soft";
-
-/** The prototype's app picker; connecting arrives with steps 2.6 and 3.3. */
-function ConnectionsTab() {
-  return (
-    <div className="flex flex-wrap items-start gap-3.5">
-      <section
-        className={cn(
-          connectionPanelClass,
-          "flex max-w-[420px] flex-[1_1_320px] flex-col gap-3.5 p-[18px]",
-        )}
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <h2 className="text-[17px] font-medium">Přidat aplikaci</h2>
-            <p className="mt-[3px] text-sm text-ink-3">Přístup je vždy jen pro čtení.</p>
-          </div>
-          <SoonBadge />
-        </div>
-        <ProviderTiles providers={PROVIDERS} className="grid-cols-5" />
-      </section>
-      <section className={cn(connectionPanelClass, "flex-[2_1_360px] overflow-hidden")}>
-        <div className="flex items-baseline justify-between border-b border-line-soft px-[18px] py-4">
-          <h2 className="text-[17px] font-medium">Propojené aplikace</h2>
-          <p className="text-[13px] text-ink-3">0 z {PROVIDERS.length}</p>
-        </div>
-        <p className="px-[18px] py-9 text-center text-sm text-ink-3">
-          Zatím nic. Propojení teprve chystáme.
-        </p>
-      </section>
-    </div>
-  );
-}
-
 /** Morning brief and cash warning settings from the prototype; none of them is stored yet. */
 function NotificationsTab() {
   return (
@@ -214,7 +173,9 @@ function NotificationsTab() {
 /** Nastavení: the prototype's tabs. The plan tab arrives with billing (phase 9). */
 export default async function SettingsPage(props: PageProps<"/app/nastaveni">) {
   const context = await requireRequestContext();
-  const requested = (await props.searchParams).karta;
+  const query = await props.searchParams;
+  const requested = query.karta;
+  const outcome = typeof query.propojeni === "string" ? query.propojeni : undefined;
   const active: TabKey = TABS.find((tab) => tab.key === requested)?.key ?? "profil";
 
   return (
@@ -244,7 +205,9 @@ export default async function SettingsPage(props: PageProps<"/app/nastaveni">) {
 
         <div className="flex min-w-0 flex-[999_1_520px] flex-col gap-3.5">
           {active === "profil" && <ProfileTab context={context} />}
-          {active === "propojeni" && <ConnectionsTab />}
+          {active === "propojeni" && context.organization !== null && (
+            <ConnectionsTab organizationId={context.organization.id} outcome={outcome} />
+          )}
           {active === "upozorneni" && <NotificationsTab />}
         </div>
       </div>
