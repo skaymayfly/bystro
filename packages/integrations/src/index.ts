@@ -23,10 +23,12 @@ export {
   fakturoidOAuthConfig,
   FakturoidProvider,
   listFakturoidAccounts,
+  revokeFakturoidAccess,
   mapFakturoidInvoice,
   mapFakturoidPayments,
   mapFakturoidSubject,
   type FakturoidAccount,
+  type FakturoidAppCredentials,
 } from "./fakturoid/fakturoid";
 export {
   INVOICE_SYNC_LOOKBACK_MONTHS,

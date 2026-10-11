@@ -92,7 +92,11 @@ test("prvky z pozdějších fází jsou neaktivní a označené jako Připravuje
   const page = await signedInPage(browser, DESKTOP);
   await page.goto("/app");
 
-  await expect(page.getByRole("button", { name: "Připojit fakturaci" })).toBeDisabled();
+  // Invoicing can be connected (step 2.6), so its button leads to Nastavení → Propojení.
+  await expect(page.getByRole("link", { name: "Připojit fakturaci" })).toHaveAttribute(
+    "href",
+    "/app/nastaveni?karta=propojeni",
+  );
   await expect(page.getByRole("button", { name: "Připojit banku" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Připojit e-mail" })).toBeDisabled();
   await expect(page.getByText("Připravujeme").first()).toBeVisible();
@@ -102,7 +106,7 @@ test("prvky z pozdějších fází jsou neaktivní a označené jako Připravuje
   await expect(page.getByRole("button", { name: "Kdo mi dluží peníze?" }).first()).toBeDisabled();
 
   await page.goto("/app/faktury");
-  await expect(page.getByRole("button", { name: "Připojit fakturaci" })).toBeDisabled();
+  await expect(page.getByRole("link", { name: "Připojit fakturaci" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Nahrát PDF faktury" })).toHaveCount(0);
 
   // Settings are split into tabs; nothing in them can be changed yet.

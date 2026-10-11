@@ -14,7 +14,7 @@ import {
   enqueue,
   registerSchedules,
   type Queues,
-} from "./queues";
+} from "@bystro/queue";
 import { createRateLimiter } from "./rate-limiter";
 import { captureError, flushSentry, initSentry } from "./sentry";
 

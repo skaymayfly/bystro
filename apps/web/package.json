@@ -18,6 +18,7 @@
     "@bystro/db": "workspace:*",
     "@bystro/integrations": "workspace:*",
     "@bystro/observability": "workspace:*",
+    "@bystro/queue": "workspace:*",
     "@sentry/nextjs": "^11.4.0",
     "better-auth": "^1.7.7",
     "class-variance-authority": "^0.7.1",

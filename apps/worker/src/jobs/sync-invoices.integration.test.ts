@@ -119,7 +119,8 @@ async function connected(tokens: Partial<ConnectionTokens> = {}) {
       tokens: {
         accessToken: new Secret("access-old"),
         refreshToken: new Secret("refresh-keep"),
-        expiresAt: new Date("2026-10-11T12:00:00Z"),
+        // No expiry by default, so no test depends on what time it is when it runs.
+        expiresAt: null,
         ...tokens,
       },
       userId: owner.id,

@@ -6,7 +6,10 @@ import {
   ARES_STUB_URL,
   E2E_AUTH_SECRET,
   E2E_BASE_URL,
+  E2E_ENCRYPTION_KEY,
   E2E_PORT,
+  FAKTUROID_STUB_PORT,
+  FAKTUROID_STUB_URL,
 } from "./e2e/config";
 
 loadRootEnv();
@@ -48,6 +51,13 @@ export default defineConfig({
       env: { ARES_STUB_PORT: String(ARES_STUB_PORT) },
     },
     {
+      // Stands in for Fakturoid's OAuth and user endpoints; E2E never calls the real API.
+      command: "node e2e/fakturoid-stub.mjs",
+      url: `${FAKTUROID_STUB_URL}/health`,
+      reuseExistingServer: false,
+      env: { FAKTUROID_STUB_PORT: String(FAKTUROID_STUB_PORT) },
+    },
+    {
       command: `pnpm exec next build && pnpm exec next start --port ${PORT}`,
       url: baseURL,
       timeout: 180_000,
@@ -59,6 +69,14 @@ export default defineConfig({
         BETTER_AUTH_URL: baseURL,
         BETTER_AUTH_SECRET: E2E_AUTH_SECRET,
         ARES_BASE_URL: aresStubUrl,
+        // Fakturoid is "configured" with made-up credentials and points at the stand-in.
+        FAKTUROID_BASE_URL: FAKTUROID_STUB_URL,
+        FAKTUROID_CLIENT_ID: "e2e-client-id",
+        FAKTUROID_CLIENT_SECRET: "e2e-client-secret",
+        INTEGRATIONS_CONTACT_EMAIL: "e2e@bystro.example",
+        ENCRYPTION_KEY: E2E_ENCRYPTION_KEY,
+        // Jobs added by E2E go to their own queues, away from a locally running worker.
+        QUEUE_PREFIX: "bystro-e2e",
         // Keep third-party integrations off in E2E, whatever the developer has in .env.
         GOOGLE_CLIENT_ID: "",
         GOOGLE_CLIENT_SECRET: "",

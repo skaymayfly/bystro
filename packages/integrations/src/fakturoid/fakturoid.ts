@@ -46,15 +46,21 @@ export const FAKTUROID_REVOKE_ENDPOINT = `${FAKTUROID_API_BASE_URL}/oauth/revoke
  * and no PKCE (neither is mentioned in the documentation). Access tokens live 2 hours;
  * refresh tokens do not expire and are not returned again on refresh.
  */
-export function fakturoidOAuthConfig(input: {
+export interface FakturoidAppCredentials {
   clientId: string;
   clientSecret: Secret;
+  /** From `fakturoidUserAgent`. */
   userAgent: string;
-}): OAuthProviderConfig {
+  /** Only for tests against a local stand-in; defaults to the real API. */
+  baseUrl?: string;
+}
+
+export function fakturoidOAuthConfig(input: FakturoidAppCredentials): OAuthProviderConfig {
+  const baseUrl = input.baseUrl ?? FAKTUROID_API_BASE_URL;
   return {
     id: FAKTUROID_SOURCE,
-    authorizationEndpoint: FAKTUROID_AUTHORIZATION_ENDPOINT,
-    tokenEndpoint: FAKTUROID_TOKEN_ENDPOINT,
+    authorizationEndpoint: `${baseUrl}/oauth`,
+    tokenEndpoint: `${baseUrl}/oauth/token`,
     clientId: input.clientId,
     clientSecret: input.clientSecret,
     scopes: [],
@@ -62,6 +68,40 @@ export function fakturoidOAuthConfig(input: {
     clientAuthentication: "basic",
     tokenRequestHeaders: { "User-Agent": input.userAgent },
   };
+}
+
+/**
+ * Revokes the grant at Fakturoid (POST /oauth/revoke with the refresh token), which deletes
+ * both tokens there. Returns whether Fakturoid confirmed it; a failure must not stop the
+ * user from disconnecting, so nothing is thrown.
+ */
+export async function revokeFakturoidAccess(
+  credentials: FakturoidAppCredentials,
+  refreshToken: Secret,
+  options: { fetch?: typeof fetch } = {},
+): Promise<boolean> {
+  const basic = Buffer.from(
+    `${credentials.clientId}:${credentials.clientSecret.reveal()}`,
+  ).toString("base64url");
+  try {
+    const response = await (options.fetch ?? fetch)(
+      `${credentials.baseUrl ?? FAKTUROID_API_BASE_URL}/oauth/revoke`,
+      {
+        method: "POST",
+        headers: {
+          "User-Agent": credentials.userAgent,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Basic ${basic}`,
+        },
+        body: JSON.stringify({ token: refreshToken.reveal() }),
+        signal: AbortSignal.timeout(10_000),
+      },
+    );
+    return response.ok;
+  } catch {
+    return false;
+  }
 }
 
 // ---------------------------------------------------------------------------------------

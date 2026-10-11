@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Panel, PanelEmpty, SoonBadge } from "@/components/bits";
+import { loadConnections } from "@/components/connections/connections-tab";
+import { InvoicingCta } from "@/components/connections/invoicing-cta";
 import { Button } from "@/components/ui/button";
 import { requireRequestContext } from "@/server/context";
 
@@ -18,6 +20,10 @@ const detailLinkClass = "text-[13px] text-ink-3 hover:text-ink";
 export default async function DashboardPage() {
   const { organization } = await requireRequestContext();
   const now = new Date();
+  const { fakturoid, fakturoidAvailable } =
+    organization === null
+      ? { fakturoid: null, fakturoidAvailable: false }
+      : await loadConnections(organization.id);
 
   return (
     <div className="flex max-w-[1240px] flex-col">
@@ -73,15 +79,19 @@ export default async function DashboardPage() {
             </Link>
           }
         >
-          <PanelEmpty
-            title="Faktury zatím nevidím"
-            text="Propoj Fakturoid, iDoklad nebo Pohodu a pohlídám ti splatnosti."
-          >
-            <Button size="sm" disabled>
-              Připojit fakturaci
-            </Button>
-            <SoonBadge />
-          </PanelEmpty>
+          {fakturoid === null ? (
+            <PanelEmpty
+              title="Faktury zatím nevidím"
+              text="Propoj Fakturoid, iDoklad nebo Pohodu a pohlídám ti splatnosti."
+            >
+              <InvoicingCta available={fakturoidAvailable} size="sm" />
+            </PanelEmpty>
+          ) : (
+            <PanelEmpty
+              title="Fakturace je propojená"
+              text="Faktury z Fakturoidu načítám na pozadí. Přehled splatností sem brzy přidáme."
+            />
+          )}
         </Panel>
 
         <Panel title="Odpovědět" className="flex-[1_1_340px]">

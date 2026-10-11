@@ -233,7 +233,7 @@ Výsledek fáze: uživatel připojí Fakturoid nebo iDoklad a vidí své skuteč
 
 **Hotovo když:** integrační test: dvojí spuštění syncu se stejnými daty nevytvoří duplicity; smazaná faktura se označí jako smazaná.
 
-### - [ ] 2.6 Obrazovka Propojení
+### - [x] 2.6 Obrazovka Propojení
 
 **Cíl:** uživatel ví, co je připojené a v jakém stavu.
 

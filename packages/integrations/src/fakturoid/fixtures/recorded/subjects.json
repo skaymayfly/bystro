@@ -1,0 +1,32 @@
+[
+  {
+    "id": 33402085,
+    "type": "customer",
+    "country": "CZ",
+    "created_at": "2026-10-11T12:22:46.156+02:00",
+    "updated_at": "2026-10-11T12:22:53.641+02:00",
+    "name": "Klient 1 s.r.o.",
+    "registration_no": "00007919",
+    "vat_no": "",
+    "street": "Ulice 1",
+    "city": "Praha",
+    "zip": "11000",
+    "email": "",
+    "phone": ""
+  },
+  {
+    "id": 33402081,
+    "type": "customer",
+    "country": "CZ",
+    "created_at": "2026-10-11T12:21:52.170+02:00",
+    "updated_at": "2026-10-11T12:22:06.976+02:00",
+    "name": "Klient 2 s.r.o.",
+    "registration_no": "00015838",
+    "vat_no": "",
+    "street": "Ulice 2",
+    "city": "Praha",
+    "zip": "11000",
+    "email": "",
+    "phone": ""
+  }
+]

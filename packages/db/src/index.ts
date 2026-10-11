@@ -26,6 +26,7 @@ export {
   readConnectionTokens,
   recordWebhookEvent,
   saveConnection,
+  setConnectionAccount,
   setSyncCursor,
   updateConnectionTokens,
   type ConnectionTokens,
@@ -38,6 +39,7 @@ export {
 export {
   countInvoiceLines,
   findUnknownCompanyExternalIds,
+  hideSyncedData,
   listActiveInvoiceExternalIds,
   listCompanies,
   listInvoicePayments,

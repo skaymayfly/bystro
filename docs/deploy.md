@@ -59,22 +59,25 @@ Tyto hodnoty jsou zapsané i v `apps/web/railway.json`. Pokud Railway u služby 
 
 Zadej je v záložce proměnných služby `web`. Hodnoty označené jako tajné ulož jako zapečetěné (sealed), pokud to Railway nabízí.
 
-| Proměnná                  | Hodnota                              | Poznámka                                                          |
-| ------------------------- | ------------------------------------ | ----------------------------------------------------------------- |
-| `RAILWAY_DOCKERFILE_PATH` | `apps/web/Dockerfile`                | říká Railway, který Dockerfile použít                             |
-| `PORT`                    | `3000`                               | port, na kterém web poslouchá; musí sedět s cílovým portem domény |
-| `DATABASE_URL`            | `${{Postgres.DATABASE_URL}}`         | odkaz na službu Postgres                                          |
-| `REDIS_URL`               | `${{Redis.REDIS_URL}}`               | odkaz na službu Redis                                             |
-| `BETTER_AUTH_SECRET`      | první vygenerovaný klíč              | **tajné**                                                         |
-| `BETTER_AUTH_URL`         | `https://${{RAILWAY_PUBLIC_DOMAIN}}` | veřejná adresa webu; musí sedět s adresou v prohlížeči            |
-| `ENCRYPTION_KEY`          | druhý vygenerovaný klíč              | **tajné**; šifruje tokeny propojení, stejný musí mít i worker     |
-| `RESEND_API_KEY`          | nový klíč z Resendu                  | **tajné**                                                         |
-| `EMAIL_FROM`              | `Bystro <onboarding@resend.dev>`     | zkušební odesílatel; doručí jen na e-mail tvého účtu u Resendu    |
-| `GOOGLE_CLIENT_ID`        | Client ID z Google Cloud Console     |                                                                   |
-| `GOOGLE_CLIENT_SECRET`    | nový Client secret                   | **tajné**                                                         |
-| `SENTRY_DSN`              | DSN ze Sentry                        | stejná hodnota jako v lokálním `.env`                             |
-| `NEXT_PUBLIC_SENTRY_DSN`  | stejné DSN                           | použije se při sestavení pro hlášení chyb z prohlížeče            |
-| `SENTRY_ENVIRONMENT`      | `staging`                            | aby šly chyby z testovacího prostředí odlišit                     |
+| Proměnná                     | Hodnota                              | Poznámka                                                          |
+| ---------------------------- | ------------------------------------ | ----------------------------------------------------------------- |
+| `RAILWAY_DOCKERFILE_PATH`    | `apps/web/Dockerfile`                | říká Railway, který Dockerfile použít                             |
+| `PORT`                       | `3000`                               | port, na kterém web poslouchá; musí sedět s cílovým portem domény |
+| `DATABASE_URL`               | `${{Postgres.DATABASE_URL}}`         | odkaz na službu Postgres                                          |
+| `REDIS_URL`                  | `${{Redis.REDIS_URL}}`               | odkaz na službu Redis                                             |
+| `BETTER_AUTH_SECRET`         | první vygenerovaný klíč              | **tajné**                                                         |
+| `BETTER_AUTH_URL`            | `https://${{RAILWAY_PUBLIC_DOMAIN}}` | veřejná adresa webu; musí sedět s adresou v prohlížeči            |
+| `ENCRYPTION_KEY`             | druhý vygenerovaný klíč              | **tajné**; šifruje tokeny propojení, stejný musí mít i worker     |
+| `FAKTUROID_CLIENT_ID`        | Client ID integrace ve Fakturoidu    | nepovinné; bez něj je Fakturoid v aplikaci „Připravujeme“         |
+| `FAKTUROID_CLIENT_SECRET`    | Client Secret integrace              | **tajné**; nepovinné                                              |
+| `INTEGRATIONS_CONTACT_EMAIL` | kontaktní e-mail                     | jde do hlavičky `User-Agent`, kterou Fakturoid vyžaduje           |
+| `RESEND_API_KEY`             | nový klíč z Resendu                  | **tajné**                                                         |
+| `EMAIL_FROM`                 | `Bystro <onboarding@resend.dev>`     | zkušební odesílatel; doručí jen na e-mail tvého účtu u Resendu    |
+| `GOOGLE_CLIENT_ID`           | Client ID z Google Cloud Console     |                                                                   |
+| `GOOGLE_CLIENT_SECRET`       | nový Client secret                   | **tajné**                                                         |
+| `SENTRY_DSN`                 | DSN ze Sentry                        | stejná hodnota jako v lokálním `.env`                             |
+| `NEXT_PUBLIC_SENTRY_DSN`     | stejné DSN                           | použije se při sestavení pro hlášení chyb z prohlížeče            |
+| `SENTRY_ENVIRONMENT`         | `staging`                            | aby šly chyby z testovacího prostředí odlišit                     |
 
 Nepovinné, pro čitelné chyby v Sentry (nahrání zdrojových map): `SENTRY_AUTH_TOKEN` (**tajné**), `SENTRY_ORG`, `SENTRY_PROJECT`. Bez nich nasazení funguje stejně, jen chyby z produkčního sestavení mají hůř čitelný výpis.
 
@@ -91,6 +94,13 @@ https://<veřejná doména webu>/api/auth/callback/google
 ```
 
 Adresu pro `localhost` tam nech, ať funguje i lokální vývoj.
+
+### Fakturoid
+
+1. Ve Fakturoidu založ integraci: **Nastavení → Napojení na jiné aplikace → OAuth 2 pro tvůrce aplikací**.
+2. Jako adresu pro přesměrování zadej přesně `https://<veřejná doména webu>/api/integrations/fakturoid/callback`. Fakturoid nedovolí `localhost`.
+3. Client ID a Client Secret zadej do proměnných služby **web** i **worker** spolu s `INTEGRATIONS_CONTACT_EMAIL`. Na obou službách musí být stejné hodnoty.
+4. Po nasazení je v aplikaci v Nastavení → Propojení u Fakturoidu tlačítko „Propojit“.
 
 ## 6. Služba worker
 

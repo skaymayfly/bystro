@@ -96,12 +96,13 @@ packages/
   core/           Doménová logika bez I/O: faktury, párování, cashflow, akce, priority
   integrations/   Adaptery (fakturoid, fio, ares, …) za rozhraními Provider
   ai/             LlmProvider, nástroje (tools), prompty, evaluace
+  queue/          Fronty úloh na Redisu (BullMQ): společné pro worker (zpracovává) a web (zařazuje)
   observability/  Logger (pino) s redakcí citlivých polí, očištění událostí pro Sentry
   config/         Sdílený tsconfig, eslint, prettier
 docs/             PLAN.md, PROGRESS.md, zadání, prototyp, decisions/
 ```
 
-Pravidla závislostí: `core` nezávisí na ničem z ostatních balíčků. `observability` zná jen `core`. `integrations` a `ai` znají `core` a `db`. Aplikace (`web`, `worker`) skládají balíčky dohromady. Business logika nikdy v React komponentách.
+Pravidla závislostí: `core` nezávisí na ničem z ostatních balíčků. `observability` a `queue` znají jen `core`. `integrations` a `ai` znají `core` a `db`. Aplikace (`web`, `worker`) skládají balíčky dohromady. Business logika nikdy v React komponentách.
 
 ## Konvence
 
@@ -120,7 +121,7 @@ Pravidla závislostí: `core` nezávisí na ničem z ostatních balíčků. `obs
 
 ## Příkazy
 
-Stav po kroku 2.2. Při každé změně skriptů tuto sekci aktualizuj podle skutečnosti.
+Stav po kroku 2.6. Při každé změně skriptů tuto sekci aktualizuj podle skutečnosti.
 
 ```
 pnpm install             # na Windows vyžaduje zapnutý Režim pro vývojáře (symlinky)
@@ -131,7 +132,7 @@ pnpm dev                 # web (http://localhost:3000) + worker
 pnpm lint
 pnpm typecheck
 pnpm test                # unit + integrační testy; potřebuje běžící Postgres a Redis
-pnpm test:e2e            # Playwright; sestaví web a pustí ho na portu 3100 proti testovací DB
+pnpm test:e2e            # Playwright; sestaví web a pustí ho na portu 3100 proti testovací DB; potřebuje i Redis
 pnpm build               # web (.next) + worker (dist)
 pnpm format              # Prettier, zápis
 pnpm format:check

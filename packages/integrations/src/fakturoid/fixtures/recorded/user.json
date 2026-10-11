@@ -1,0 +1,11 @@
+{
+  "accounts": [
+    {
+      "permission": "owner",
+      "allowed_scope": ["invoices", "expenses", "reports"],
+      "slug": "testovaci-ucet-1",
+      "name": "Testovací účet 1",
+      "registration_no": "00007919"
+    }
+  ]
+}

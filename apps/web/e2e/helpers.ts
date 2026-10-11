@@ -31,8 +31,9 @@ export const OUTAGE_ICO = "45274649";
 export async function createSignedInUser(
   context: BrowserContext,
   options: { name?: string } = {},
-): Promise<{ email: string }> {
+): Promise<{ email: string; userId: string }> {
   const email = newEmail();
+  let userId: string | undefined;
   const { db, close } = createDb(readTestDatabase().url);
   try {
     const auth = createAuth({
@@ -46,6 +47,8 @@ export async function createSignedInUser(
       asResponse: true,
     });
     expect(response.ok, "server-side sign-up for the test user").toBe(true);
+    const { user } = (await response.clone().json()) as { user: { id: string } };
+    userId = user.id;
 
     const cookies = response.headers.getSetCookie().map((header) => {
       const [pair = ""] = header.split(";");
@@ -60,7 +63,10 @@ export async function createSignedInUser(
   } finally {
     await close();
   }
-  return { email };
+  if (userId === undefined) {
+    throw new Error("Sign-up returned no user id.");
+  }
+  return { email, userId };
 }
 
 /** Registers through the sign-up form; the new user lands on onboarding (no company yet). */
