@@ -42,7 +42,7 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **Smazaná faktura se v Bystru projeví až při týdenním úplném porovnání** (neděle 2:30), změny a platby do hodiny. Rychlejší by byly webhooky; ty Fakturoid nabízí jen na placených tarifech a pro OAuth aplikace až po domluvě s podporou (jinak 403).
 - **Skutečné připojení Fakturoidu od začátku do konce** (přihlášení u Fakturoidu → návrat → worker → faktury v databázi) jde vyzkoušet jen na nasazené adrese a zatím neproběhlo. Udělat hned po nasazení kroku 2.6: na Railway doplnit proměnné Fakturoidu do webu i workeru a v Nastavení → Propojení kliknout na „Propojit“. Při tom ověřit i kódování hlavičky Basic a to, že nová platba změní `updated_at` faktury.
 - **Client secret iDokladu prošel chatem** (2026-10-11, na snímku obrazovky z Developer portálu). Je v lokálním `.env` a v Railway; před betou v portálu vytvořit nový (Detail aplikace → Client secret → Nový client secret), starý smazat a nový zadat přímo do Railway (web i worker).
-- **iDoklad není ověřený proti skutečnému účtu.** Adaptér je napsaný podle dokumentace a testy běží proti jejím příkladům, ne proti nahraným odpovědím. Po prvním skutečném připojení ověřit: že faktury a součty na obrazovce Faktury sedí s iDokladem (podmínka kroku 2.8); v jakém tvaru chodí data (`2026-09-30`, nebo s časem); jestli jsou částky dobropisů záporné; co API vrátí na tarifu zdarma; že smazaný doklad vrací 404; že `Reports/…/Pdf` vrací PDF v Base64. Potom nahrát skutečné odpovědi do `packages/integrations/src/idoklad/fixtures/recorded/` (skript jako u Fakturoidu zatím není).
+- **iDoklad není ověřený proti skutečnému účtu s daty.** Stav k 2026-10-11: přihlášení a vydání tokenu proti skutečnému iDokladu funguje; dál se nedošlo, protože účet uživatele je na tarifu Základní a iDoklad dává API až od tarifu Oblíbený (ceník <https://www.idoklad.cz/cenik>: Zdarma a Základní 0 požadavků, Oblíbený 7 500, Prémiový 75 000 měsíčně). Uživatel to vyzkouší s někým, kdo tarif s API platí. Při tom ověřit: že faktury a součty na obrazovce Faktury sedí s iDokladem (podmínka kroku 2.8); v jakém tvaru chodí data (`2026-09-30`, nebo s časem); jestli jsou částky dobropisů záporné; že smazaný doklad vrací 404; že `Reports/…/Pdf` vrací PDF v Base64. Potom nahrát skutečné odpovědi do `packages/integrations/src/idoklad/fixtures/recorded/` (skript jako u Fakturoidu zatím není). Když propojení selže, řádek `Integration connection failed` v logu služby web říká krok a kód (`detail`).
 - **Stejná faktura ve Fakturoidu i v iDokladu se započítá dvakrát.** Na přání uživatele jde připojit oba systémy najednou; aplikace na to při připojování druhého upozorní, ale duplicity nehledá. Kdyby to vadilo, řešit pravidlem (např. stejné číslo dokladu a IČO odběratele) jako samostatný krok.
 - **Webhooky iDokladu** (`/Webhooks`, podpis HMAC v `X-idoklad-signature`) nejsou zapojené; změny se zjišťují dotazováním podle rozvrhu jako u Fakturoidu. Zrychlily by změny a smazání na okamžité.
 - **Měsíční limit iDokladu** (7 500 požadavků u tarifu Oblíbený) nikde nepočítáme. Hodinová aktualizace stojí 3 požadavky (tři seznamy dokladů), tedy asi 1 350 měsíčně, plus úhrady změněných dokladů. Po vyčerpání limitu se zachová jako jiné odmítnutí API.
@@ -100,6 +100,13 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 ---
 
 ## Záznamy
+
+## 2026-10-11 — iDoklad: první pokusy se skutečným účtem
+
+- PKCE jako příčina `invalid_grant` je potvrzené: po nasazení opravy (PR #18) vydání tokenu prošlo.
+- Další pokus zastavil iDoklad odpovědí o nedostatečném tarifu při čtení `/Account/CurrentAgenda`. Aplikace ukázala hlášku o tarifu, nic neuložila a přístup u iDokladu vrátila (chování podle návrhu). Účet uživatele je na tarifu Základní, který API nemá.
+- Rozhodnutí uživatele: iDoklad vyzkouší s někým, kdo platí tarif s API, a dá vědět. Krok 2.8 zůstává zaškrtnutý s otevřeným bodem „ověření proti skutečnému účtu s daty“.
+- Kód se v tomto záznamu neměnil.
 
 ## 2026-10-11 — oprava: iDoklad bez PKCE a čitelná příčina nepovedeného připojení
 
