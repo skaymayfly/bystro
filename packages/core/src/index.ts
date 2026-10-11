@@ -10,6 +10,12 @@ export {
   type AuditResult,
   type AuditSource,
 } from "./audit";
+export {
+  DecimalFormatError,
+  parseMoneyToMinor,
+  parseScaledDecimal,
+  parseScaledSafeInteger,
+} from "./decimal";
 export type { EmailMessage, EmailSender } from "./email";
 export {
   formatCzk,
@@ -92,5 +98,6 @@ export {
   type JsonValue,
   type RedactOptions,
 } from "./redaction";
+export { PROVIDER_ERROR_CODES, ProviderError, type ProviderErrorCode } from "./provider-error";
 export { ROLES, type Role } from "./roles";
 export { Secret } from "./secret";

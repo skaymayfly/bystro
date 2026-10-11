@@ -208,7 +208,7 @@ Výsledek fáze: uživatel připojí Fakturoid nebo iDoklad a vidí své skuteč
 
 **Hotovo když:** migrace a testy stavu faktury procházejí.
 
-### - [ ] 2.4 Adapter Fakturoid
+### - [x] 2.4 Adapter Fakturoid
 
 **Cíl:** první skutečná integrace.
 

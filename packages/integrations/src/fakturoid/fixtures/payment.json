@@ -1,0 +1,12 @@
+{
+  "id": 2,
+  "paid_on": "2023-12-08",
+  "currency": "CZK",
+  "amount": "1210.0",
+  "native_amount": "1210.0",
+  "variable_symbol": "120230004",
+  "bank_account_id": 11,
+  "tax_document_id": null,
+  "created_at": "2024-01-12T11:58:30.468+01:00",
+  "updated_at": "2024-01-15T16:32:08.890+01:00"
+}

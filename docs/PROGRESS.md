@@ -39,8 +39,14 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **Přijaté faktury:** model a tabulky umí směr `received`, ale synchronizace v kroku 2.5 bude načítat jen vydané. Přijaté (výdaje) přidat, až je bude potřebovat Hlídač peněz (fáze 4).
 - **Datová vrstva pro faktury** (zápis při synchronizaci, čtení pro obrazovku) zatím neexistuje; tabulky nejsou exportované. Vznikne v krocích 2.5 a 2.7 a musí brát `organizationId` jako všechny ostatní.
 - **Data po odpojení fakturace:** synchronizované firmy, kontakty a faktury odkazují na připojení. Co s nimi při odpojení (smazat, nebo nechat jako historii) rozhodnout v kroku 2.6; úplné smazání organizace je krok 7.4.
+- **Testy Fakturoidu stojí zatím na příkladech z dokumentace.** Až bude testovací účet, spustit `pnpm --filter @bystro/integrations record:fakturoid` (návod v `.env.example`), zkontrolovat a commitnout `src/fakturoid/fixtures/recorded/`; test `recorded.test.ts` je pak začne používat. Účet by měl mít zaplacenou, po splatnosti, částečně zaplacenou, zálohovou, opravnou a stornovanou fakturu.
+- **Fakturoid a hlavička Basic:** dokumentace píše o URL-safe Base64, OAuth helper z kroku 2.1 kóduje běžným Base64 (nahrávací skript už URL-safe). Ověřit při prvním skutečném připojení v kroku 2.6 a případně helper upravit.
+- **Fakturoid nepovoluje `localhost` jako návratovou adresu OAuth.** Testovací integrace má adresu nasazeného prostředí (`https://bystro-production.up.railway.app/api/integrations/fakturoid/callback`). Jak připojovat při lokálním vývoji (vlastní doména v souboru hosts), vyřešit v kroku 2.6.
+- **Platby z Fakturoidu se načítají přes faktury** (samostatný seznam plateb API nemá). Předpokládáme, že přidání platby změní `updated_at` faktury, takže ji přírůstkový sync (`updated_since`) zachytí. Ověřit na testovacím účtu v kroku 2.5.
+- **Přijaté faktury z Fakturoidu** (náklady, endpoint expenses) adaptér nenačítá; přidat s fází 4.
+- **`INTEGRATIONS_CONTACT_EMAIL`** (kontakt v User-Agent pro Fakturoid) bude od kroku 2.5 potřebovat worker a od 2.6 web; doplnit tehdy na Railway a do `docs/deploy.md`.
 - **Jedno připojení na poskytovatele a organizaci** (unikátní klíč). Dva účty u téhož poskytovatele v jedné firmě zatím nejdou.
-- **`last_error_code`** je krátký strojový kód, který volí náš kód (např. `http_401`, `rate_limited`); texty chyb od poskytovatele se neukládají. Seznam kódů sjednotit s prvním adaptérem v kroku 2.4.
+- **`last_error_code`** je krátký strojový kód, který volí náš kód; texty chyb od poskytovatele se neukládají. Od kroku 2.4 platí společné kódy `ProviderError` z `packages/core` (`reauth_required`, `forbidden`, `account_blocked`, `rate_limited`, `provider_unavailable`, `invalid_response`).
 - **Rotace `ENCRYPTION_KEY`** stále nemá postup; od tohoto kroku se jím skutečně šifrují tokeny a PKCE ověřovače.
 - **Bezpečnostní hlavičky chybí** (vynucení HTTPS, zákaz vkládání do rámce, CSP) a odpověď obsahuje `x-powered-by: Next.js`. Zjištěno při kontrole nasazené adresy; řešit v kroku 7.3.
 - **Testovací prostředí běží s klíči Resend a Google, které byly sdílené v chatu.** Před betou (fáze 7) vyměnit a zadat přímo do Railway.
@@ -80,6 +86,23 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 ---
 
 ## Záznamy
+
+## 2026-10-11 — krok 2.4 Adapter Fakturoid
+
+- Hotovo: `packages/integrations/src/fakturoid/`: HTTP klient (`client.ts`) a `FakturoidProvider` implementující `InvoiceProvider` (`fakturoid.ts`), mapování faktur, položek, plateb a subjektů na doménové typy, `listFakturoidAccounts` (výběr účtu po připojení), OAuth konfigurace pro helper z kroku 2.1, konstanta limitu pro omezovač; v `packages/core` přesný převod textových částek na haléře (`parseMoneyToMinor`, `parseScaledDecimal`) a společné chyby poskytovatelů (`ProviderError`). Skript `record:fakturoid` na nahrání anonymizovaných odpovědí z testovacího účtu.
+- Ověřeno v dokumentaci Fakturoid API v3 (2026-10-11; odkazy v komentářích u klienta): základ `https://app.fakturoid.cz/api/v3`, povinný `User-Agent: Název (e-mail)`, stránky po 40, limit v hlavičkách `X-RateLimit-Policy` / `X-RateLimit` (příklad 400 za 60 s), 429 při překročení, 402 = zablokovaný účet, 503 = údržba; OAuth Authorization Code s Basic autentizací, bez zmínky o scopes a PKCE, token 2 hodiny, refresh token bez expirace, odvolání přes `/oauth/revoke`; účty z `GET /user.json`; platby jen uvnitř faktur; částky jako text; PDF vrací 204, dokud se generuje.
+- Rozhodnutí (schváleno uživatelem):
+  - Druhy dokladů: `invoice` a `final_invoice` → faktura, `proforma` a `partial_proforma` → zálohová, `correction` → opravný doklad; `tax_document` (daňový doklad k platbě) se přeskakuje i s platbami.
+  - Stavy: `open`, `sent`, `overdue` → otevřená, `paid` → zaplacená, `cancelled` a `uncollectible` (nedobytná) → stornovaná.
+  - Neznámý druh nebo stav a cokoli, co neodpovídá dokumentaci, je chyba `invalid_response`; adaptér nehádá.
+  - DPH celkem = celkem − základ (odpověď ho nemá). Variabilní symbol, který není 1–10 číslic, a neplatný kód země se uloží jako prázdný.
+  - Chyby: 401 → `reauth_required`, 402 → `account_blocked`, 403 → `forbidden`, 429 → `rate_limited` s čekáním z hlavičky `X-RateLimit` (jinak `Retry-After`, jinak 60 s), 5xx a síť → `provider_unavailable`, ostatní 4xx a nečitelná odpověď → `invalid_response`. Chyba nikdy neobsahuje token ani obsah odpovědi.
+  - Slug účtu a ID faktury se před vložením do adresy ověřují, aby nešlo změnit cestu.
+  - Kontakt v `User-Agent` je v proměnné `INTEGRATIONS_CONTACT_EMAIL` (adresu dodal uživatel), ne v kódu.
+- Fixtures: příklady odpovědí zkopírované z dokumentace (faktura, subjekt, uživatel, platba); varianty v testech jsou z nich odvozené. Nahrané odpovědi z testovacího účtu zatím nejsou.
+- Testy: 27 testů adaptéru (přesné mapování příkladů z dokumentace, všechny stavy a druhy dokladů, opravný doklad se zápornou částkou, cizí měna, položky bez ID, odmítnutí odpovědí mimo dokumentaci, stránkování a `updated_since`, platby z faktur, 404 u detailu, PDF po 204 i trvalé 204, všechny chybové stavy, token ani odpověď v chybě, `User-Agent`, OAuth konfigurace) a 7 testů převodu částek a chyb v `core`.
+- Otevřené body: nahrané odpovědi, kódování Basic, návratová adresa pro lokální vývoj, platby přes `updated_since`, přijaté faktury, `INTEGRATIONS_CONTACT_EMAIL` na Railway (viz sekce výše).
+- Další krok: 2.5 Synchronizace faktur
 
 ## 2026-10-11 — krok 2.3 Doménový model faktur
 
