@@ -3,13 +3,12 @@
 // is pointed at it through IDOKLAD_IDENTITY_BASE_URL and IDOKLAD_BASE_URL. The sign-in page
 // is skipped: /server/connect/authorize sends the browser straight back with a code, as
 // iDoklad does after the user signs in and allows the access.
-import { createHash } from "node:crypto";
 import { createServer } from "node:http";
 
 const port = Number(process.env.IDOKLAD_STUB_PORT ?? 3103);
 let revocations = 0;
-/** PKCE challenges by the code they were issued for. */
-const challenges = new Map();
+/** Codes that were issued and not used yet. */
+const issued = new Set();
 let codes = 0;
 
 function readBody(request) {
@@ -35,17 +34,12 @@ createServer(async (request, response) => {
     return send(200, { count: revocations });
   }
   if (request.method === "GET" && url.pathname === "/server/connect/authorize") {
-    const challenge = url.searchParams.get("code_challenge");
-    if (
-      url.searchParams.get("scope") !== "idoklad_api offline_access" ||
-      url.searchParams.get("code_challenge_method") !== "S256" ||
-      challenge === null
-    ) {
+    if (url.searchParams.get("scope") !== "idoklad_api offline_access") {
       return send(400, { error: "invalid_request" });
     }
     codes += 1;
     const code = `stub-idoklad-code-${codes}`;
-    challenges.set(code, challenge);
+    issued.add(code);
     const redirect = new URL(url.searchParams.get("redirect_uri") ?? "http://invalid.example");
     redirect.searchParams.set("code", code);
     redirect.searchParams.set("state", url.searchParams.get("state") ?? "");
@@ -54,15 +48,10 @@ createServer(async (request, response) => {
   }
   if (request.method === "POST" && url.pathname === "/server/connect/token") {
     const form = await readBody(request);
-    const expected = challenges.get(form.get("code"));
-    const verifier = form.get("code_verifier") ?? "";
-    // The code is good once, and only together with the verifier it was started with.
-    challenges.delete(form.get("code"));
-    if (
-      expected === undefined ||
-      createHash("sha256").update(verifier).digest("base64url") !== expected ||
-      form.get("client_secret") !== "e2e-idoklad-secret"
-    ) {
+    // The code is good once. Like the real server for applications registered with the
+    // plain AuthorizationCode flow, a request carrying a PKCE verifier is refused.
+    const known = issued.delete(form.get("code"));
+    if (!known || form.has("code_verifier") || form.get("client_secret") !== "e2e-idoklad-secret") {
       return send(400, { error: "invalid_grant" });
     }
     return send(200, {

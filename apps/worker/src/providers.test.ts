@@ -34,7 +34,7 @@ describe("createInvoiceProviderResolver", () => {
     const setup = createInvoiceProviderResolver(settings)(connection("idoklad", "4321"));
 
     expect(setup?.oauth?.id).toBe("idoklad");
-    expect(setup?.oauth?.pkce).toBe("S256");
+    expect(setup?.oauth?.pkce).toBe("none");
     expect(setup?.rateLimit).toEqual({
       key: "idoklad.4321",
       limit: { max: 200, windowMs: 60_000 },

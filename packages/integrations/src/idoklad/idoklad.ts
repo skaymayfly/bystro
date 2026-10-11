@@ -50,10 +50,13 @@ export interface IdokladAppCredentials {
 
 /**
  * Authorization Code flow as documented: the client id and secret go in the body of the
- * token request together with the scopes. PKCE (S256) is not in the documentation's
- * examples, but the identity server announces it in its OpenID configuration
- * (`code_challenge_methods_supported`), so it is used. Access tokens live 100 minutes; a new
- * refresh token comes with every token response and replaces the previous one.
+ * token request together with the scopes. No PKCE: the documentation does not use it, and
+ * although the identity server lists `code_challenge_methods_supported`, it refuses a token
+ * request carrying a `code_verifier` from an application registered with the plain
+ * "AuthorizationCode" flow (`invalid_grant`, seen with a real account on 2026-10-11). The
+ * request is still bound to the user by `state` and to us by the client secret. Access
+ * tokens live 100 minutes; a new refresh token comes with every token response and
+ * replaces the previous one.
  */
 export function idokladOAuthConfig(input: IdokladAppCredentials): OAuthProviderConfig {
   const identity = input.identityBaseUrl ?? IDOKLAD_IDENTITY_BASE_URL;
@@ -64,7 +67,7 @@ export function idokladOAuthConfig(input: IdokladAppCredentials): OAuthProviderC
     clientId: input.clientId,
     clientSecret: input.clientSecret,
     scopes: IDOKLAD_SCOPES,
-    pkce: "S256",
+    pkce: "none",
     clientAuthentication: "body",
     tokenRequestParams: { scope: IDOKLAD_SCOPES.join(" ") },
   };
