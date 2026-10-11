@@ -180,6 +180,16 @@ const callback = (state: string | null, extra: { code?: string | null; error?: s
   error: extra.error ?? null,
 });
 
+/** The log-only detail of a failed attempt. */
+async function flowDetail(promise: Promise<unknown>) {
+  try {
+    await promise;
+  } catch (error) {
+    return error instanceof ConnectionFlowError ? error.detail : "other";
+  }
+  return "none";
+}
+
 async function flowError(promise: Promise<unknown>) {
   try {
     await promise;
@@ -542,6 +552,22 @@ describe("connecting iDoklad", () => {
       "provider_unavailable",
     );
     expect(await listConnections(db, who.organization.id)).toHaveLength(0);
+  });
+
+  it("says for the log at which step it failed, without any provider text", async () => {
+    const who = await company();
+
+    const noTokens = idokladFlow(fakeIdoklad({ tokenStatus: 400 }).fetchFn);
+    const first = await startedIdoklad(noTokens, who);
+    expect(await flowDetail(completeIdokladConnection(noTokens, who, callback(first.state)))).toBe(
+      "token: 400 invalid_grant",
+    );
+
+    const noAgenda = idokladFlow(fakeIdoklad({ agendaStatus: 401 }).fetchFn);
+    const second = await startedIdoklad(noAgenda, who);
+    expect(await flowDetail(completeIdokladConnection(noAgenda, who, callback(second.state)))).toBe(
+      "account: reauth_required",
+    );
   });
 
   it("gives the access back when the plan at iDoklad does not allow the API", async () => {
