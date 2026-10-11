@@ -23,6 +23,17 @@ export function formatCzk(amountMinor: bigint | number): string {
   return `${value < 0n ? MINUS : ""}${crowns}${decimals}${NBSP}Kč`;
 }
 
+/**
+ * Formats an amount in minor units with its currency. Crowns as in {@link formatCzk}; other
+ * currencies with their ISO code, e.g. `1 234,50 EUR` (two decimal places are assumed).
+ */
+export function formatMoney(amountMinor: bigint | number, currency: string): string {
+  if (currency === "CZK") {
+    return formatCzk(amountMinor);
+  }
+  return formatCzk(amountMinor).replace(/Kč$/, currency);
+}
+
 /** A calendar day without time, as `YYYY-MM-DD` (e.g. an invoice due date). */
 export type DateOnly = `${number}-${number}-${number}`;
 

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import type { Client, DateOnly, Invoice, InvoicePayment } from "@bystro/core";
+import type { Client, DateOnly, Invoice, InvoiceOverviewInput, InvoicePayment } from "@bystro/core";
 import { and, asc, eq, gte, inArray, isNull, notInArray, sql } from "drizzle-orm";
 
 import type { Db, DbTransaction } from "./client";
@@ -17,6 +17,7 @@ import { companies, invoiceLines, invoicePayments, invoices, syncCursors } from 
 export type StoredCompany = typeof companies.$inferSelect;
 export type StoredInvoice = typeof invoices.$inferSelect;
 export type StoredInvoicePayment = typeof invoicePayments.$inferSelect;
+export type StoredInvoiceLine = typeof invoiceLines.$inferSelect;
 
 /** Whose data a sync writes: the organization and the connection it runs through. */
 export interface SyncScope {
@@ -562,6 +563,120 @@ export async function listCompanies(db: Db, organizationId: string): Promise<Sto
       ),
     )
     .orderBy(asc(companies.name), asc(companies.id));
+}
+
+/**
+ * Invoices of the organization for the Faktury screen: each with its client's name and
+ * the sum of its payments (in the invoice's currency). Deleted invoices are left out.
+ */
+export async function listInvoiceOverview(
+  db: Db,
+  organizationId: string,
+): Promise<InvoiceOverviewInput[]> {
+  const orgId = requireUuid(organizationId, "organizationId");
+  const paid = sql<string>`coalesce((
+    select sum(${invoicePayments.amountMinor})
+    from ${invoicePayments}
+    where ${invoicePayments.organizationId} = ${invoices.organizationId}
+      and ${invoicePayments.invoiceId} = ${invoices.id}
+      and ${invoicePayments.currency} = ${invoices.currency}
+      and ${invoicePayments.deletedAt} is null
+  ), 0)`;
+  const rows = await db
+    .select({
+      id: invoices.id,
+      number: invoices.number,
+      kind: invoices.kind,
+      sourceStatus: invoices.sourceStatus,
+      issuedOn: invoices.issuedOn,
+      dueOn: invoices.dueOn,
+      paidOn: invoices.paidOn,
+      currency: invoices.currency,
+      totalMinor: invoices.totalMinor,
+      paidMinor: paid,
+      clientName: companies.name,
+    })
+    .from(invoices)
+    .leftJoin(
+      companies,
+      and(
+        eq(companies.organizationId, invoices.organizationId),
+        eq(companies.id, invoices.companyId),
+      ),
+    )
+    .where(and(eq(invoices.organizationId, orgId), isNull(invoices.deletedAt)))
+    .orderBy(asc(invoices.dueOn), asc(invoices.number), asc(invoices.id));
+  return rows.map((row) => ({
+    ...row,
+    issuedOn: row.issuedOn as DateOnly,
+    dueOn: row.dueOn as DateOnly,
+    paidOn: row.paidOn as DateOnly | null,
+    paidMinor: BigInt(row.paidMinor),
+  }));
+}
+
+export interface InvoiceDetail {
+  invoice: StoredInvoice;
+  /** The client, when the invoice has one that still exists. */
+  company: StoredCompany | null;
+  lines: StoredInvoiceLine[];
+  payments: StoredInvoicePayment[];
+}
+
+/**
+ * One invoice of the organization with its client, lines and payments, or `null` when the
+ * organization has no such invoice (or it was deleted at the source). An id from another
+ * organization is simply not found.
+ */
+export async function getInvoiceDetail(
+  db: Db,
+  organizationId: string,
+  invoiceId: string,
+): Promise<InvoiceDetail | null> {
+  const orgId = requireUuid(organizationId, "organizationId");
+  const [invoice] = await db
+    .select()
+    .from(invoices)
+    .where(
+      and(
+        eq(invoices.organizationId, orgId),
+        eq(invoices.id, requireUuid(invoiceId, "invoiceId")),
+        isNull(invoices.deletedAt),
+      ),
+    );
+  if (invoice === undefined) {
+    return null;
+  }
+  const [company] =
+    invoice.companyId === null
+      ? []
+      : await db
+          .select()
+          .from(companies)
+          .where(and(eq(companies.organizationId, orgId), eq(companies.id, invoice.companyId)));
+  const lines = await db
+    .select()
+    .from(invoiceLines)
+    .where(
+      and(
+        eq(invoiceLines.organizationId, orgId),
+        eq(invoiceLines.invoiceId, invoice.id),
+        isNull(invoiceLines.deletedAt),
+      ),
+    )
+    .orderBy(asc(invoiceLines.position), asc(invoiceLines.id));
+  const payments = await db
+    .select()
+    .from(invoicePayments)
+    .where(
+      and(
+        eq(invoicePayments.organizationId, orgId),
+        eq(invoicePayments.invoiceId, invoice.id),
+        isNull(invoicePayments.deletedAt),
+      ),
+    )
+    .orderBy(asc(invoicePayments.paidOn), asc(invoicePayments.id));
+  return { invoice, company: company ?? null, lines, payments };
 }
 
 /** Number of non-deleted line rows of an invoice; used to verify syncs. */

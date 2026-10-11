@@ -121,7 +121,7 @@ Pravidla závislostí: `core` nezávisí na ničem z ostatních balíčků. `obs
 
 ## Příkazy
 
-Stav po kroku 2.6. Při každé změně skriptů tuto sekci aktualizuj podle skutečnosti.
+Stav po kroku 2.7. Při každé změně skriptů tuto sekci aktualizuj podle skutečnosti.
 
 ```
 pnpm install             # na Windows vyžaduje zapnutý Režim pro vývojáře (symlinky)

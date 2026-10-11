@@ -102,7 +102,7 @@ test("připojení Fakturoidu → stav → odpojení; po odpojení nejsou v datab
   expect(JSON.stringify(fromApi)).not.toMatch(/token/i);
 
   await page.goto("/app/faktury");
-  await expect(page.getByText("Fakturace je propojená")).toBeVisible();
+  await expect(page.getByText("Faktury se načítají")).toBeVisible();
 
   await page.goto("/app/nastaveni?karta=propojeni");
   page.once("dialog", (dialog) => void dialog.accept());

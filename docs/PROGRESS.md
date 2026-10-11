@@ -32,7 +32,7 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **Idempotence přes `jobId` platí jen po dobu, co fronta úlohu drží** (dokončené 24 hodin nebo posledních 1000, neúspěšné 7 dní). Proto musí být idempotentní i samotné handlery (upsert); `jobId` má obsahovat časové okno.
 - **Více instancí workeru** je možné (plánovač i omezovač jsou sdílené přes Redis), ale nevyzkoušené; na Railway běží jedna.
 - **Redis na Railway** by měl mít zapnuté ukládání na disk a `maxmemory-policy noeviction`, jinak může při nedostatku paměti zahodit úlohy. Ověřit v nastavení služby před betou.
-- **Faktury v cizí měně** se ukládají v původní měně. Součty v korunách (Přehled, Hlídač peněz) zatím půjdou počítat jen z CZK faktur; přepočet kurzem (např. ČNB) není v plánu. Rozhodnout nejpozději v kroku 2.7.
+- **Faktury v cizí měně** se ukládají i zobrazují v původní měně. Do korunových součtů (dlaždice na Fakturách, karta Po splatnosti) se nepočítají a obrazovka to pod seznamem říká. Přepočet kurzem (např. ČNB) není v plánu; vrátit se k němu s Hlídačem peněz (fáze 4).
 - **Přijaté faktury:** model a tabulky umí směr `received`, ale synchronizace v kroku 2.5 bude načítat jen vydané. Přijaté (výdaje) přidat, až je bude potřebovat Hlídač peněz (fáze 4).
 - **Nahrané odpovědi Fakturoidu pokrývají jen dvě otevřené faktury** (`src/fakturoid/fixtures/recorded/`, nahráno 2026-10-11 z účtu uživatele, anonymizováno). Ostatní případy (zaplacená, částečně zaplacená, zálohová, opravná, stornovaná, cizí měna) stojí na příkladech z dokumentace; až je uživatel v účtu vytvoří, nahrát znovu skriptem `record:fakturoid`.
 - **Fakturoid a hlavička Basic:** dokumentace píše o URL-safe Base64, OAuth helper kóduje běžným Base64. S údaji uživatele vydal Fakturoid token při obou kódováních (2026-10-11); u hodnot ze samých šestnáctkových znaků se obě kódování liší jen výjimečně. Znovu ověřit při prvním připojení přes OAuth v kroku 2.6.
@@ -46,10 +46,14 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **Proměnné na Railway pro Fakturoid:** `FAKTUROID_CLIENT_ID`, `FAKTUROID_CLIENT_SECRET` a `INTEGRATIONS_CONTACT_EMAIL` musí být na službě web i worker (stejné hodnoty), `ENCRYPTION_KEY` na obou stejný. Postup je v `docs/deploy.md`.
 - **Lokální vývoj a Fakturoid:** Fakturoid nedovolí `localhost` jako návratovou adresu, takže skutečné připojení jde jen na nasazené adrese; lokálně a v E2E běží proti napodobenému serveru (`apps/web/e2e/fakturoid-stub.mjs`, přes `FAKTUROID_BASE_URL`). Kdyby bylo potřeba ladit skutečné připojení lokálně, založit druhou integraci s doménou namapovanou v souboru hosts.
 - **Výběr účtu Fakturoidu** (uživatel s více účty, žádný se neshoduje podle IČO) je pokrytý integračními testy, ne E2E; ve skutečném provozu ho vyzkoušet s účtem účetní, až bude příležitost.
-- **Obrazovka Faktury po připojení** ukazuje jen „Fakturace je propojená“; seznam faktur a karta na Přehledu jsou krok 2.7.
 - **Stav připojení se v prohlížeči obnovuje dotazováním** (každé 4 s, nejdéle 3 minuty, jen když se čeká na synchronizaci). Stačí to; server-sent events zvážit, až bude stavů víc.
 - **Odpojení při výpadku Fakturoidu:** tokeny se u nás smažou vždy, ale odvolání přístupu u Fakturoidu se nemusí povést (zkouší se jednou). Uživatel si může přístup zrušit i přímo ve Fakturoidu; opakované odvolání na pozadí zatím neděláme.
 - **`QUEUE_PREFIX`** existuje jen kvůli E2E (aby jejich úlohy nezpracoval lokálně běžící worker). Worker předponu nečte; kdyby se měla měnit i v provozu, musí ji začít číst oba.
+- **👤 Podmínka kroku 2.7 se skutečným Fakturoidem** („součty sedí s Fakturoidem“) čeká na ověření uživatelem po nasazení: v účtu jsou dvě otevřené faktury (1 000 Kč a 2 000 Kč, splatné 25. 10. 2026), na Fakturách má být „2 faktury · 3 000 Kč čeká na zaplacení“. Do té doby je krok ověřený jen na testovacích datech.
+- **Stažení PDF faktury** z detailu chybí (prototyp ho má). Adaptér to umí (`getDocument`), ale každé stažení stojí požadavek z měsíčního limitu Fakturoidu; přidat s fází 5, kde se PDF přikládá k upomínce.
+- **Detail faktury je bez akcí:** „Poslat připomínku“ přijde ve fázi 5; „Označit jako zaplacené“ z prototypu do Bystra nepatří (zapisovalo by do Fakturoidu, Bystro jen čte).
+- **Seznam faktur se nestránkuje** a filtruje se na serveru nad všemi fakturami firmy za poslední rok. Pro stovky faktur stačí; u tisíců doplnit stránkování a filtrování v databázi.
+- **Iniciály v seznamu faktur** se berou z názvu klienta (první a poslední slovo), takže „Zelený dům a.s.“ dá „ZA“. Prototyp používá iniciály kontaktní osoby; tu u faktur zatím nemáme.
 - **Jedno připojení na poskytovatele a organizaci** (unikátní klíč). Dva účty u téhož poskytovatele v jedné firmě zatím nejdou.
 - **`last_error_code`** je krátký strojový kód, který volí náš kód; texty chyb od poskytovatele se neukládají. Od kroku 2.4 platí společné kódy `ProviderError` z `packages/core` (`reauth_required`, `forbidden`, `account_blocked`, `rate_limited`, `provider_unavailable`, `invalid_response`).
 - **Rotace `ENCRYPTION_KEY`** stále nemá postup; od tohoto kroku se jím skutečně šifrují tokeny a PKCE ověřovače.
@@ -75,7 +79,6 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **Prvky „Připravujeme“:** tlačítka pro připojení, dlaždice poskytovatelů, otázky a pole asistenta a volby v Nastavení jsou vypnuté. Zprovoznit je v krocích 2.6 (fakturace), 3.3 (banka), 4.5–4.6 (Hlídač peněz), 6.4 (asistent) a 6.6 (ranní přehled).
 - **Úvodní věta Přehledu** je zatím pevný text pro stav bez propojení. Skutečný ranní přehled je krok 6.6.
 - **Mobilní zobrazení** není ani v prototypu v4; navržené je v ADR 0002 (horní lišta + spodní navigace pod 768 px). Ověřit s uživateli v betě.
-- **Detail faktury** z prototypu zatím neexistuje (nemá prázdný stav); vznikne v kroku 2.7 podle v4.
 - **Rychlé akce ⌘K** (vyhledávací paleta z v4) nejsou postavené ani v plánu. Rozhodnout, kam je zařadit.
 - **Profil v Nastavení je jen ke čtení** a volba „Jak spolu mluvíme“ (tykání, vykání, stručně) se neukládá; tón zatím nikde v plánu není.
 - **Karta Předplatné v Nastavení** z v4 chybí; vznikne v kroku 9.1, až budou potvrzené ceny.
@@ -91,6 +94,24 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 ---
 
 ## Záznamy
+
+## 2026-10-11 — krok 2.7 Obrazovka Faktury a karta na Přehledu
+
+- Hotovo: obrazovka Faktury podle v4 (souhrnné dlaždice Po splatnosti / Čeká na platbu / Zaplaceno, filtry, hledání, řazení, tabulka); detail faktury (`/app/faktury/{id}`: částka k úhradě, vystaveno, splatnost, variabilní symbol, kontakt, položky, historie); karta „Po splatnosti“ na Přehledu (součet, počet, nejstarší, tři nejstarší faktury) a věta v úvodu Přehledu; čtení z databáze (`listInvoiceOverview`, `getInvoiceDetail`); logika seznamu v `packages/core/src/invoice-overview.ts`; `formatMoney`.
+- Rozhodnutí:
+  - Stavy, filtry, hledání, řazení a součty počítá čistý kód v `core` nad daty jedné firmy; stránky jen vykreslují. Den se bere v pražském čase.
+  - Filtry: Vše / Po splatnosti / Brzy splatné / Čeká / Zaplaceno. „Brzy splatné“ je navíc proti v4 (je v plánu); „Čeká“ zahrnuje i brzy splatné. Filtr, hledání a řazení jsou v adrese (`?stav=`, `?q=`, `?razeni=`), takže fungují bez JavaScriptu a jdou sdílet.
+  - Výchozí řazení: nezaplacené nahoře od nejdéle po splatnosti, zaplacené na konci. Řadit jde i podle čísla, klienta a částky.
+  - Součty: „Po splatnosti“ a „Čeká na platbu“ sčítají nezaplacený zbytek (po odečtení dílčích plateb), „Zaplaceno“ celé částky. Jen v korunách; faktury v jiné měně se počítají do počtu, ne do částky (schváleno uživatelem).
+  - Koncepty, stornované a smazané faktury se v seznamu ani v součtech neukazují.
+  - Každé číslo má u sebe zdroj a čas: „Zdroj: Fakturoid · aktualizováno před X“.
+  - Detail se hledá vždy spolu s firmou; cizí, smazaná nebo vymyšlená faktura je 404.
+  - Texty z Fakturoidu (klient, položky) se vypisují jako prostý text.
+  - Bez propojení zůstává prázdný stav z prototypu; po propojení bez faktur „Faktury se načítají“ (před první synchronizací) nebo „Ve Fakturoidu zatím žádné faktury nevidím“.
+- Bez migrace a bez nových HTTP cest.
+- Testy: 13 testů logiky seznamu v `core` (stavy, dílčí platba, filtry, hledání bez diakritiky, řazení, součty, cizí měna); 5 integračních testů čtení (součet plateb, odebraná platba, platba v jiné měně, oddělení firem, skrytá data, cizí a smazaná faktura v detailu); unit testy textů a adres; E2E se čtyřmi scénáři: součty a pořadí, filtry + hledání + řazení, detail a karta na Přehledu, cizí a vymyšlená faktura (404).
+- Otevřené body: ověření se skutečným Fakturoidem, PDF, akce na detailu, stránkování, iniciály (viz sekce výše).
+- Další krok: 2.8 Adapter iDoklad
 
 ## 2026-10-11 — panel Fakturoidu se otevírá až kliknutím (úprava na přání uživatele)
 
