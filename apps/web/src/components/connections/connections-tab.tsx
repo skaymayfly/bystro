@@ -1,7 +1,7 @@
 import { listConnections } from "@bystro/db";
 import type { FakturoidAccount } from "@bystro/integrations";
 
-import { ProviderTiles, SoonBadge } from "@/components/bits";
+import { SoonBadge } from "@/components/bits";
 import { Button } from "@/components/ui/button";
 import { CONNECT_OUTCOME_TEXTS } from "@/lib/connection-status";
 import { PROVIDERS } from "@/lib/content";
@@ -10,17 +10,10 @@ import { ConnectionFlowError, listSelectableFakturoidAccounts } from "@/server/c
 import { getDb } from "@/server/db";
 import { getFakturoidFlow, toConnectionView, type ConnectionView } from "@/server/integrations";
 
-import { ConnectForm, type ConnectReturnTarget } from "./connect-form";
 import { ConnectionsList } from "./connections-list";
+import { ProviderPicker, type FakturoidState } from "./provider-picker";
 
 const panelClass = "min-w-0 rounded-[18px] border border-line bg-card shadow-soft";
-
-/** What the prototype lists before connecting an invoicing system. */
-const FAKTUROID_REQUIREMENTS = [
-  "Účet ve Fakturoidu",
-  "Přihlášení u Fakturoidu",
-  "Právo číst faktury a kontakty",
-];
 
 /** Connections of a company and whether Fakturoid can be connected in this environment. */
 export async function loadConnections(organizationId: string) {
@@ -29,7 +22,10 @@ export async function loadConnections(organizationId: string) {
     .filter((connection) => connection.status !== "revoked")
     .map(toConnectionView);
   const fakturoid = connections.find((connection) => connection.provider === "fakturoid") ?? null;
-  return { connections, fakturoid, fakturoidAvailable: getFakturoidFlow() !== null };
+  const fakturoidAvailable = getFakturoidFlow() !== null;
+  const fakturoidState: FakturoidState =
+    fakturoid !== null ? "connected" : fakturoidAvailable ? "connect" : "unavailable";
+  return { connections, fakturoid, fakturoidAvailable, fakturoidState };
 }
 
 /** The sentence shown after coming back from the provider. */
@@ -50,34 +46,6 @@ export function ConnectOutcomeNotice({ outcome }: { outcome: string | undefined 
     >
       {notice.text}
     </p>
-  );
-}
-
-/** Anchor of the connect box; the Fakturoid tile links to it. */
-export const FAKTUROID_CONNECT_ANCHOR = "propojit-fakturoid";
-
-/**
- * The box offering to connect Fakturoid, with the prototype's list of requirements.
- * Clicking the Fakturoid tile jumps here and the box lights up, so it is clear where to go on.
- */
-export function FakturoidConnectBox({ returnTo }: { returnTo: ConnectReturnTarget }) {
-  return (
-    <div
-      id={FAKTUROID_CONNECT_ANCHOR}
-      className="-mx-2 flex scroll-mt-24 flex-col gap-3 rounded-box border-t border-line-soft px-2 pt-3.5 pb-2 transition-shadow target:border-transparent target:shadow-[0_0_0_2px_var(--color-ink)]"
-    >
-      <p className="text-[15px] font-medium">Fakturoid</p>
-      <p className="text-sm text-ink-3">Požadavky:</p>
-      <ul className="flex flex-col gap-2 pl-0.5">
-        {FAKTUROID_REQUIREMENTS.map((requirement) => (
-          <li key={requirement} className="flex items-baseline gap-2.5 text-sm">
-            <span aria-hidden className="size-1 flex-none -translate-y-[3px] rounded-full bg-ink" />
-            {requirement}
-          </li>
-        ))}
-      </ul>
-      <ConnectForm returnTo={returnTo} size="form" className="mt-1" />
-    </div>
   );
 }
 
@@ -152,7 +120,8 @@ export async function ConnectionsTab({
   organizationId: string;
   outcome: string | undefined;
 }) {
-  const { connections, fakturoid, fakturoidAvailable } = await loadConnections(organizationId);
+  const { connections, fakturoid, fakturoidAvailable, fakturoidState } =
+    await loadConnections(organizationId);
   const accounts = fakturoid === null ? [] : await selectableAccounts(fakturoid, organizationId);
 
   return (
@@ -175,14 +144,7 @@ export async function ConnectionsTab({
             </div>
             {!fakturoidAvailable && <SoonBadge />}
           </div>
-          <ProviderTiles
-            providers={PROVIDERS}
-            className="grid-cols-5"
-            fakturoidHref={
-              fakturoidAvailable && fakturoid === null ? `#${FAKTUROID_CONNECT_ANCHOR}` : undefined
-            }
-          />
-          {fakturoidAvailable && fakturoid === null && <FakturoidConnectBox returnTo="settings" />}
+          <ProviderPicker fakturoid={fakturoidState} returnTo="settings" className="grid-cols-5" />
           {fakturoidAvailable && (
             <p className="text-xs text-ink-3">Ostatní aplikace teprve chystáme.</p>
           )}

@@ -1,9 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import fakturoidLogo from "@/assets/fakturoid-logo.svg";
-import type { Provider } from "@/lib/content";
 import { cn } from "@/lib/utils";
 
 /** The Bystro mark: a white slash on a black rounded square. */
@@ -254,78 +251,5 @@ export function PillOptions({
         </button>
       ))}
     </div>
-  );
-}
-
-/**
- * Grid of provider tiles from the prototype's "add an app" picker. Only a provider that can
- * be connected is clickable: `fakturoidHref` makes the Fakturoid tile a link (to the box
- * with the "Propojit" button).
- */
-export function ProviderTiles({
-  providers,
-  className,
-  fakturoidHref,
-}: {
-  providers: readonly Provider[];
-  className?: string;
-  fakturoidHref?: string | undefined;
-}) {
-  const fakturoidLogoImage = (name: string) => (
-    <Image
-      src={fakturoidLogo}
-      alt={name}
-      unoptimized
-      className="h-auto max-h-full w-full max-w-[132px] min-w-[88px]"
-    />
-  );
-  return (
-    <>
-      <ul className={cn("grid gap-2", className)}>
-        {providers.map((provider) =>
-          provider.logo === "fakturoid" ? (
-            // Fakturoid's logo rules (https://www.fakturoid.cz/logo): the symbol never without
-            // the name, the horizontal logo at least 30 px high, unaltered, on a calm
-            // background. The file already contains the required clear space. Hence a tile
-            // two columns wide, in full colour.
-            <li
-              key={provider.name}
-              title={provider.name}
-              className="col-span-2 flex rounded-xl border border-line bg-white transition-colors has-[a:hover]:border-ink-2"
-            >
-              {fakturoidHref === undefined ? (
-                <span className="flex flex-1 items-center justify-center px-1">
-                  {fakturoidLogoImage(provider.name)}
-                </span>
-              ) : (
-                <a
-                  href={fakturoidHref}
-                  aria-label={`Propojit ${provider.name}`}
-                  className="flex flex-1 items-center justify-center rounded-xl px-1 outline-none focus-visible:shadow-focus"
-                >
-                  {fakturoidLogoImage(provider.name)}
-                </a>
-              )}
-            </li>
-          ) : (
-            <li
-              key={provider.name}
-              title={provider.name}
-              className="flex aspect-square items-center justify-center rounded-xl text-base font-bold tracking-[-0.02em] opacity-60"
-              style={{ background: provider.background, color: provider.color }}
-            >
-              <span aria-hidden>{provider.mark}</span>
-              <span className="sr-only">{provider.name}</span>
-            </li>
-          ),
-        )}
-      </ul>
-      {providers.some((provider) => provider.logo === "fakturoid") && (
-        <p className="text-xs leading-normal text-ink-3">
-          Fakturoid je samostatná placená služba, kterou provozuje Fakturoid s.r.o. Propojení s ní
-          vyvíjí Bystro.
-        </p>
-      )}
-    </>
   );
 }

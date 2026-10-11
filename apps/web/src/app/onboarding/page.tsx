@@ -3,16 +3,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AuthHeading, AuthShell, authStyles } from "@/components/auth-shell";
-import { PillOptions, ProviderTiles, SoonBadge } from "@/components/bits";
-import {
-  ConnectOutcomeNotice,
-  FAKTUROID_CONNECT_ANCHOR,
-  FakturoidConnectBox,
-  loadConnections,
-} from "@/components/connections/connections-tab";
+import { PillOptions, SoonBadge } from "@/components/bits";
+import { ConnectOutcomeNotice, loadConnections } from "@/components/connections/connections-tab";
+import { ProviderPicker } from "@/components/connections/provider-picker";
 import { CompanyStep } from "@/components/onboarding/company-step";
 import { buttonVariants } from "@/components/ui/button";
-import { BRIEF_CHANNELS, BRIEF_TIMES, DEFAULT_BRIEF_TIME, PROVIDERS } from "@/lib/content";
+import { BRIEF_CHANNELS, BRIEF_TIMES, DEFAULT_BRIEF_TIME } from "@/lib/content";
 import { cn } from "@/lib/utils";
 import { APP_HOME_PATH } from "@/server/access";
 import { requireRequestContext } from "@/server/context";
@@ -49,7 +45,7 @@ async function ConnectionsStep({
   organizationId: string;
   outcome: string | undefined;
 }) {
-  const { fakturoid, fakturoidAvailable } = await loadConnections(organizationId);
+  const { fakturoid, fakturoidState } = await loadConnections(organizationId);
   const connected = fakturoid !== null;
 
   return (
@@ -61,27 +57,16 @@ async function ConnectionsStep({
       />
       <div className="flex flex-col gap-3.5 rounded-[18px] border border-line bg-card p-4 shadow-soft">
         <ConnectOutcomeNotice outcome={outcome} />
-        <ProviderTiles
-          providers={PROVIDERS}
+        <ProviderPicker
+          fakturoid={fakturoidState}
+          returnTo="onboarding"
           className="grid-cols-5 sm:grid-cols-7"
-          fakturoidHref={
-            !connected && fakturoidAvailable ? `#${FAKTUROID_CONNECT_ANCHOR}` : undefined
-          }
         />
         {connected && (
           <div className="flex flex-col items-center gap-1 px-2 pt-2 pb-1 text-center">
             <p className="text-[17px] font-medium">Fakturoid je propojený!</p>
             <p className="text-[13px] leading-normal text-ink-3">
               Nastavení propojení můžeš kdykoliv změnit v Nastavení → Propojení.
-            </p>
-          </div>
-        )}
-        {!connected && fakturoidAvailable && <FakturoidConnectBox returnTo="onboarding" />}
-        {!fakturoidAvailable && (
-          <div className="flex flex-col items-center gap-1.5 px-2 pt-2 pb-1 text-center">
-            <SoonBadge />
-            <p className="text-[13px] leading-normal text-ink-3">
-              Propojení teprve chystáme. Zatím můžeš pokračovat bez něj.
             </p>
           </div>
         )}
