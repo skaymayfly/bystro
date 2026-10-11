@@ -91,6 +91,7 @@ export async function startConnection(request: Request, provider: ConnectProvide
   const target = parseReturnTarget(form?.get("returnTo"));
   const flow = providerFlow(provider);
   if (flow === null) {
+    logger.warn({ provider, code: "not_configured" }, "Integration connection failed");
     return redirectWithin(baseUrl, returnPath(target, "nedostupne", provider));
   }
 
@@ -127,6 +128,7 @@ export async function finishConnection(request: Request, provider: ConnectProvid
   const target = readReturnTarget(request.headers.get("cookie"));
   const flow = providerFlow(provider);
   if (flow === null) {
+    logger.warn({ provider, code: "not_configured" }, "Integration connection failed");
     return redirectWithin(baseUrl, returnPath(target, "nedostupne", provider));
   }
 
@@ -150,7 +152,10 @@ export async function finishConnection(request: Request, provider: ConnectProvid
     );
   } catch (error) {
     if (error instanceof ConnectionFlowError) {
-      logger.warn({ provider, code: error.code }, "Integration connection failed");
+      logger.warn(
+        { provider, code: error.code, detail: error.detail },
+        "Integration connection failed",
+      );
       return redirectWithin(baseUrl, returnPath(target, FAILURES[error.code], provider));
     }
     throw error;

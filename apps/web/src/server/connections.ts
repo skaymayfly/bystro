@@ -72,7 +72,14 @@ export type ConnectionFlowErrorCode =
 export class ConnectionFlowError extends Error {
   override name = "ConnectionFlowError";
 
-  constructor(readonly code: ConnectionFlowErrorCode) {
+  constructor(
+    readonly code: ConnectionFlowErrorCode,
+    /**
+     * Where and why it failed, for the log only: a step and a machine code such as
+     * `token: 400 invalid_client` or `account: invalid_response`. Never provider text.
+     */
+    readonly detail: string | null = null,
+  ) {
     super(`Connection failed: ${code}`);
   }
 }
@@ -114,7 +121,7 @@ async function invoicingAccounts(deps: FlowDeps, client: FakturoidClient) {
     return accounts.filter((account) => account.allowedScope.includes("invoices"));
   } catch (error) {
     if (error instanceof ProviderError) {
-      throw new ConnectionFlowError("provider_unavailable");
+      throw new ConnectionFlowError("provider_unavailable", `account: ${error.code}`);
     }
     throw error;
   }
@@ -274,7 +281,7 @@ async function finishAuthorization(
     );
   } catch (error) {
     if (error instanceof OAuthError) {
-      throw new ConnectionFlowError("provider_unavailable");
+      throw new ConnectionFlowError("provider_unavailable", `token: ${error.detail ?? error.code}`);
     }
     throw error;
   }
@@ -329,6 +336,7 @@ export async function completeIdokladConnection(
       }
       throw new ConnectionFlowError(
         error.code === "account_blocked" ? "account_blocked" : "provider_unavailable",
+        `account: ${error.code}`,
       );
     }
     throw error;

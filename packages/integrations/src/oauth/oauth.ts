@@ -50,7 +50,11 @@ export class OAuthError extends Error {
 
   constructor(
     readonly code: OAuthErrorCode,
-    detail?: string,
+    /**
+     * For token requests: the HTTP status and the provider's standard error code
+     * (e.g. `400 invalid_client`). Never a description, a token or request data.
+     */
+    readonly detail?: string,
   ) {
     super(detail === undefined ? `OAuth failed: ${code}` : `OAuth failed: ${code} (${detail})`);
   }
