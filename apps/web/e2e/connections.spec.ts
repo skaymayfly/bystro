@@ -57,13 +57,22 @@ test("připojení Fakturoidu → stav → odpojení; po odpojení nejsou v datab
   await page.getByRole("link", { name: "Připojit fakturaci" }).click();
   await expect(page).toHaveURL("/app/nastaveni?karta=propojeni");
   await expect(page.getByText("Zatím nic. Vyber aplikaci vlevo.")).toBeVisible();
-  await expect(page.getByText("Právo číst faktury a kontakty")).toBeVisible();
   const revokedBefore = await revocations(page);
 
-  // Clicking the Fakturoid logo leads to the box with the button.
-  await page.getByRole("link", { name: "Propojit Fakturoid" }).click();
-  await expect(page).toHaveURL("/app/nastaveni?karta=propojeni#propojit-fakturoid");
-  await expect(page.getByRole("button", { name: "Propojit" })).toBeInViewport();
+  // The panel is closed until the Fakturoid tile is clicked; the note about Fakturoid
+  // being a separate paid service belongs to it, not to all the tiles.
+  const tile = page.getByRole("button", { name: "Fakturoid", exact: true });
+  await expect(page.getByRole("button", { name: "Propojit" })).toHaveCount(0);
+  await expect(page.getByText("Fakturoid je samostatná placená služba")).toHaveCount(0);
+  await expect(page.getByText("Klikni na aplikaci a uvidíš, co je potřeba.")).toBeVisible();
+  await tile.click();
+  await expect(tile).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByText("Právo číst faktury a kontakty")).toBeVisible();
+  await expect(page.getByText("Fakturoid je samostatná placená služba")).toBeVisible();
+  // A second click closes it again.
+  await tile.click();
+  await expect(page.getByRole("button", { name: "Propojit" })).toHaveCount(0);
+  await tile.click();
 
   // Off to (the stand-in for) Fakturoid and back.
   await page.getByRole("button", { name: "Propojit" }).click();
@@ -78,9 +87,10 @@ test("připojení Fakturoidu → stav → odpojení; po odpojení nejsou v datab
   await expect(
     page.getByRole("status").filter({ hasText: "Čekám na první načtení" }),
   ).toBeVisible();
-  // Connected once: the offer to connect is gone and the logo is no longer a link.
+  // Connected once: the tile no longer offers to connect.
+  await page.getByRole("button", { name: "Fakturoid", exact: true }).click();
+  await expect(page.getByText("Fakturoid je propojený. Stav a odpojení najdeš")).toBeVisible();
   await expect(page.getByRole("button", { name: "Propojit" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Propojit Fakturoid" })).toHaveCount(0);
 
   // The tokens are in the database (encrypted), and nowhere in what the browser received.
   const connected = await storedConnections(userId);
@@ -98,6 +108,7 @@ test("připojení Fakturoidu → stav → odpojení; po odpojení nejsou v datab
   page.once("dialog", (dialog) => void dialog.accept());
   await page.getByRole("button", { name: "Odpojit" }).click();
   await expect(page.getByText("Zatím nic. Vyber aplikaci vlevo.")).toBeVisible();
+  await page.getByRole("button", { name: "Fakturoid", exact: true }).click();
   await expect(page.getByRole("button", { name: "Propojit" })).toBeVisible();
 
   expect(await connectionsFromApi(page)).toEqual([]);
@@ -117,6 +128,8 @@ test("onboarding nabídne Fakturoid a po připojení pokračuje dál", async ({ 
   await expect(page).toHaveURL("/onboarding?krok=2");
 
   await expect(page.getByRole("link", { name: "Teď přeskočit" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Propojit" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Fakturoid", exact: true }).click();
   await page.getByRole("button", { name: "Propojit" }).click();
 
   await expect(page).toHaveURL("/onboarding?krok=2&propojeni=ok");

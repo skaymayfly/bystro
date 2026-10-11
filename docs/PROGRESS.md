@@ -92,6 +92,13 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 
 ## Záznamy
 
+## 2026-10-11 — panel Fakturoidu se otevírá až kliknutím (úprava na přání uživatele)
+
+- Rámeček s požadavky a tlačítkem „Propojit“ už není otevřený předem. Otevře se kliknutím na dlaždici Fakturoidu a druhým kliknutím se zavře, jako v prototypu v4; dokud je zavřený, je pod dlaždicemi „Klikni na aplikaci a uvidíš, co je potřeba.“ Dlaždice je tlačítko ve všech stavech: nepropojeno (požadavky a „Propojit“), propojeno (odkaz na seznam propojených aplikací), nenastaveno („Připravujeme“). Platí v Nastavení → Propojení i v onboardingu.
+- Věta „Fakturoid je samostatná placená služba, kterou provozuje Fakturoid s.r.o. Propojení s ní vyvíjí Bystro.“ se přesunula z místa pod všemi dlaždicemi do panelu Fakturoidu. Pravidla loga ji vyžadují v prezentaci doplňku; je tedy u Fakturoidu, jen až po kliknutí. Kdyby to Fakturoid při schvalování integrace chtěl viditelné hned, vrátit ji pod dlaždice.
+- Dlaždice a panel jsou nově v klientské komponentě `apps/web/src/components/connections/provider-picker.tsx`; `ProviderTiles` z `bits.tsx` zmizelo.
+- Test: E2E ověřuje, že před kliknutím tlačítko „Propojit“ ani věta nejsou, po kliknutí jsou a druhé kliknutí panel zavře.
+
 ## 2026-10-11 — dlaždice Fakturoidu vede k tlačítku „Propojit“ (drobná úprava po kroku 2.6)
 
 - Uživatel při prvním pokusu klikal na dlaždici s logem, která nic nedělala (v prototypu v4 se na dlaždice kliká). Když jde Fakturoid připojit, je teď jeho dlaždice odkaz na rámeček s požadavky a tlačítkem „Propojit“; rámeček se po kliknutí zvýrazní. Po připojení a bez nastavení Fakturoidu dlaždice odkazem není. Platí v Nastavení → Propojení i v onboardingu.
