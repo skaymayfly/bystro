@@ -1,3 +1,5 @@
+import { randomBytes } from "node:crypto";
+
 import { EnvError } from "@bystro/db";
 import { describe, expect, it } from "vitest";
 
@@ -10,18 +12,51 @@ import { JobRegistry } from "./processing";
 import { silentLogger } from "./test/redis";
 
 describe("readWorkerEnv", () => {
+  const key = randomBytes(32);
   const valid = {
     REDIS_URL: "redis://localhost:6379",
     DATABASE_URL: "postgresql://bystro:bystro@localhost:5432/bystro",
+    ENCRYPTION_KEY: key.toString("base64"),
+  };
+  const fakturoid = {
+    FAKTUROID_CLIENT_ID: "client-id",
+    FAKTUROID_CLIENT_SECRET: "client-secret-value",
+    INTEGRATIONS_CONTACT_EMAIL: "vyvoj@bystro.example",
   };
 
   it("reads the connection strings and defaults the concurrency", () => {
     expect(readWorkerEnv(valid)).toEqual({
       redisUrl: valid.REDIS_URL,
       databaseUrl: valid.DATABASE_URL,
+      encryptionKey: key,
       concurrency: 5,
+      providers: { fakturoid: null },
     });
     expect(readWorkerEnv({ ...valid, WORKER_CONCURRENCY: "12" }).concurrency).toBe(12);
+  });
+
+  it("needs the key that decrypts tokens", () => {
+    expect(() => readWorkerEnv({ ...valid, ENCRYPTION_KEY: undefined })).toThrow(EnvError);
+    expect(() => readWorkerEnv({ ...valid, ENCRYPTION_KEY: "short" })).toThrow(EnvError);
+  });
+
+  it("reads Fakturoid when it is configured completely, and keeps the secret out of sight", () => {
+    const env = readWorkerEnv({ ...valid, ...fakturoid });
+    expect(env.providers.fakturoid).toMatchObject({
+      clientId: "client-id",
+      userAgent: "Bystro (vyvoj@bystro.example)",
+    });
+    expect(JSON.stringify(env.providers)).not.toContain("client-secret-value");
+    expect(env.providers.fakturoid?.clientSecret.reveal()).toBe("client-secret-value");
+  });
+
+  it("refuses a half-configured Fakturoid or a contact that is not an e-mail", () => {
+    expect(() => readWorkerEnv({ ...valid, ...fakturoid, FAKTUROID_CLIENT_SECRET: "" })).toThrow(
+      EnvError,
+    );
+    expect(() =>
+      readWorkerEnv({ ...valid, ...fakturoid, INTEGRATIONS_CONTACT_EMAIL: "nobody" }),
+    ).toThrow(EnvError);
   });
 
   it("refuses to start without Redis or the database", () => {

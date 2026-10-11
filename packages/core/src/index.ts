@@ -69,6 +69,8 @@ export {
   decideRateLimit,
   DEFAULT_RETRY_POLICY,
   defineJob,
+  dispatchInvoiceSyncJob,
+  INVOICE_SYNC_JOB_MODES,
   InvalidJobIdError,
   JOB_SCHEDULES,
   jobErrorCode,
@@ -78,7 +80,9 @@ export {
   retryDelayMs,
   sanitizeJobIdPart,
   SCHEDULE_TIME_ZONE,
+  syncInvoicesJob,
   type DeadLetter,
+  type DispatchInvoiceSyncPayload,
   type EmptyPayload,
   type JobDefinition,
   type JobSchedule,
@@ -87,6 +91,7 @@ export {
   type RateLimit,
   type RateLimitDecision,
   type RetryPolicy,
+  type SyncInvoicesPayload,
 } from "./jobs";
 export { organizationInputSchema, type OrganizationInput } from "./organization-input";
 export {

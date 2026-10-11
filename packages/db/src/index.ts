@@ -21,6 +21,7 @@ export {
   getConnection,
   getSyncCursor,
   listConnections,
+  listSyncTargets,
   markWebhookEventProcessed,
   readConnectionTokens,
   recordWebhookEvent,
@@ -32,7 +33,25 @@ export {
   type NewOAuthRequest,
   type OAuthRequestRecord,
   type SaveConnectionInput,
+  type SyncTarget,
 } from "./integrations";
+export {
+  countInvoiceLines,
+  findUnknownCompanyExternalIds,
+  listActiveInvoiceExternalIds,
+  listCompanies,
+  listInvoicePayments,
+  listInvoices,
+  markInvoicesDeleted,
+  upsertCompanies,
+  upsertInvoices,
+  type InvoiceUpsertResult,
+  type StoredCompany,
+  type StoredInvoice,
+  type StoredInvoicePayment,
+  type SyncScope,
+  type UpsertCounts,
+} from "./invoices";
 export {
   createFirstOrganization,
   createOrganization,

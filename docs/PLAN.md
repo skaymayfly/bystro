@@ -221,7 +221,7 @@ Výsledek fáze: uživatel připojí Fakturoid nebo iDoklad a vidí své skuteč
 
 **Hotovo když:** testy mapování a chybových stavů procházejí; žádný endpoint není vymyšlený (odkaz na dokumentaci v komentáři u klienta).
 
-### - [ ] 2.5 Synchronizace faktur
+### - [x] 2.5 Synchronizace faktur
 
 **Cíl:** data z Fakturoidu se spolehlivě dostanou do Bystra.
 

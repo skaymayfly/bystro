@@ -1,11 +1,21 @@
-import { cleanupOAuthRequestsJob } from "@bystro/core";
-import { createDb, deleteExpiredOAuthRequests } from "@bystro/db";
+import { cleanupOAuthRequestsJob, dispatchInvoiceSyncJob, syncInvoicesJob } from "@bystro/core";
+import { createDb, deleteExpiredOAuthRequests, listSyncTargets } from "@bystro/db";
 
 import { readWorkerEnv } from "./env";
 import { cleanupOAuthRequestsHandler } from "./jobs/cleanup-oauth-requests";
+import { dispatchInvoiceSyncHandler } from "./jobs/dispatch-invoice-sync";
+import { syncInvoicesHandler } from "./jobs/sync-invoices";
 import { logger } from "./logger";
 import { JobRegistry, startWorkers, type Workers } from "./processing";
-import { createQueues, createRedisConnection, registerSchedules, type Queues } from "./queues";
+import { createInvoiceProviderResolver } from "./providers";
+import {
+  createQueues,
+  createRedisConnection,
+  enqueue,
+  registerSchedules,
+  type Queues,
+} from "./queues";
+import { createRateLimiter } from "./rate-limiter";
 import { captureError, flushSentry, initSentry } from "./sentry";
 
 /** Message the deployment check looks for in the log. */
@@ -31,12 +41,29 @@ async function start(): Promise<void> {
   });
   const queues = createQueues(connection);
 
-  const registry = new JobRegistry().register(
-    cleanupOAuthRequestsJob,
-    cleanupOAuthRequestsHandler({
-      deleteExpiredBefore: (moment) => deleteExpiredOAuthRequests(db, moment),
-    }),
-  );
+  const registry = new JobRegistry()
+    .register(
+      cleanupOAuthRequestsJob,
+      cleanupOAuthRequestsHandler({
+        deleteExpiredBefore: (moment) => deleteExpiredOAuthRequests(db, moment),
+      }),
+    )
+    .register(
+      dispatchInvoiceSyncJob,
+      dispatchInvoiceSyncHandler({
+        listTargets: () => listSyncTargets(db, "invoicing"),
+        enqueue: (data, jobId) => enqueue(queues, syncInvoicesJob, data, { jobId }),
+      }),
+    )
+    .register(
+      syncInvoicesJob,
+      syncInvoicesHandler({
+        db,
+        encryptionKey: env.encryptionKey,
+        rateLimiter: createRateLimiter(connection, queues.prefix),
+        resolveProvider: createInvoiceProviderResolver(env.providers),
+      }),
+    );
 
   await registerSchedules(queues);
   const workers = startWorkers({
@@ -56,7 +83,14 @@ async function start(): Promise<void> {
       await closeDb();
     },
   };
-  logger.info({ sentryEnabled, concurrency: env.concurrency }, READY_MESSAGE);
+  logger.info(
+    {
+      sentryEnabled,
+      concurrency: env.concurrency,
+      fakturoidConfigured: env.providers.fakturoid !== null,
+    },
+    READY_MESSAGE,
+  );
 }
 
 /**

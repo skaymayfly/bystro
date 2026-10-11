@@ -257,26 +257,42 @@ describe("schedules", () => {
 
     const schedulers = await test.queues.processed.scheduled.getJobSchedulers();
     expect(schedulers).toHaveLength(JOB_SCHEDULES.length);
-    expect(schedulers[0]).toMatchObject({
+    expect(
+      schedulers.find((scheduler) => scheduler.key === "cleanup-oauth-requests"),
+    ).toMatchObject({
       key: "cleanup-oauth-requests",
       name: cleanupOAuthRequestsJob.name,
       pattern: "30 3 * * *",
       tz: "Europe/Prague",
     });
     // Exactly one upcoming run is waiting, not one per registration.
-    expect(await test.queues.processed.scheduled.getJobCountByTypes("delayed")).toBe(1);
+    expect(await test.queues.processed.scheduled.getJobCountByTypes("delayed")).toBe(
+      JOB_SCHEDULES.length,
+    );
+    const hourly = schedulers.find((scheduler) => scheduler.key === "sync-invoices-hourly");
+    expect(hourly).toMatchObject({ name: "sync.dispatch-invoices", pattern: "0 6-20 * * *" });
   });
 
   it("removes schedules that are no longer listed", async () => {
     await registerSchedules(test.queues, [
       ...JOB_SCHEDULES,
-      { id: "retired-job", pattern: "0 7 * * *", job: cleanupOAuthRequestsJob },
+      {
+        id: "retired-job",
+        pattern: "0 7 * * *",
+        jobName: cleanupOAuthRequestsJob.name,
+        retry: cleanupOAuthRequestsJob.retry,
+        data: {},
+      },
     ]);
-    expect(await test.queues.processed.scheduled.getJobSchedulers()).toHaveLength(2);
+    expect(await test.queues.processed.scheduled.getJobSchedulers()).toHaveLength(
+      JOB_SCHEDULES.length + 1,
+    );
 
     await registerSchedules(test.queues);
 
     const schedulers = await test.queues.processed.scheduled.getJobSchedulers();
-    expect(schedulers.map((scheduler) => scheduler.key)).toEqual(["cleanup-oauth-requests"]);
+    expect(schedulers.map((scheduler) => scheduler.key).sort()).toEqual(
+      JOB_SCHEDULES.map((schedule) => schedule.id).sort(),
+    );
   });
 });

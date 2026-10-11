@@ -67,7 +67,7 @@ Zadej je v záložce proměnných služby `web`. Hodnoty označené jako tajné 
 | `REDIS_URL`               | `${{Redis.REDIS_URL}}`               | odkaz na službu Redis                                             |
 | `BETTER_AUTH_SECRET`      | první vygenerovaný klíč              | **tajné**                                                         |
 | `BETTER_AUTH_URL`         | `https://${{RAILWAY_PUBLIC_DOMAIN}}` | veřejná adresa webu; musí sedět s adresou v prohlížeči            |
-| `ENCRYPTION_KEY`          | druhý vygenerovaný klíč              | **tajné**; zatím se nepoužívá, od fáze 2 šifruje tokeny           |
+| `ENCRYPTION_KEY`          | druhý vygenerovaný klíč              | **tajné**; šifruje tokeny propojení, stejný musí mít i worker     |
 | `RESEND_API_KEY`          | nový klíč z Resendu                  | **tajné**                                                         |
 | `EMAIL_FROM`              | `Bystro <onboarding@resend.dev>`     | zkušební odesílatel; doručí jen na e-mail tvého účtu u Resendu    |
 | `GOOGLE_CLIENT_ID`        | Client ID z Google Cloud Console     |                                                                   |
@@ -99,19 +99,24 @@ Adresu pro `localhost` tam nech, ať funguje i lokální vývoj.
 3. Veřejnou doménu negeneruj; worker nepřijímá požadavky z internetu.
 4. Proměnné:
 
-| Proměnná                  | Hodnota                                                      |
-| ------------------------- | ------------------------------------------------------------ |
-| `RAILWAY_DOCKERFILE_PATH` | `apps/worker/Dockerfile`                                     |
-| `DATABASE_URL`            | `${{Postgres.DATABASE_URL}}`                                 |
-| `REDIS_URL`               | `${{Redis.REDIS_URL}}`                                       |
-| `ENCRYPTION_KEY`          | stejná hodnota jako u webu; **tajné**                        |
-| `SENTRY_DSN`              | DSN ze Sentry                                                |
-| `SENTRY_ENVIRONMENT`      | `staging`                                                    |
-| `WORKER_CONCURRENCY`      | nepovinné; kolik úloh jedné fronty běží najednou (výchozí 5) |
+| Proměnná                     | Hodnota                                                                    |
+| ---------------------------- | -------------------------------------------------------------------------- |
+| `RAILWAY_DOCKERFILE_PATH`    | `apps/worker/Dockerfile`                                                   |
+| `DATABASE_URL`               | `${{Postgres.DATABASE_URL}}`                                               |
+| `REDIS_URL`                  | `${{Redis.REDIS_URL}}`                                                     |
+| `ENCRYPTION_KEY`             | stejná hodnota jako u webu; **tajné**, povinné                             |
+| `FAKTUROID_CLIENT_ID`        | Client ID integrace ve Fakturoidu; nepovinné                               |
+| `FAKTUROID_CLIENT_SECRET`    | Client Secret integrace; **tajné**, nepovinné                              |
+| `INTEGRATIONS_CONTACT_EMAIL` | kontaktní e-mail, který Fakturoid uvidí v hlavičce `User-Agent`; nepovinné |
+| `SENTRY_DSN`                 | DSN ze Sentry                                                              |
+| `SENTRY_ENVIRONMENT`         | `staging`                                                                  |
+| `WORKER_CONCURRENCY`         | nepovinné; kolik úloh jedné fronty běží najednou (výchozí 5)               |
 
-Bez `DATABASE_URL` a `REDIS_URL` worker nenastartuje a nasazení skončí chybou. `ENCRYPTION_KEY` začne worker číst, až bude synchronizovat data (krok 2.5); nastav ho už teď, ať se na něj nezapomene. Musí být stejný jako u webu, jinak worker tokeny nerozšifruje.
+Bez `DATABASE_URL`, `REDIS_URL` a `ENCRYPTION_KEY` worker nenastartuje a nasazení skončí chybou. `ENCRYPTION_KEY` musí být stejný jako u webu, jinak worker tokeny propojení nerozšifruje.
 
-Worker si při startu sám založí opakované úlohy (zatím noční úklid vypršelých žádostí o propojení ve 3:30 našeho času). Fronty žijí v Redisu pod předponou `bystro`.
+Tři hodnoty pro Fakturoid nastav buď všechny, nebo žádnou; neúplné nastavení worker při startu odmítne. Bez nich worker běží, jen synchronizace Fakturoidu skončí chybou `provider_not_configured`. V logu při startu je vidět `fakturoidConfigured: true` nebo `false`.
+
+Worker si při startu sám založí opakované úlohy v našem čase: noční úklid vypršelých žádostí o propojení (3:30), synchronizaci faktur každou hodinu mezi 6:00 a 20:00 a úplné porovnání faktur v neděli ve 2:30. Fronty žijí v Redisu pod předponou `bystro`.
 
 ## 7. Kontrola po nasazení
 

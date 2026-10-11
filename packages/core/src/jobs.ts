@@ -135,6 +135,35 @@ export const cleanupOAuthRequestsJob = defineJob<EmptyPayload>({
   retry: DEFAULT_RETRY_POLICY,
 });
 
+export const INVOICE_SYNC_JOB_MODES = ["incremental", "full"] as const;
+
+const syncInvoicesSchema = z.strictObject({
+  organizationId: z.uuid(),
+  connectionId: z.uuid(),
+  /** `incremental` = changes since the last run; `full` = whole window plus deletions. */
+  mode: z.enum(INVOICE_SYNC_JOB_MODES),
+});
+export type SyncInvoicesPayload = z.infer<typeof syncInvoicesSchema>;
+
+/** Syncs invoices, clients and payments of one invoicing connection. */
+export const syncInvoicesJob = defineJob<SyncInvoicesPayload>({
+  name: "sync.invoices",
+  queue: QUEUE_NAMES.sync,
+  schema: syncInvoicesSchema,
+  retry: DEFAULT_RETRY_POLICY,
+});
+
+const dispatchInvoiceSyncSchema = z.strictObject({ mode: z.enum(INVOICE_SYNC_JOB_MODES) });
+export type DispatchInvoiceSyncPayload = z.infer<typeof dispatchInvoiceSyncSchema>;
+
+/** Enqueues {@link syncInvoicesJob} for every invoicing connection that can be synced. */
+export const dispatchInvoiceSyncJob = defineJob<DispatchInvoiceSyncPayload>({
+  name: "sync.dispatch-invoices",
+  queue: QUEUE_NAMES.scheduled,
+  schema: dispatchInvoiceSyncSchema,
+  retry: DEFAULT_RETRY_POLICY,
+});
+
 // ---------------------------------------------------------------------------------------
 // Schedules
 // ---------------------------------------------------------------------------------------
@@ -147,11 +176,31 @@ export interface JobSchedule {
   id: string;
   /** Cron expression evaluated in {@link SCHEDULE_TIME_ZONE}. */
   pattern: string;
-  job: JobDefinition<EmptyPayload>;
+  /** Name of the job to run; its payload is `data`. */
+  jobName: string;
+  retry: RetryPolicy;
+  data: Record<string, unknown>;
 }
 
+function schedule<TData extends Record<string, unknown>>(
+  id: string,
+  pattern: string,
+  job: JobDefinition<TData>,
+  data: TData,
+): JobSchedule {
+  return { id, pattern, jobName: job.name, retry: job.retry, data: job.schema.parse(data) };
+}
+
+/**
+ * How often invoices are fetched. Providers limit requests (a Fakturoid account has a
+ * monthly allowance, 1 500 on the plan seen on 2026-10-11), and an incremental run costs
+ * one request when nothing changed: hourly during the working day is about 450 a month.
+ * The weekly full run also finds invoices deleted at the source.
+ */
 export const JOB_SCHEDULES: readonly JobSchedule[] = [
-  { id: "cleanup-oauth-requests", pattern: "30 3 * * *", job: cleanupOAuthRequestsJob },
+  schedule("cleanup-oauth-requests", "30 3 * * *", cleanupOAuthRequestsJob, {}),
+  schedule("sync-invoices-hourly", "0 6-20 * * *", dispatchInvoiceSyncJob, { mode: "incremental" }),
+  schedule("sync-invoices-weekly", "30 2 * * 0", dispatchInvoiceSyncJob, { mode: "full" }),
 ];
 
 // ---------------------------------------------------------------------------------------
