@@ -9,6 +9,7 @@ import { runMigrations } from "./migrate";
 import { readTestDatabase } from "./test/test-database";
 
 export { loadRootEnv } from "./load-env";
+export { createTestOrganization, createTestUser } from "./test/organization-fixtures";
 export { readTestDatabase } from "./test/test-database";
 
 /** SQLSTATE codes PostgreSQL reports when two sessions create the same database at once. */

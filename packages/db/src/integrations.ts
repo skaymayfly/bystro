@@ -5,7 +5,7 @@ import {
   type IntegrationCategory,
   type IntegrationEvent,
 } from "@bystro/core";
-import { and, asc, eq, isNull, lt } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lt } from "drizzle-orm";
 
 import { writeAudit, type AuditActor } from "./audit";
 import type { Db, DbExecutor } from "./client";
@@ -294,6 +294,38 @@ export async function listConnections(
     .select()
     .from(integrationConnections)
     .where(eq(integrationConnections.organizationId, requireUuid(organizationId, "organizationId")))
+    .orderBy(asc(integrationConnections.createdAt), asc(integrationConnections.id));
+}
+
+export interface SyncTarget {
+  organizationId: string;
+  connectionId: string;
+  provider: string;
+}
+
+/**
+ * Connections of one category that a scheduled sync should visit, in every organization.
+ * System use only (the worker's dispatcher): it returns identifiers, never data or
+ * credentials, and each sync then works strictly inside its own organization. Connections
+ * waiting for a new authorization and disconnected ones are left out.
+ */
+export async function listSyncTargets(
+  db: Db,
+  category: IntegrationCategory,
+): Promise<SyncTarget[]> {
+  return db
+    .select({
+      organizationId: integrationConnections.organizationId,
+      connectionId: integrationConnections.id,
+      provider: integrationConnections.provider,
+    })
+    .from(integrationConnections)
+    .where(
+      and(
+        eq(integrationConnections.category, category),
+        inArray(integrationConnections.status, ["connected", "syncing", "degraded", "error"]),
+      ),
+    )
     .orderBy(asc(integrationConnections.createdAt), asc(integrationConnections.id));
 }
 

@@ -29,6 +29,15 @@ export {
   type FakturoidAccount,
 } from "./fakturoid/fakturoid";
 export {
+  INVOICE_SYNC_LOOKBACK_MONTHS,
+  INVOICE_SYNC_MODES,
+  syncInvoices,
+  withRequestHook,
+  type InvoiceSyncInput,
+  type InvoiceSyncMode,
+  type InvoiceSyncResult,
+} from "./sync/invoice-sync";
+export {
   createAuthorizationRequest,
   exchangeAuthorizationCode,
   hashOAuthState,

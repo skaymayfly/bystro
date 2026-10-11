@@ -133,6 +133,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://bystro:bystro@localhost:5432/bystro
       REDIS_URL: redis://localhost:6379
+      # 32 zero bytes: decrypts nothing real, only lets the worker start.
+      ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
       BETTER_AUTH_SECRET: ci-only-secret-ci-only-secret-ci-only-1
       BETTER_AUTH_URL: http://localhost:3000
 
@@ -147,7 +149,7 @@ jobs:
 
       - name: Worker connects to Redis, starts and stops cleanly
         run: |
-          docker run -d --name worker --network host -e DATABASE_URL -e REDIS_URL bystro-worker:ci
+          docker run -d --name worker --network host -e DATABASE_URL -e REDIS_URL -e ENCRYPTION_KEY bystro-worker:ci
           sleep 5
           docker logs worker
           docker logs worker 2>&1 | grep -q "Bystro worker: ready"

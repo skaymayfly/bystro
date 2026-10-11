@@ -274,6 +274,8 @@ export function mapFakturoidInvoice(raw: unknown): Invoice | null {
       vatMinor: totalMinor - subtotalMinor,
       totalMinor,
       lines: invoice.lines.map((line, index) => toLine(invoice.id, line, index)),
+      // Fakturoid sends an invoice's payments inside it, so no second request is needed.
+      payments: invoice.payments.map((payment) => toPayment(invoice.id, payment)),
     };
   });
 }
@@ -369,6 +371,9 @@ export class FakturoidProvider implements InvoiceProvider {
     const query: Record<string, string> = { page: String(page) };
     if (options.updatedSince !== undefined) {
       query.updated_since = options.updatedSince.toISOString();
+    }
+    if (options.createdSince !== undefined) {
+      query.since = options.createdSince.toISOString();
     }
     const body = await this.client.getJson(`${this.accountPath}${path}`, query);
     const items = strict(() => z.array(z.unknown()).parse(body));

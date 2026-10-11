@@ -275,6 +275,9 @@ importers:
       '@bystro/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@bystro/integrations':
+        specifier: workspace:*
+        version: link:../../packages/integrations
       '@bystro/observability':
         specifier: workspace:*
         version: link:../../packages/observability

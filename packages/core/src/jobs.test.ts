@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildJobId,
   cleanupOAuthRequestsJob,
+  dispatchInvoiceSyncJob,
   decideRateLimit,
   DEFAULT_RETRY_POLICY,
   InvalidJobIdError,
@@ -13,6 +14,7 @@ import {
   rateLimitKey,
   retryDelayMs,
   sanitizeJobIdPart,
+  syncInvoicesJob,
   SCHEDULE_TIME_ZONE,
   type RetryPolicy,
 } from "./jobs";
@@ -97,7 +99,28 @@ describe("job definitions and schedules", () => {
     expect(SCHEDULE_TIME_ZONE).toBe("Europe/Prague");
     const ids = JOB_SCHEDULES.map((schedule) => schedule.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(JOB_SCHEDULES.every((schedule) => schedule.job.queue === "scheduled")).toBe(true);
+    expect(JOB_SCHEDULES.map((schedule) => [schedule.id, schedule.jobName, schedule.data])).toEqual(
+      [
+        ["cleanup-oauth-requests", "maintenance.cleanup-oauth-requests", {}],
+        ["sync-invoices-hourly", "sync.dispatch-invoices", { mode: "incremental" }],
+        ["sync-invoices-weekly", "sync.dispatch-invoices", { mode: "full" }],
+      ],
+    );
+  });
+
+  it("carries only identifiers in the invoice sync payload", () => {
+    const payload = {
+      organizationId: "0b0e8a52-5f0c-4d6e-9d57-0e6f0a5f3c11",
+      connectionId: "5b1f6a0e-93f4-4e63-8a3b-0e1b7a5d2c44",
+      mode: "incremental",
+    };
+    expect(syncInvoicesJob.schema.safeParse(payload).success).toBe(true);
+    expect(syncInvoicesJob.schema.safeParse({ ...payload, accessToken: "x" }).success).toBe(false);
+    expect(syncInvoicesJob.schema.safeParse({ ...payload, mode: "everything" }).success).toBe(
+      false,
+    );
+    expect(syncInvoicesJob.queue).toBe("sync");
+    expect(dispatchInvoiceSyncJob.queue).toBe("scheduled");
   });
 });
 

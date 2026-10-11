@@ -113,6 +113,7 @@ describe("mapFakturoidInvoice", () => {
           totalMinor: 100_000n,
         },
       ],
+      payments: [],
     });
   });
 
@@ -195,6 +196,7 @@ describe("mapFakturoidPayments", () => {
         currency: "CZK",
       },
     ]);
+    expect(mapFakturoidInvoice(paid)?.payments).toEqual(mapFakturoidPayments(paid));
     expect(mapFakturoidPayments(invoice())).toEqual([]);
     expect(
       mapFakturoidPayments(invoice({ document_type: "tax_document", payments: [paymentExample] })),
@@ -256,6 +258,10 @@ describe("FakturoidProvider", () => {
     expect(first.items).toHaveLength(40);
     expect(first.nextCursor).toBe("2");
     expect(calls[0]?.url.searchParams.get("updated_since")).toBe("2026-10-01T00:00:00.000Z");
+    expect(calls[0]?.url.searchParams.has("since")).toBe(false);
+
+    await fakturoid.listInvoices({ createdSince: new Date("2025-10-11T00:00:00Z") });
+    expect(calls.at(-1)?.url.searchParams.get("since")).toBe("2025-10-11T00:00:00.000Z");
 
     const second = await fakturoid.listInvoices({ cursor: first.nextCursor, updatedSince: since });
     expect(second.items).toHaveLength(1);

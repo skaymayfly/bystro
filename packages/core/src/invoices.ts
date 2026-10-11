@@ -79,6 +79,11 @@ export interface Invoice extends ExternalReference {
   /** Negative only for credit notes. */
   totalMinor: bigint;
   lines: readonly InvoiceLine[];
+  /**
+   * Payments, when the source returns them together with the invoice (then they are the
+   * complete list for it). `null` when they have to be fetched with `listPayments`.
+   */
+  payments: readonly InvoicePayment[] | null;
 }
 
 /** A payment as recorded by the invoicing system (not a bank transaction). */
@@ -99,6 +104,8 @@ export interface ListOptions {
   cursor?: string | null;
   /** Only objects changed since this moment (incremental sync). */
   updatedSince?: Date;
+  /** Only objects created since this moment (limits how far back a full sync reaches). */
+  createdSince?: Date;
 }
 
 export interface InvoiceDocument {

@@ -6,6 +6,7 @@ import {
   type JobDefinition,
   type JobSchedule,
   type ProcessedQueueName,
+  type RetryPolicy,
 } from "@bystro/core";
 import { Queue, type JobsOptions } from "bullmq";
 import { Redis } from "ioredis";
@@ -57,8 +58,12 @@ export function createQueues(connection: Redis, prefix = DEFAULT_QUEUE_PREFIX): 
  * adding another one with the same id is ignored.
  */
 export function jobOptions(definition: JobDefinition<unknown>): JobsOptions {
+  return retryOptions(definition.retry);
+}
+
+function retryOptions(retry: RetryPolicy): JobsOptions {
   return {
-    attempts: definition.retry.attempts,
+    attempts: retry.attempts,
     backoff: { type: "custom" },
     removeOnComplete: { age: DAY_SECONDS, count: 1_000 },
     removeOnFail: { age: 7 * DAY_SECONDS },
@@ -108,11 +113,7 @@ export async function registerSchedules(
     await queue.upsertJobScheduler(
       schedule.id,
       { pattern: schedule.pattern, tz: SCHEDULE_TIME_ZONE },
-      {
-        name: schedule.job.name,
-        data: {},
-        opts: jobOptions(schedule.job as JobDefinition<unknown>),
-      },
+      { name: schedule.jobName, data: schedule.data, opts: retryOptions(schedule.retry) },
     );
   }
 

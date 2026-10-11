@@ -14,6 +14,7 @@
   "dependencies": {
     "@bystro/core": "workspace:*",
     "@bystro/db": "workspace:*",
+    "@bystro/integrations": "workspace:*",
     "@bystro/observability": "workspace:*",
     "@sentry/node": "^11.4.0",
     "bullmq": "^6.3.11",
