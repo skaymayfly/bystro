@@ -67,6 +67,8 @@ export const integrationConnections = pgTable(
       table.organizationId,
       table.provider,
     ),
+    // Target of composite foreign keys: synced data must belong to the same organization.
+    unique("integration_connections_organization_id_unique").on(table.organizationId, table.id),
   ],
 );
 

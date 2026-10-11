@@ -196,7 +196,7 @@ Výsledek fáze: uživatel připojí Fakturoid nebo iDoklad a vidí své skuteč
 
 **Hotovo když:** test: úloha, která 2× selže, se 3. pokusem dokončí; úloha se stejným `jobId` se nespustí dvakrát; po vyčerpání pokusů skončí v dead-letter.
 
-### - [ ] 2.3 Doménový model faktur
+### - [x] 2.3 Doménový model faktur
 
 **Cíl:** jednotný model faktur nezávislý na Fakturoidu.
 

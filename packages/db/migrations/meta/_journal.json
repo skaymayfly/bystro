@@ -15,6 +15,13 @@
       "when": 1791216311790,
       "tag": "0001_integration_framework",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791710139326,
+      "tag": "0002_invoices",
+      "breakpoints": true
     }
   ]
 }

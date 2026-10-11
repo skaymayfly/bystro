@@ -35,6 +35,10 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **Idempotence přes `jobId` platí jen po dobu, co fronta úlohu drží** (dokončené 24 hodin nebo posledních 1000, neúspěšné 7 dní). Proto musí být idempotentní i samotné handlery (upsert); `jobId` má obsahovat časové okno.
 - **Více instancí workeru** je možné (plánovač i omezovač jsou sdílené přes Redis), ale nevyzkoušené; na Railway běží jedna.
 - **Redis na Railway** by měl mít zapnuté ukládání na disk a `maxmemory-policy noeviction`, jinak může při nedostatku paměti zahodit úlohy. Ověřit v nastavení služby před betou.
+- **Faktury v cizí měně** se ukládají v původní měně. Součty v korunách (Přehled, Hlídač peněz) zatím půjdou počítat jen z CZK faktur; přepočet kurzem (např. ČNB) není v plánu. Rozhodnout nejpozději v kroku 2.7.
+- **Přijaté faktury:** model a tabulky umí směr `received`, ale synchronizace v kroku 2.5 bude načítat jen vydané. Přijaté (výdaje) přidat, až je bude potřebovat Hlídač peněz (fáze 4).
+- **Datová vrstva pro faktury** (zápis při synchronizaci, čtení pro obrazovku) zatím neexistuje; tabulky nejsou exportované. Vznikne v krocích 2.5 a 2.7 a musí brát `organizationId` jako všechny ostatní.
+- **Data po odpojení fakturace:** synchronizované firmy, kontakty a faktury odkazují na připojení. Co s nimi při odpojení (smazat, nebo nechat jako historii) rozhodnout v kroku 2.6; úplné smazání organizace je krok 7.4.
 - **Jedno připojení na poskytovatele a organizaci** (unikátní klíč). Dva účty u téhož poskytovatele v jedné firmě zatím nejdou.
 - **`last_error_code`** je krátký strojový kód, který volí náš kód (např. `http_401`, `rate_limited`); texty chyb od poskytovatele se neukládají. Seznam kódů sjednotit s prvním adaptérem v kroku 2.4.
 - **Rotace `ENCRYPTION_KEY`** stále nemá postup; od tohoto kroku se jím skutečně šifrují tokeny a PKCE ověřovače.
@@ -76,6 +80,23 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 ---
 
 ## Záznamy
+
+## 2026-10-11 — krok 2.3 Doménový model faktur
+
+- Hotovo: `packages/core/src/invoices.ts`: typy `Client`, `Invoice`, `InvoiceLine`, `InvoicePayment`, `InvoiceDocument`, rozhraní `InvoiceProvider` (`listInvoices`, `getInvoice`, `listClients`, `listPayments`, `getDocument`; seznamy stránkované kurzorem s volbou „změněno od“), čisté funkce `invoiceStatus` a `todayInPrague`. Migrace `0002_invoices` s tabulkami `companies`, `contacts`, `invoices`, `invoice_lines`, `invoice_payments`.
+- Rozhodnutí (schváleno uživatelem, bez ADR):
+  - Model je obecný; konkrétní pole Fakturoidu a iDokladu namapují adaptéry v krocích 2.4 a 2.8 podle dokumentace.
+  - Stavy faktury: `paid`, `overdue`, `due_soon`, `open` podle plánu a navíc `draft` a `cancelled`, které se nepočítají nikam. Brzy splatná = do 7 dní včetně. Den splatnosti ještě není po splatnosti. Den se určuje v pražském čase.
+  - Zaplacená je faktura, kterou tak označí fakturační systém, nebo když platby v její měně dají přesně celou částku či víc. Částečná platba stav nemění, jen sníží zbývající částku. Platby v jiné měně se nezapočítají.
+  - Model rozlišuje druh (faktura, zálohová faktura, opravný doklad) a směr (vydaná, přijatá). Opravný doklad může mít zápornou částku a nikdy není po splatnosti.
+  - Částky `bigint` v haléřích (v TypeScriptu `bigint`, i nad 2^53), data splatnosti `date` bez času, množství v tisícinách, sazba DPH v bazických bodech.
+  - Každá tabulka má standardní pole externích dat (`organization_id`, `connection_id`, `source`, `external_id`, `source_updated_at`, `synced_at`, `deleted_at`, `raw_hash`) a unikátní klíč `(organization_id, source, external_id)`; položky faktur bez vlastního ID u zdroje dostanou `<id faktury>#<pořadí>`.
+  - Odkazy mezi tabulkami jsou složené cizí klíče včetně `organization_id` (nový unikátní klíč `(organization_id, id)` i na `integration_connections`), takže databáze sama odmítne propojit data dvou organizací.
+  - Neukládá se surová odpověď poskytovatele (jen otisk) ani poznámky na fakturách.
+  - Migraci vygeneroval drizzle-kit; přidání unikátního klíče na `integration_connections` jsem v ní ručně přesunul na začátek, protože ho cizí klíče nových tabulek potřebují dřív.
+- Testy: 16 testů stavu faktury (půlnoc v Praze v létě i v zimě, přechod času, den splatnosti, hranice 7 dní, konec měsíce a roku, částečná a přesná platba i přeplatek, cizí měna, koncept, storno, opravný doklad, záloha, neplatná data) a integrační testy tabulek (přesné částky nad 2^53, unikátní klíč, stejné `external_id` ve dvou organizacích, odmítnutí propojení dat dvou organizací, kontroly měny, znaménka částky, variabilního symbolu, sazby DPH a země); test veřejného API ověřuje, že nové tabulky nejsou exportované.
+- Otevřené body: cizí měny, přijaté faktury, datová vrstva, data po odpojení (viz sekce výše); stále čeká odpověď, zda u úklidu `oauth_requests` stačí log.
+- Další krok: 2.4 Adapter Fakturoid
 
 ## 2026-10-08 — krok 2.2 Worker a fronta úloh
 
