@@ -35,3 +35,7 @@ packages/db/dist/
 # Design working folder (older prototype versions, reference screenshots); the binding
 # prototype lives in docs/prototyp/
 /Webapp design project kickoff/
+
+# Fakturoid logo pack as downloaded (https://www.fakturoid.cz/logo); the file in use is
+# apps/web/src/assets/fakturoid-logo.svg
+/RGB (obrazovky _ digital)/

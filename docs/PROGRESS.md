@@ -87,6 +87,13 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 
 ## Záznamy
 
+## 2026-10-11 — logo Fakturoidu u propojení (mimo plán, na přání uživatele)
+
+- Hotovo: dlaždice Fakturoidu v onboardingu a v Nastavení → Propojení ukazuje oficiální logo (`apps/web/src/assets/fakturoid-logo.svg`, vodorovná varianta, beze změn) místo písmene.
+- Rozhodnutí podle pravidel na https://www.fakturoid.cz/logo (čteno 2026-10-11): značka se nesmí použít bez nápisu a vodorovné logo má mít aspoň 30 px, proto je dlaždice široká dva sloupce (logo vychází kolem 39 px na výšku) a není zprůhledněná jako ostatní; ochranný prostor je součástí souboru. Pravidla pro cizí aplikace vyžadují, aby bylo zřejmé, že Fakturoid je samostatná placená služba provozovaná Fakturoid s.r.o. a že doplněk je náš, proto je pod dlaždicemi věta „Fakturoid je samostatná placená služba, kterou provozuje Fakturoid s.r.o. Propojení s ní vyvíjí Bystro.“
+- Ostatní poskytovatelé mají dál písmenné dlaždice; jejich loga přidávat jen po přečtení jejich pravidel.
+- Stažený balík log (`RGB (obrazovky _ digital)`) zůstává na disku mimo repozitář.
+
 ## 2026-10-11 — krok 2.4 Adapter Fakturoid
 
 - Hotovo: `packages/integrations/src/fakturoid/`: HTTP klient (`client.ts`) a `FakturoidProvider` implementující `InvoiceProvider` (`fakturoid.ts`), mapování faktur, položek, plateb a subjektů na doménové typy, `listFakturoidAccounts` (výběr účtu po připojení), OAuth konfigurace pro helper z kroku 2.1, konstanta limitu pro omezovač; v `packages/core` přesný převod textových částek na haléře (`parseMoneyToMinor`, `parseScaledDecimal`) a společné chyby poskytovatelů (`ProviderError`). Skript `record:fakturoid` na nahrání anonymizovaných odpovědí z testovacího účtu.
