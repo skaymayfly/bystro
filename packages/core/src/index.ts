@@ -2,6 +2,23 @@
 export const PACKAGE_NAME = "@bystro/core";
 
 export {
+  ACTION_APPROVAL_LEVELS,
+  ACTION_EVENTS,
+  ACTION_STATUSES,
+  ACTION_TYPES,
+  ActionTransitionError,
+  APPROVAL_DECISIONS,
+  canTransitionAction,
+  FINAL_ACTION_STATUSES,
+  isActionExpired,
+  transitionAction,
+  type ActionApprovalLevel,
+  type ActionEvent,
+  type ActionStatus,
+  type ActionType,
+  type ApprovalDecision,
+} from "./actions";
+export {
   AUDIT_ACTOR_TYPES,
   AUDIT_RESULTS,
   AUDIT_SOURCES,

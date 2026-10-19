@@ -291,7 +291,7 @@ Výsledek fáze: uživatel připojí Fakturoid nebo iDoklad a vidí své skuteč
 
 Výsledek fáze: uživatel schválí upomínku k faktuře po splatnosti, odejde právě jednou a Bystro pohlídá platbu. Viz kapitola 13 a Workflow B v kapitole 23 zadání.
 
-### - [ ] 5.1 Action engine
+### - [x] 5.1 Action engine
 
 **Cíl:** jednotný a bezpečný způsob, jak Bystro něco provede.
 

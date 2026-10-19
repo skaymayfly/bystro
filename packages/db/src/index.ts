@@ -4,6 +4,22 @@
  * Tenant tables are deliberately not exported: tenant data is reachable only through
  * functions that take an `organizationId` (see `forOrganization`).
  */
+export {
+  ActionExpiredError,
+  ActionNotFoundError,
+  applyActionEvent,
+  ApprovalRequiredError,
+  decideAction,
+  getAction,
+  getApproval,
+  listActions,
+  proposeAction,
+  type ActionSourceRef,
+  type ProposeActionInput,
+  type ProposedAction,
+  type StoredAction,
+  type StoredApproval,
+} from "./actions";
 export { writeAudit, type AuditActor, type AuditEntry } from "./audit";
 export { createDb, type Db, type DbConnection, type DbExecutor } from "./client";
 export { decrypt, DecryptionError, encrypt, parseEncryptionKey } from "./crypto";

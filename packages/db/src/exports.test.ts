@@ -3,13 +3,19 @@ import { PgTable } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
 import * as publicApi from "./index";
+import * as actionTables from "./schema/actions";
 import * as authTables from "./schema/auth";
 import * as integrationTables from "./schema/integrations";
 import * as invoiceTables from "./schema/invoices";
 import * as organizationTables from "./schema/tenant";
 
 /** Every table holding data of one organization. */
-const tenantTables = { ...organizationTables, ...integrationTables, ...invoiceTables };
+const tenantTables = {
+  ...organizationTables,
+  ...integrationTables,
+  ...invoiceTables,
+  ...actionTables,
+};
 
 // Module namespace objects have a null prototype, which Drizzle's `is` cannot handle.
 function isTable(value: unknown): value is PgTable {
@@ -46,6 +52,8 @@ function exportedTableNames(): string[] {
 describe("public API of @bystro/db", () => {
   it("has tenant tables to protect (guards against this test going stale)", () => {
     expect(tableNames(tenantTables)).toEqual([
+      "actions",
+      "approvals",
       "audit_logs",
       "companies",
       "contacts",
