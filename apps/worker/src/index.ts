@@ -1,9 +1,15 @@
-import { cleanupOAuthRequestsJob, dispatchInvoiceSyncJob, syncInvoicesJob } from "@bystro/core";
+import {
+  cleanupOAuthRequestsJob,
+  dispatchInvoiceSyncJob,
+  executeActionJob,
+  syncInvoicesJob,
+} from "@bystro/core";
 import { createDb, deleteExpiredOAuthRequests, listSyncTargets } from "@bystro/db";
 
 import { readWorkerEnv } from "./env";
 import { cleanupOAuthRequestsHandler } from "./jobs/cleanup-oauth-requests";
 import { dispatchInvoiceSyncHandler } from "./jobs/dispatch-invoice-sync";
+import { executeActionHandler } from "./jobs/execute-action";
 import { syncInvoicesHandler } from "./jobs/sync-invoices";
 import { logger } from "./logger";
 import { JobRegistry, startWorkers, type Workers } from "./processing";
@@ -65,7 +71,9 @@ async function start(): Promise<void> {
         rateLimiter: createRateLimiter(connection, queues.prefix),
         resolveProvider: createInvoiceProviderResolver(env.providers),
       }),
-    );
+    )
+    // No action type can be carried out yet: sending reminders comes with steps 5.3 and 5.4.
+    .register(executeActionJob, executeActionHandler({ db, executors: {} }));
 
   await registerSchedules(queues);
   const workers = startWorkers({

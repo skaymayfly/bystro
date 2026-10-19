@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildJobId,
   cleanupOAuthRequestsJob,
+  executeActionJob,
   dispatchInvoiceSyncJob,
   decideRateLimit,
   DEFAULT_RETRY_POLICY,
@@ -106,6 +107,18 @@ describe("job definitions and schedules", () => {
         ["sync-invoices-weekly", "sync.dispatch-invoices", { mode: "full" }],
       ],
     );
+  });
+
+  it("never retries carrying out an action and carries only identifiers", () => {
+    expect(executeActionJob.queue).toBe("actions");
+    expect(executeActionJob.retry.attempts).toBe(1);
+    const ids = {
+      organizationId: "0b0e8a52-5f0c-4d6e-9d57-0e6f0a5f3c11",
+      actionId: "1c1e8a52-5f0c-4d6e-9d57-0e6f0a5f3c11",
+    };
+    expect(executeActionJob.schema.safeParse(ids).success).toBe(true);
+    expect(executeActionJob.schema.safeParse({ ...ids, preview: "text" }).success).toBe(false);
+    expect(executeActionJob.schema.safeParse({ ...ids, actionId: "1" }).success).toBe(false);
   });
 
   it("carries only identifiers in the invoice sync payload", () => {

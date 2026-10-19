@@ -4,6 +4,7 @@
  * Tenant tables are deliberately not exported: tenant data is reachable only through
  * functions that take an `organizationId` (see `forOrganization`).
  */
+export { checkActionStillValid, type ActionCheck } from "./action-checks";
 export {
   ActionExpiredError,
   ActionNotFoundError,

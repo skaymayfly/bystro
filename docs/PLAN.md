@@ -303,7 +303,7 @@ Výsledek fáze: uživatel schválí upomínku k faktuře po splatnosti, odejde 
 
 **Hotovo když:** testy všech povolených i zakázaných přechodů procházejí.
 
-### - [ ] 5.2 API pro schválení
+### - [x] 5.2 API pro schválení
 
 **Cíl:** schválení je bezpečné i při dvojkliku nebo opakovaném požadavku.
 
