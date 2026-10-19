@@ -249,6 +249,7 @@ test("detail faktury a karta Po splatnosti na Přehledu", async ({ browser }) =>
   const overdue = 11_200_000n - 1_200_000n + 1_840_000n;
   await expect(page.getByText(formatCzk(overdue))).toBeVisible();
   await expect(page.getByText("2 faktury · nejstarší 12 dní po splatnosti")).toBeVisible();
+  await expect(page.getByRole("img", { name: "Bystrouš hlídá" })).toBeVisible();
   await expect(page.getByText("Zdroj: Fakturoid · aktualizováno před")).toBeVisible();
 
   await page.getByRole("link", { name: /Novák s\.r\.o\..*2026-0142/ }).click();

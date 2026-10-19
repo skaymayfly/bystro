@@ -6,18 +6,18 @@ Tento soubor čti na začátku každého sezení. Platí vždy, i když ti uživ
 
 Bystro je SaaS pro majitele malých českých firem (typicky řemeslník nebo služby, 1–20 lidí). Propojí fakturaci, banku, e-mail, kalendář a CRM, každé ráno řekne, co je důležité, hlídá, aby firmě nedošly peníze, a pomůže věci rovnou vyřešit (upomínka, odpověď, úkol) — citlivé akce vždy až po schválení uživatelem.
 
-Pořadí vývoje stojí na „Hlídači peněz“: faktury → banka → párování plateb → cashflow → upomínky → AI. E-mail a kalendář přicházejí až po betě.
+Pořadí vývoje: faktury → upomínky a schvalování → AI asistent a ranní přehled → banka a párování plateb → cashflow („Hlídač peněz“). Banka jde na konec, protože je nejnáročnější (rozhodl uživatel 2026-10-19); do té doby se o zaplacení faktury Bystro dozví z fakturačního systému. E-mail a kalendář přicházejí až po betě.
 
 ## Zdroje pravdy
 
-| Soubor             | K čemu                                                                                                                                                                                          |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/PLAN.md`     | Co přesně dělat teď. Kroky jdou po sobě.                                                                                                                                                        |
-| `docs/PROGRESS.md` | Deník: co je hotovo, jaká padla rozhodnutí, co zůstalo otevřené.                                                                                                                                |
-| `docs/zadani.pdf`  | Kompletní produktové a technické zadání. Kapitola 22 = závazná pravidla.                                                                                                                        |
-| `docs/prototyp/`   | Klikací prototyp v4 (`prototyp-v4.dc.html`, potřebuje `support.js` vedle sebe) a logo: vzhled, texty, obrazovky, prázdné stavy. UI texty přebírej odsud; odchylky od prototypu jsou v ADR 0002. |
-| `docs/decisions/`  | Zapsaná architektonická rozhodnutí (ADR), jeden soubor na rozhodnutí.                                                                                                                           |
-| `docs/deploy.md`   | Návod na nasazení (Railway): služby, proměnné, migrace, kontrola po nasazení.                                                                                                                   |
+| Soubor             | K čemu                                                                                                                                                                                                                       |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/PLAN.md`     | Co přesně dělat teď. Kroky jdou po sobě.                                                                                                                                                                                     |
+| `docs/PROGRESS.md` | Deník: co je hotovo, jaká padla rozhodnutí, co zůstalo otevřené.                                                                                                                                                             |
+| `docs/zadani.pdf`  | Kompletní produktové a technické zadání. Kapitola 22 = závazná pravidla.                                                                                                                                                     |
+| `docs/prototyp/`   | Klikací prototyp v4 (`prototyp-v4.dc.html`, potřebuje `support.js` vedle sebe), logo a maskot Bystrouš (`maskot/`): vzhled, texty, obrazovky, prázdné stavy. UI texty přebírej odsud; odchylky od prototypu jsou v ADR 0002. |
+| `docs/decisions/`  | Zapsaná architektonická rozhodnutí (ADR), jeden soubor na rozhodnutí.                                                                                                                                                        |
+| `docs/deploy.md`   | Návod na nasazení (Railway): služby, proměnné, migrace, kontrola po nasazení.                                                                                                                                                |
 
 Když si zdroje odporují, platí: tento soubor → `docs/PLAN.md` → `docs/zadani.pdf` → prototyp. Rozpor zapiš do `PROGRESS.md` a upozorni na něj.
 
@@ -121,7 +121,7 @@ Pravidla závislostí: `core` nezávisí na ničem z ostatních balíčků. `obs
 
 ## Příkazy
 
-Stav po kroku 2.8. Při každé změně skriptů tuto sekci aktualizuj podle skutečnosti.
+Stav po kroku 2.9. Při každé změně skriptů tuto sekci aktualizuj podle skutečnosti.
 
 ```
 pnpm install             # na Windows vyžaduje zapnutý Režim pro vývojáře (symlinky)

@@ -2,16 +2,27 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 
 import { completeOnboarding, createSignedInUser, KNOWN_COMPANY_NAME, signIn } from "./helpers";
 
-/** Each screen with a text that only its empty state shows. */
+/** Each screen with a text that only its empty state shows, and Bystrouš where it appears. */
 const SCREENS = [
-  { label: "Přehled", path: "/app", text: "Faktury zatím nevidím" },
-  { label: "Asistent", path: "/app/asistent", text: "Na co se chceš zeptat?" },
-  { label: "Hlídač peněz", path: "/app/hlidac-penez", text: "Bez banky nevím, kolik ti zbude" },
-  { label: "Faktury", path: "/app/faktury", text: "Zatím tu žádné faktury nejsou" },
+  { label: "Přehled", path: "/app", text: "Faktury zatím nevidím", mascot: null },
+  { label: "Asistent", path: "/app/asistent", text: "Na co se chceš zeptat?", mascot: null },
+  {
+    label: "Hlídač peněz",
+    path: "/app/hlidac-penez",
+    text: "Bez banky nevím, kolik ti zbude",
+    mascot: "Bystrouš spí",
+  },
+  {
+    label: "Faktury",
+    path: "/app/faktury",
+    text: "Zatím tu žádné faktury nejsou",
+    mascot: "Bystrouš spí",
+  },
   {
     label: "Nastavení",
     path: "/app/nastaveni",
     text: "Profil, propojení a jak často se ti mám ozývat.",
+    mascot: null,
   },
 ] as const;
 
@@ -49,6 +60,9 @@ async function visitEveryScreen(page: Page, shots: string) {
     await nav.getByRole("link", { name: screen.label }).click();
     await expect(page).toHaveURL(screen.path);
     await expect(page.getByText(screen.text)).toBeVisible();
+    if (screen.mascot !== null) {
+      await expect(page.getByRole("img", { name: screen.mascot })).toBeVisible();
+    }
     await expect(nav.getByRole("link", { name: screen.label })).toHaveAttribute(
       "aria-current",
       "page",

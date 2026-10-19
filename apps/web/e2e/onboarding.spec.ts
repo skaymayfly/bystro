@@ -18,6 +18,8 @@ test("registrace → zadání IČO → firma založena → Přehled", async ({ p
   await page.goto("/app/faktury");
   await expect(page).toHaveURL("/onboarding");
   await expect(page.getByRole("heading", { name: "Jak se jmenuje tvoje firma?" })).toBeVisible();
+  // The first time the user meets Bystrouš, he waves.
+  await expect(page.getByRole("img", { name: "Bystrouš mává" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Pokračovat" })).toBeDisabled();
 
   // A typo is caught before anything is sent to ARES.
