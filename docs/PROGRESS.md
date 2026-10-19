@@ -41,6 +41,8 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **Měsíční limit požadavků Fakturoidu:** účet uživatele má 1 500 API požadavků za měsíc (vidět v Nastavení → Napojení na jiné aplikace; dokumentace API ho neuvádí a jinde může být jiný). Synchronizace je proto hodinová jen přes den (zhruba 450 požadavků měsíčně, když se nic nemění) a úplné porovnání týdenní. Nevíme, jak API odpoví po vyčerpání limitu, ani jak zbývající počet zjistit; sledovat při prvním provozu a případně počítat požadavky u nás.
 - **Smazaná faktura se v Bystru projeví až při týdenním úplném porovnání** (neděle 2:30), změny a platby do hodiny. Rychlejší by byly webhooky; ty Fakturoid nabízí jen na placených tarifech a pro OAuth aplikace až po domluvě s podporou (jinak 403).
 - **Skutečné připojení Fakturoidu od začátku do konce** (přihlášení u Fakturoidu → návrat → worker → faktury v databázi) jde vyzkoušet jen na nasazené adrese a zatím neproběhlo. Udělat hned po nasazení kroku 2.6: na Railway doplnit proměnné Fakturoidu do webu i workeru a v Nastavení → Propojení kliknout na „Propojit“. Při tom ověřit i kódování hlavičky Basic a to, že nová platba změní `updated_at` faktury.
+- **Vypršelé akce se zatím neoznačují samy.** Akce po platnosti se označí `expired` až ve chvíli, kdy ji někdo zkusí schválit nebo spustit. Pravidelnou úlohu, která je označí, přidat v kroku 5.2 nebo 5.4, až budou akce vznikat.
+- **Oprávnění ke schválení podle role** (kdo ve firmě smí schvalovat) se ověřuje až v API kroku 5.2; `decideAction` jen zapíše rozhodnutí uživatele, kterého dostane.
 - **Client secret iDokladu prošel chatem** (2026-10-11, na snímku obrazovky z Developer portálu). Je v lokálním `.env` a v Railway; před betou v portálu vytvořit nový (Detail aplikace → Client secret → Nový client secret), starý smazat a nový zadat přímo do Railway (web i worker).
 - **iDoklad není ověřený proti skutečnému účtu s daty.** Stav k 2026-10-11: přihlášení a vydání tokenu proti skutečnému iDokladu funguje; dál se nedošlo, protože účet uživatele je na tarifu Základní a iDoklad dává API až od tarifu Oblíbený (ceník <https://www.idoklad.cz/cenik>: Zdarma a Základní 0 požadavků, Oblíbený 7 500, Prémiový 75 000 měsíčně). Uživatel to vyzkouší s někým, kdo tarif s API platí. Při tom ověřit: že faktury a součty na obrazovce Faktury sedí s iDokladem (podmínka kroku 2.8); v jakém tvaru chodí data (`2026-09-30`, nebo s časem); jestli jsou částky dobropisů záporné; že smazaný doklad vrací 404; že `Reports/…/Pdf` vrací PDF v Base64. Potom nahrát skutečné odpovědi do `packages/integrations/src/idoklad/fixtures/recorded/` (skript jako u Fakturoidu zatím není). Když propojení selže, řádek `Integration connection failed` v logu služby web říká krok a kód (`detail`).
 - **Stejná faktura ve Fakturoidu i v iDokladu se započítá dvakrát.** Na přání uživatele jde připojit oba systémy najednou; aplikace na to při připojování druhého upozorní, ale duplicity nehledá. Kdyby to vadilo, řešit pravidlem (např. stejné číslo dokladu a IČO odběratele) jako samostatný krok.
@@ -100,6 +102,23 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 ---
 
 ## Záznamy
+
+## 2026-10-19 — krok 5.1 Action engine
+
+- Hotovo: stavový automat akcí v `packages/core/src/actions.ts` (stavy, události, úrovně schválení, rozhodnutí, `isActionExpired`); tabulky `actions` a `approvals` (migrace `0003_actions`); funkce v `packages/db/src/actions.ts`: `proposeAction`, `getAction`, `listActions`, `getApproval`, `applyActionEvent`, `decideAction`.
+- Zdroj: kapitola 13 zadání (co má každá akce mít) a část Action engine; Workflow B pro budoucí kroky.
+- Rozhodnutí:
+  - Přechody: `proposed` → `approved` / `rejected` / `expired`; `approved` → `executing` / `expired`; `executing` → `succeeded` / `failed`; `succeeded` → `verified`. Zadání píše „succeeded/failed → verified“; `failed` jsme nechali konečný, protože ověřovat výsledek akce, která se neprovedla, nedává smysl. Nový pokus je nový návrh s vlastním schválením.
+  - `approved → expired`: schválená akce se ještě před spuštěním dá zrušit, když přestane dávat smysl (faktura mezitím zaplacená; použije krok 5.2).
+  - Akci po platnosti nejde schválit ani spustit: v té chvíli se označí `expired` (s auditem) a volající dostane `ActionExpiredError`.
+  - Úroveň schválení `user` nebo `none`; systém smí sám schválit jen `none`. Rozhodnutí člověka jde jen přes `decideAction`, které v jedné transakci zapíše `approvals` a změní stav.
+  - Idempotence: `(organization_id, idempotency_key)` je unikátní a opakovaný návrh vrátí existující akci (i při souběhu).
+  - Souběh: změny stavu zamykají řádek akce; ze dvou současných rozhodnutí projde jedno, druhé skončí `ActionTransitionError` a nic nezapíše.
+  - Audit: `action.proposed` a `action.status_changed` (událost, odkud, kam, kdo, kód chyby). Náhled akce (příjemce, text) do auditu nejde. Kód chyby musí být krátký kód, ne zpráva od poskytovatele.
+  - Typy akcí zatím jen `invoice_reminder`; další přidá migrace s funkcí, která je potřebuje.
+- Databáze: migrace `0003_actions` (výčty `action_type`, `action_status`, `action_approval_level`, `approval_decision`; tabulky `actions`, `approvals` se složeným cizím klíčem přes organizaci). Tabulky se z balíčku neexportují (hlídá test).
+- Testy: všech 56 kombinací stav × událost (8 povolených, 48 zakázaných), hranice platnosti; proti databázi: návrh, idempotence i při souběhu, oddělení firem, rozhodnutí a audit, souběh tří rozhodnutí, vypršení při schválení i spuštění, zakázaný přechod bez stopy, chyba s kódem, automatické schválení jen u `none`.
+- Otevřené: viz Otevřené body (označování vypršelých akcí, oprávnění podle role v 5.2).
 
 ## 2026-10-19 — krok 2.9 Maskot Bystrouš a nové pořadí fází
 
