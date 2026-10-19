@@ -101,6 +101,14 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 
 ## Záznamy
 
+## 2026-10-19 — krok 2.9 Maskot Bystrouš a nové pořadí fází
+
+- **Nové pořadí fází** (rozhodl uživatel 2026-10-19, změněno i pravidlo v `CLAUDE.md`): po fázi 2 přijde fáze 5 (akce, upomínky, schvalování), pak 6 (AI a ranní přehled), pak 3 (banka a párování) a 4 (Hlídač peněz). Důvod: banka je nejnáročnější. Čísla fází zůstala, v `PLAN.md` jsou fáze přeskládané podle pořadí práce. Úpravy kroků: 5.6 pozná zaplacenou fakturu podle fakturačního systému (párování s bankou doplní fáze 3); 6.2 zatím bez nástrojů `finance.getCashPosition` a `finance.getCashflow`; 6.3 na „Zvládnu zaplatit DPH?“ řekne, že bez banky neví; 6.6 bez rizika cashflow. Fáze 3 a 4 mají v úvodu, co do hotových částí doplní. Cena: Hlídač peněz přijde až po AI; na betu je banka potřeba tak jako tak.
+- **Maskot:** podklad přesunutý z kořene repozitáře do `docs/prototyp/maskot/`. Komponenta `Mascot` s osmi stavy a třemi velikostmi, styl vygenerovaný z podkladu a omezený na `.masc`, popisky pro čtečky v `apps/web/src/lib/mascot.ts`. Zapojený na existující obrazovky (seznam v ADR 0002); `ScreenEmpty` a `PanelEmpty` mají volbu `mascot`. Proti návrhu: „ahoj“ je v kroku 1 onboardingu (první setkání), ne v kroku 2. Text „Nic po splatnosti“ při fakturách v termínu převzatý z podkladu: „Hlídám dál. Ozvu se, kdyby se něco změnilo.“
+- Databáze ani API beze změny.
+- Testy: popisky a rozměry maskota, styl pokrývá všechny stavy a nic mimo `.masc`, vypnutí animací; E2E: maskot v onboardingu, na prázdných stavech (počítač i mobil), na kartě Po splatnosti a u chyby propojení.
+- Otevřené: ostatní stavy (zaplaceno, oslava, ranní přehled) přidají kroky 5.x a 6.6.
+
 ## 2026-10-11 — iDoklad: první pokusy se skutečným účtem
 
 - PKCE jako příčina `invalid_grant` je potvrzené: po nasazení opravy (PR #18) vydání tokenu prošlo.

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { Mascot } from "@/components/mascot/mascot";
+import type { MascotMood } from "@/lib/mascot";
 import { cn } from "@/lib/utils";
 
 /** The Bystro mark: a white slash on a black rounded square. */
@@ -119,20 +121,28 @@ export function PageHeader({
 /** Full-width empty state of a whole screen. */
 export function ScreenEmpty({
   icon,
+  mascot,
   title,
   text,
   children,
 }: {
-  icon: ReactNode;
+  /** An icon in a tile; ignored when `mascot` is given. */
+  icon?: ReactNode;
+  /** Bystrouš in this mood instead of the icon. */
+  mascot?: MascotMood;
   title: string;
   text: string;
   children?: ReactNode;
 }) {
   return (
     <Card className="items-center gap-3.5 px-6 py-16 text-center sm:px-8">
-      <span className="flex size-16 items-center justify-center rounded-[20px] bg-fill text-ink">
-        {icon}
-      </span>
+      {mascot !== undefined ? (
+        <Mascot mood={mascot} size="lg" className="max-w-[45vw] max-sm:h-auto" />
+      ) : (
+        <span className="flex size-16 items-center justify-center rounded-[20px] bg-fill text-ink">
+          {icon}
+        </span>
+      )}
       <h2 className="max-w-[520px] text-[26px] leading-tight font-medium tracking-[-0.02em]">
         {title}
       </h2>
@@ -172,16 +182,20 @@ export function Panel({
 
 /** "Nothing here yet" body of a Přehled panel. */
 export function PanelEmpty({
+  mascot,
   title,
   text,
   children,
 }: {
+  /** Bystrouš in this mood above the title. */
+  mascot?: MascotMood;
   title: string;
   text: string;
   children?: ReactNode;
 }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-1 px-2 py-6 text-center">
+      {mascot !== undefined && <Mascot mood={mascot} size="md" className="mb-2" />}
       <h3 className="text-sm font-medium text-ink">{title}</h3>
       <p className="max-w-[360px] text-sm leading-normal text-ink-3">{text}</p>
       {children !== undefined && (

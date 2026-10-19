@@ -86,6 +86,18 @@ Prototyp v4 má vědomě dva styly: Přehled je kompaktní (panely 14 px, tlač�
 - Značka: černý čtverec (`#111111`, zaoblení čtvrtina strany) s bílým lomítkem. Komponenta `LogoMark`, ikona webu `apps/web/src/app/icon.svg`.
 - Nápis: „by/stro“ písmem Geist, váha 600, lomítko `ink-4` s váhou 400. Komponenta `Wordmark`; čtečky obrazovky dostanou „Bystro“.
 
+### Maskot Bystrouš
+
+Doplněno 2026-10-19 (krok 2.9, schválil uživatel). Podklad: `docs/prototyp/maskot/` (hřiště `Main.dc.html`, osm stavů `Stavy.dc.html`, ukázky v aplikaci `VAplikaci.dc.html`; vykreslí se se `support.js` ve stejné složce).
+
+- Černý čtverec z loga s očima, rukama a nohama; lomítko je kštice. Komponenta `Mascot` (`apps/web/src/components/mascot/`), styly převzaté z podkladu do `mascot.css`, každé pravidlo omezené na `.masc`. Při změně podkladu styl vygenerovat znovu, ne upravovat ručně.
+- Stavy: klid, ahoj (mává), zaplaceno, přemýšlí, hlídá, chyba, spí, oslava. Barva jen tam, kde nese význam: zelená za zaplaceno, červená za pozor.
+- Velikosti z podkladu: 56 px (oznámení, řádky), 88 px (ranní přehled, kompaktní panely), 160 px (prázdné stavy obrazovek).
+- Každý maskot má popisek pro čtečky („Bystrouš spí“). Text vedle něj říká totéž slovy; maskot jen přidává náladu.
+- Při „omezit pohyb“ se nehýbe; co by ukázala jen animace (zetka, konfety), je vidět v klidu.
+- Kde je teď: onboarding krok 1 (mává), prázdné stavy Faktur a Hlídače peněz a „Nic po splatnosti“ (spí), načítání faktur (přemýšlí), karta Po splatnosti s fakturami (hlídá), chybová hláška po návratu z propojení (chyba). Stavy zaplaceno a oslava a ranní přehled přidají kroky, které přinesou jejich funkci.
+- Řeči v bublině z hřiště zatím nepoužíváme: každá obrazovka má vlastní nadpis a text.
+
 ### Rozložení
 
 - Aplikace: šedé pozadí, vlevo menu široké 288 px (firma a e-mail, dvě skupiny položek, dole uživatel s rolí a „Odhlásit“), vpravo bílý list se zaobleným levým horním rohem, obsah nejvýš 1440 px.

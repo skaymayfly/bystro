@@ -8,6 +8,7 @@ import {
 import Link from "next/link";
 
 import { PanelEmpty } from "@/components/bits";
+import { Mascot } from "@/components/mascot/mascot";
 import { daysLabel, invoiceCountLabel } from "@/lib/invoice-labels";
 import type { InvoicingSources } from "@/lib/invoicing-providers";
 
@@ -37,11 +38,12 @@ export function OverduePanel({
     return (
       <>
         <PanelEmpty
+          mascot="sleep"
           title="Nic po splatnosti"
           text={
             rows.length === 0
               ? `${sources.inside} zatím žádné faktury nevidím.`
-              : "Všechny faktury jsou zaplacené nebo v termínu."
+              : "Hlídám dál. Ozvu se, kdyby se něco změnilo."
           }
         />
         {note}
@@ -52,14 +54,17 @@ export function OverduePanel({
   const overdueRows = sortInvoiceRows(rows.filter((row) => row.status === "overdue"));
   return (
     <>
-      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <p className="text-2xl font-semibold tracking-[-0.02em] text-danger-strong">
-          {formatCzk(overdue.sumMinor)}
-        </p>
-        <p className="text-[13px] text-ink-3">
-          {invoiceCountLabel(overdue.count)} · nejstarší {daysLabel(oldestOverdue.daysOverdue)} po
-          splatnosti
-        </p>
+      <div className="flex items-center gap-3">
+        <Mascot mood="alert" size="sm" />
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <p className="text-2xl font-semibold tracking-[-0.02em] text-danger-strong">
+            {formatCzk(overdue.sumMinor)}
+          </p>
+          <p className="text-[13px] text-ink-3">
+            {invoiceCountLabel(overdue.count)} · nejstarší {daysLabel(oldestOverdue.daysOverdue)} po
+            splatnosti
+          </p>
+        </div>
       </div>
       <ul className="flex flex-1 flex-col">
         {overdueRows.slice(0, SHOWN).map((row) => (

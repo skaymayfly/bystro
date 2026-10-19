@@ -206,6 +206,7 @@ test("podvržený návrat z iDokladu nic nepřipojí", async ({ page }) => {
     "/app/nastaveni?karta=propojeni&propojeni=neplatne&aplikace=idoklad",
   );
   await expect(page.getByText("Tenhle odkaz už neplatí. Zkus to prosím znovu.")).toBeVisible();
+  await expect(page.getByRole("img", { name: "Bystrouš je smutný" })).toBeVisible();
   expect(await storedConnections(userId)).toEqual([]);
 });
 

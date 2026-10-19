@@ -6,7 +6,7 @@ import {
   sortInvoiceRows,
   type InvoiceFilter,
 } from "@bystro/core";
-import { ChevronRight, FileText, Search } from "lucide-react";
+import { ChevronRight, Search } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -57,7 +57,7 @@ export default async function InvoicesPage(props: PageProps<"/app/faktury">) {
       <div className="flex flex-col gap-[22px]">
         <PageHeader title="Faktury" text="Fakturace není propojená" />
         <ScreenEmpty
-          icon={<FileText aria-hidden size={28} strokeWidth={1.6} />}
+          mascot="sleep"
           title="Zatím tu žádné faktury nejsou"
           text="Propoj svůj fakturační systém. Načtu faktury za poslední rok a začnu hlídat splatnosti."
         >
@@ -78,7 +78,7 @@ export default async function InvoicesPage(props: PageProps<"/app/faktury">) {
       <div className="flex flex-col gap-[22px]">
         <PageHeader title="Faktury" text={sources.connected} />
         <ScreenEmpty
-          icon={<FileText aria-hidden size={28} strokeWidth={1.6} />}
+          mascot={loading ? "think" : "sleep"}
           title={loading ? "Faktury se načítají" : `${sources.inside} zatím žádné faktury nevidím`}
           text={
             loading

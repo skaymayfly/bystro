@@ -6,6 +6,7 @@ import { AuthHeading, AuthShell, authStyles } from "@/components/auth-shell";
 import { PillOptions, SoonBadge } from "@/components/bits";
 import { ConnectOutcomeNotice, loadConnections } from "@/components/connections/connections-tab";
 import { ProviderPicker } from "@/components/connections/provider-picker";
+import { Mascot } from "@/components/mascot/mascot";
 import { CompanyStep } from "@/components/onboarding/company-step";
 import { buttonVariants } from "@/components/ui/button";
 import { BRIEF_CHANNELS, BRIEF_TIMES, DEFAULT_BRIEF_TIME } from "@/lib/content";
@@ -147,6 +148,8 @@ export default async function OnboardingPage(props: PageProps<"/onboarding">) {
     >
       {step === 1 && (
         <>
+          {/* The first time the user meets Bystrouš. */}
+          <Mascot mood="wave" size="md" className="mb-4" />
           <StepHeading
             step={1}
             title="Jak se jmenuje tvoje firma?"
