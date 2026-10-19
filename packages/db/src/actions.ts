@@ -247,6 +247,7 @@ async function moveAction(
     .set({
       status,
       statusChangedAt: context.now,
+      ...(event === "fail" || event === "succeed" ? { executedAt: context.now } : {}),
       ...(event === "fail" ? { errorCode: context.errorCode ?? "failed" } : {}),
       ...(event === "succeed" && context.resultReference !== undefined
         ? { resultReference: context.resultReference }

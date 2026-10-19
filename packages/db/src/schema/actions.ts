@@ -75,6 +75,8 @@ export const actions = pgTable(
     resultReference: text("result_reference"),
     /** Short machine code of the failure; never a provider message. */
     errorCode: text("error_code"),
+    /** When carrying it out finished, successfully or not. */
+    executedAt: timestamptz("executed_at"),
     statusChangedAt: timestamptz("status_changed_at").defaultNow().notNull(),
     createdAt: timestamptz("created_at").defaultNow().notNull(),
     updatedAt: timestamptz("updated_at")

@@ -42,7 +42,8 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **Smazaná faktura se v Bystru projeví až při týdenním úplném porovnání** (neděle 2:30), změny a platby do hodiny. Rychlejší by byly webhooky; ty Fakturoid nabízí jen na placených tarifech a pro OAuth aplikace až po domluvě s podporou (jinak 403).
 - **Skutečné připojení Fakturoidu od začátku do konce** (přihlášení u Fakturoidu → návrat → worker → faktury v databázi) jde vyzkoušet jen na nasazené adrese a zatím neproběhlo. Udělat hned po nasazení kroku 2.6: na Railway doplnit proměnné Fakturoidu do webu i workeru a v Nastavení → Propojení kliknout na „Propojit“. Při tom ověřit i kódování hlavičky Basic a to, že nová platba změní `updated_at` faktury.
 - **Vypršelé akce se zatím neoznačují samy.** Akce po platnosti se označí `expired` až ve chvíli, kdy ji někdo zkusí schválit nebo spustit. Pravidelnou úlohu, která je označí, přidat v kroku 5.2 nebo 5.4, až budou akce vznikat.
-- **Oprávnění ke schválení podle role** (kdo ve firmě smí schvalovat) se ověřuje až v API kroku 5.2; `decideAction` jen zapíše rozhodnutí uživatele, kterého dostane.
+- **Akce, kterou worker začal provádět a pak spadl** (nasazení, pád), zůstane ve stavu `executing`. Úloha se neopakuje, aby se nic neodeslalo dvakrát. Až budou akce něco odesílat (5.3/5.4), vyřešit: po čase ji označit `failed` s kódem `interrupted`, nebo ověřit u poskytovatele, jestli zpráva odešla.
+- **Schválená akce, kterou se nepodařilo zařadit do fronty** (Redis nedostupný), čeká, dokud uživatel schválení nezopakuje. Pravidelnou úlohu, která schválené a nezahájené akce zařadí znovu, přidat spolu s označováním vypršelých akcí v kroku 5.4.
 - **Client secret iDokladu prošel chatem** (2026-10-11, na snímku obrazovky z Developer portálu). Je v lokálním `.env` a v Railway; před betou v portálu vytvořit nový (Detail aplikace → Client secret → Nový client secret), starý smazat a nový zadat přímo do Railway (web i worker).
 - **iDoklad není ověřený proti skutečnému účtu s daty.** Stav k 2026-10-11: přihlášení a vydání tokenu proti skutečnému iDokladu funguje; dál se nedošlo, protože účet uživatele je na tarifu Základní a iDoklad dává API až od tarifu Oblíbený (ceník <https://www.idoklad.cz/cenik>: Zdarma a Základní 0 požadavků, Oblíbený 7 500, Prémiový 75 000 měsíčně). Uživatel to vyzkouší s někým, kdo tarif s API platí. Při tom ověřit: že faktury a součty na obrazovce Faktury sedí s iDokladem (podmínka kroku 2.8); v jakém tvaru chodí data (`2026-09-30`, nebo s časem); jestli jsou částky dobropisů záporné; že smazaný doklad vrací 404; že `Reports/…/Pdf` vrací PDF v Base64. Potom nahrát skutečné odpovědi do `packages/integrations/src/idoklad/fixtures/recorded/` (skript jako u Fakturoidu zatím není). Když propojení selže, řádek `Integration connection failed` v logu služby web říká krok a kód (`detail`).
 - **Stejná faktura ve Fakturoidu i v iDokladu se započítá dvakrát.** Na přání uživatele jde připojit oba systémy najednou; aplikace na to při připojování druhého upozorní, ale duplicity nehledá. Kdyby to vadilo, řešit pravidlem (např. stejné číslo dokladu a IČO odběratele) jako samostatný krok.
@@ -102,6 +103,19 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 ---
 
 ## Záznamy
+
+## 2026-10-19 — krok 5.2 API pro schválení
+
+- Hotovo: `POST /api/v1/actions/{id}/approve` (tělo `{ "approval": true }`) a `POST /api/v1/actions/{id}/reject`; logika v `apps/web/src/server/actions.ts` (`decideOnAction`), společná obsluha cest v `action-route.ts`; kontrola aktuálnosti dat `checkActionStillValid` v `packages/db`; úloha `actions.execute` a její zpracování ve workeru (`apps/worker/src/jobs/execute-action.ts`) s registrem vykonavatelů podle typu akce.
+- Rozhodnutí:
+  - Schvalovat a zamítat smí majitel a správce, člen ne (schválil uživatel). Upomínka jde jménem firmy klientovi.
+  - Odpověď podle kontraktu z kapitoly 23: `{ actionId, status, executedAt, resultReference }`. Provádí se na pozadí, takže po schválení `status: "approved"`, `executedAt: null`. Chyby: 400 `invalid_request`, 401, 403 `forbidden` (role nebo cizí původ požadavku), 404 `not_found` (i akce jiné firmy), 409 `conflict` (už rozhodnuto jinak) a `source_changed` (data se změnila, akce zrušena), 410 `expired`.
+  - Dvojklik a opakovaný požadavek se stejným rozhodnutím vrátí 200 s aktuálním stavem a nic nezdvojí; schválení zopakované po výpadku fronty akci zařadí znovu (ID úlohy je odvozené od akce, takže dvakrát se nezařadí).
+  - Aktuálnost dat: upomínka dává smysl jen u faktury, která je dnes (Europe/Prague) po splatnosti, nesmazaná, nezaplacená a nestornovaná; stav se počítá stejnou funkcí jako na obrazovce Faktury. Kontroluje se při schválení i těsně před provedením; když neplatí, akce vyprší s důvodem v auditu (`source_changed` / `source_missing`).
+  - Provedení: jen akce ve stavu `approved`; přechod do `executing` pod zámkem řádku, takže ze dvou úloh provede akci jen jedna. Úloha se nikdy neopakuje (`attempts: 1`); neúspěch se zapíše na akci s kódem (`executor_error`, když chyba žádný použitelný kód nemá). Typ bez vykonavatele skončí `failed` / `no_executor` a nic neodešle; v produkci zatím žádný vykonavatel není (upomínka přijde v 5.3 a 5.4).
+  - **Navíc proti plánu:** sloupec `actions.executed_at` (migrace `0004_action_executed_at`), aby odpověď uměla vrátit čas provedení i po ověření výsledku.
+  - Web nově závisí přímo na `zod` (validace těla požadavku).
+- Testy: rozhodování proti databázi (schválení a zařazení, dvojklik, tři souběžná schválení, opačné rozhodnutí, zamítnutí, role, cizí firma, zaplacená, smazaná a posunutá faktura, vypršení, výpadek fronty); provedení ve workeru (výsledek a audit, dvě souběžné úlohy, zaplaceno po schválení, po platnosti, chyba s kódem bez opakování, obecný kód, chybějící vykonavatel, neschválená a neznámá akce); definice úlohy; E2E ochrana cest (přihlášení, původ, tělo, cizí a neplatné ID).
 
 ## 2026-10-19 — krok 5.1 Action engine
 

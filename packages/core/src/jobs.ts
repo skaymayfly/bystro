@@ -164,6 +164,24 @@ export const dispatchInvoiceSyncJob = defineJob<DispatchInvoiceSyncPayload>({
   retry: DEFAULT_RETRY_POLICY,
 });
 
+const executeActionSchema = z.strictObject({
+  organizationId: z.uuid(),
+  actionId: z.uuid(),
+});
+export type ExecuteActionPayload = z.infer<typeof executeActionSchema>;
+
+/**
+ * Carries out one approved action. Never retried by the queue: an action may do something
+ * outside Bystro (send an e-mail), and a second try could do it twice. A failure is
+ * recorded on the action instead, and trying again is a new proposal.
+ */
+export const executeActionJob = defineJob<ExecuteActionPayload>({
+  name: "actions.execute",
+  queue: QUEUE_NAMES.actions,
+  schema: executeActionSchema,
+  retry: { attempts: 1, baseDelayMs: 0, maxDelayMs: 0, jitter: 0 },
+});
+
 // ---------------------------------------------------------------------------------------
 // Schedules
 // ---------------------------------------------------------------------------------------

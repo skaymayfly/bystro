@@ -17,7 +17,7 @@ import {
 
 const globalForQueues = globalThis as typeof globalThis & { __bystroQueues?: Queues };
 
-function getQueues(): Queues {
+export function getQueues(): Queues {
   globalForQueues.__bystroQueues ??= createQueues(
     createProducerConnection(readRedisUrl()),
     readQueuePrefix(),
