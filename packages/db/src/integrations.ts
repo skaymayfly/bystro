@@ -330,6 +330,29 @@ export async function listSyncTargets(
     .orderBy(asc(integrationConnections.createdAt), asc(integrationConnections.id));
 }
 
+/**
+ * Records that the running sync of a connection is still alive. Only a connection that is
+ * syncing is touched; the status and the audit log do not change.
+ */
+export async function markSyncProgress(
+  db: Db,
+  organizationId: string,
+  connectionId: string,
+  now: Date = new Date(),
+): Promise<void> {
+  const orgId = requireUuid(organizationId, "organizationId");
+  await db
+    .update(integrationConnections)
+    .set({ syncProgressAt: now })
+    .where(
+      and(
+        eq(integrationConnections.organizationId, orgId),
+        eq(integrationConnections.id, requireUuid(connectionId, "connectionId")),
+        eq(integrationConnections.status, "syncing"),
+      ),
+    );
+}
+
 /** One connection of the organization, or `null`. Never includes credentials. */
 export async function getConnection(
   db: Db,

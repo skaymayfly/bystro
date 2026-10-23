@@ -39,6 +39,7 @@ export {
   getSyncCursor,
   listConnections,
   listSyncTargets,
+  markSyncProgress,
   markWebhookEventProcessed,
   readConnectionTokens,
   recordWebhookEvent,
@@ -77,6 +78,7 @@ export {
 } from "./invoices";
 export {
   archiveMailThread,
+  countMailMessages,
   countUnreadInboxThreads,
   deleteMailMessages,
   deleteMailReceivedBefore,

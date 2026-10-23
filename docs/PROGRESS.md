@@ -107,6 +107,13 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 
 ## Záznamy
 
+## 2026-10-24 — oprava: dlouhé první načtení pošty
+
+- Problém: první načtení plné schránky trvá dlouho (Google pustí zhruba 100 celých zpráv za minutu: 60 jednotek z 6 000 za minutu). Běh delší než 30 minut worker považoval za spadlý a spustil druhý souběžně; oba čerpaly kvótu a Gmail je zastavil limitem (403). Pošta se navíc plnila až na konci celého běhu.
+- Hotovo: synchronizace hlásí průběh po každé uložené dávce (nový sloupec `integration_connections.sync_progress_at`, migrace `0006_sync_progress`); worker pozná spadlý běh podle 15 minut bez hlášení, ne podle začátku, takže dlouhý živý běh nechá doběhnout. Vlákna se přepočítají po každé dávce a nové zprávy se stahují od nejnovějších, takže Pošta se plní shora. Pošta během prvního načtení ukazuje „Pořád načítám starší poštu · zatím N zpráv“ a sama se obnovuje.
+- Testy: pořadí od nejnovějších a vlákna viditelná během běhu; worker nespustí druhý běh, dokud první hlásí průběh, a převezme běh, který zmlkl; průběh se zapisuje.
+- Strop rychlosti dál určuje Google; další běhy po prvním načtení stahují jen novinky.
+
 ## 2026-10-24 — oprava: důvody chyby 403 od Gmailu
 
 - Problém: synchronizace pošty na nasazené verzi dostala od Gmailu 403 a Propojení ukázalo „Tvůj účet v Gmailu mi nedovolí číst faktury“. Bystro bralo každou 403 jako trvalý zákaz a text byl šablona pro fakturační systémy.

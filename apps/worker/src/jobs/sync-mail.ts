@@ -2,6 +2,7 @@ import { jobErrorCode, ProviderError, type RateLimit, type SyncMailPayload } fro
 import {
   applyConnectionEvent,
   getConnection,
+  markSyncProgress,
   readConnectionTokens,
   writeAudit,
   type ConnectionTokens,
@@ -43,8 +44,12 @@ export interface SyncMailDeps {
   sleep?: (ms: number) => Promise<void>;
 }
 
-/** A sync marked as running for longer than this was interrupted (crash, deploy). */
-const STALE_SYNC_MS = 30 * 60 * 1000;
+/**
+ * A running sync reports progress after every stored batch, and waits for quota at most
+ * MAX_QUOTA_WAIT_MS between two batches. One silent for longer than this was interrupted
+ * (crash, deploy); one that keeps reporting is left alone however long it runs.
+ */
+const STALE_SYNC_MS = 15 * 60 * 1000;
 /**
  * How long a run waits for quota before it gives up and is put back. A first sync of a
  * busy mailbox spends minutes at Gmail's per-minute quota; waiting inside the job keeps
@@ -77,8 +82,11 @@ export function syncMailHandler(deps: SyncMailDeps): JobHandler<SyncMailPayload>
       return;
     }
     if (connection.status === "syncing") {
-      const startedAt = connection.lastSyncStartedAt?.getTime() ?? 0;
-      if (now().getTime() - startedAt < STALE_SYNC_MS) {
+      const lastSign = Math.max(
+        connection.lastSyncStartedAt?.getTime() ?? 0,
+        connection.syncProgressAt?.getTime() ?? 0,
+      );
+      if (now().getTime() - lastSign < STALE_SYNC_MS) {
         logger.info("Mail sync skipped: another run is in progress");
         return;
       }
@@ -128,6 +136,7 @@ export function syncMailHandler(deps: SyncMailDeps): JobHandler<SyncMailPayload>
         mode,
         encryptionKey: deps.encryptionKey,
         now: now(),
+        onProgress: () => markSyncProgress(db, organizationId, connectionId, now()),
       });
 
       await applyConnectionEvent(db, organizationId, connectionId, "sync_succeeded", SYSTEM);

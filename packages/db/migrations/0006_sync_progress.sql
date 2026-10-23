@@ -1,0 +1,1 @@
+ALTER TABLE "integration_connections" ADD COLUMN "sync_progress_at" timestamp with time zone;

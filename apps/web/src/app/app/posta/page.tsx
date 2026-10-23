@@ -1,4 +1,5 @@
 import {
+  countMailMessages,
   countUnreadInboxThreads,
   getMailThread,
   listMailFolder,
@@ -21,6 +22,7 @@ import {
 import { ConnectForm } from "@/components/connections/connect-form";
 import { ConnectOutcomeNotice, loadConnections } from "@/components/connections/connections-tab";
 import { ArchiveButton } from "@/components/mail/archive-button";
+import { AutoRefresh } from "@/components/mail/auto-refresh";
 import { Button } from "@/components/ui/button";
 import { relativeTime } from "@/lib/connection-status";
 import {
@@ -40,6 +42,10 @@ import { getDb } from "@/server/db";
 export const metadata: Metadata = { title: "Pošta – Bystro" };
 
 const THREAD_ID = /^[A-Za-z0-9_-]{1,100}$/;
+
+/** "1 zpráva", "3 zprávy", "5 zpráv". */
+const messagesWord = (count: number) =>
+  count === 1 ? "zpráva" : count >= 2 && count <= 4 ? "zprávy" : "zpráv";
 const param = (value: string | string[] | undefined) =>
   typeof value === "string" ? value : undefined;
 
@@ -217,7 +223,15 @@ export default async function MailPage(props: PageProps<"/app/posta">) {
     mailbox.lastSyncAt === null
       ? null
       : `aktualizováno ${relativeTime(new Date(mailbox.lastSyncAt), now)}`;
-  const firstLoad = mailbox.lastSyncAt === null && threads.length === 0 && search === "";
+  // The first load of a mailbox can take many minutes (Google lets through ~100 whole
+  // messages a minute); mail appears batch by batch, so the screen keeps itself fresh.
+  const loading =
+    mailbox.lastSyncAt === null &&
+    (mailbox.status === "syncing" ||
+      mailbox.status === "connected" ||
+      mailbox.status === "degraded");
+  const firstLoad = loading && threads.length === 0 && search === "";
+  const loaded = loading ? await countMailMessages(db, scope) : 0;
 
   return (
     <div className="flex flex-col gap-[22px]">
@@ -237,6 +251,17 @@ export default async function MailPage(props: PageProps<"/app/posta">) {
         </Card>
       )}
 
+      {loading && <AutoRefresh />}
+      {loading && !firstLoad && (
+        <p
+          role="status"
+          className="flex items-center gap-2 rounded-box border border-line bg-card px-4 py-3 text-[13px] text-ink-2 shadow-soft"
+        >
+          <span aria-hidden className="size-2 flex-none animate-pulse rounded-full bg-link" />
+          Pořád načítám starší poštu · zatím {loaded} {messagesWord(loaded)}. Nejnovější e-maily už
+          vidíš.
+        </p>
+      )}
       {firstLoad ? (
         <ScreenEmpty
           icon={<Mail aria-hidden size={28} strokeWidth={1.6} />}
