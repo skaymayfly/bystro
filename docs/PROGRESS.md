@@ -114,7 +114,7 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - Rozhodnutí: [ADR 0006](decisions/0006-synchronizace-posty.md).
 - Databáze: migrace `0005_mail` (dvě nové tabulky, žádná změna stávajících).
 - Testy: unit (`core`: MIME, znakové sady, HTML, adresy, historie, úlohy a plán); adaptér proti odpovědím podle dokumentace; integrační (`db`: dvojí uložení, šifrování, vlákna, okno, odpojení, izolace organizací; synchronizace: první úplná, opakování bez duplicit a bez stahování, nová zpráva, přečtení a archivace jinde, koš, smazání, prošlá historie, okno, přerušený běh; worker: obnova tokenu, odmítnutý refresh token, čekání na kvótu, výpadek, nenastavený Gmail, plánovač; web: první načtení po připojení); omezovač s váhou proti Redisu.
-- Ověřeno lokálně: lint, typecheck, formát; testy `core`, `integrations`, `db` a úloh workeru proti PGlite. Testy workeru s Redisem a E2E ověří CI.
+- Ověřeno: lint, typecheck, formát, unit, integrační testy (včetně workeru s Redisem), E2E a sestavení obrazů v CI (PR #27). Adaptér zatím jen na odpovědích podle dokumentace, ne skutečných.
 - 👤 Zbývá: nastavit Gmail v Google Cloud Console (z kroku 5.3) a zadat `GMAIL_CLIENT_ID` a `GMAIL_CLIENT_SECRET` i do služby worker na Railway. Pak nahrát skutečné odpovědi Gmailu místo odpovědí podle dokumentace.
 - Další krok: 5.5 Obrazovka Pošta.
 
