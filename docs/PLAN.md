@@ -355,7 +355,7 @@ Výsledek fáze: uživatel schválí upomínku k faktuře po splatnosti, odejde 
 
 **Hotovo když:** propojení a odpojení funguje proti testovacímu účtu Google, tokeny jsou jen na serveru a šifrované.
 
-### - [ ] 5.4 Synchronizace pošty
+### - [x] 5.4 Synchronizace pošty
 
 **Cíl:** Bystro má poštu posledních 30 dní a průběžně ji drží aktuální.
 

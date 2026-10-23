@@ -107,6 +107,17 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 
 ## Záznamy
 
+## 2026-10-24 — krok 5.4 Synchronizace pošty
+
+- Dokumentace (2026-10-24): návod k synchronizaci, `messages.list`, `messages.get` a formáty, zdroj Message a MessagePartBody, `history.list`, dávkové požadavky, chyby a kvóty Gmail API.
+- Hotovo: doménová logika pošty v `packages/core/src/mail.ts` (text z MIME podle znakové sady, převod HTML na text, hlavičky a adresy včetně RFC 2047, okno 30 dní, zpracování historie); tabulky `mail_messages` a `mail_threads` (migrace `0005_mail`) a funkce v `packages/db/src/mail.ts`; čtení schránky v `packages/integrations/src/gmail/mailbox.ts`; synchronizace `packages/integrations/src/sync/mail-sync.ts`; úlohy `sync.mail` a `sync.dispatch-mail` s plánem ve workeru; omezovač počítá váhu volání a umí počkat; obnova tokenu sdílená se synchronizací faktur; web po připojení Gmailu zařadí první načtení; odpojení smaže poštu.
+- Rozhodnutí: [ADR 0006](decisions/0006-synchronizace-posty.md).
+- Databáze: migrace `0005_mail` (dvě nové tabulky, žádná změna stávajících).
+- Testy: unit (`core`: MIME, znakové sady, HTML, adresy, historie, úlohy a plán); adaptér proti odpovědím podle dokumentace; integrační (`db`: dvojí uložení, šifrování, vlákna, okno, odpojení, izolace organizací; synchronizace: první úplná, opakování bez duplicit a bez stahování, nová zpráva, přečtení a archivace jinde, koš, smazání, prošlá historie, okno, přerušený běh; worker: obnova tokenu, odmítnutý refresh token, čekání na kvótu, výpadek, nenastavený Gmail, plánovač; web: první načtení po připojení); omezovač s váhou proti Redisu.
+- Ověřeno: lint, typecheck, formát, unit, integrační testy (včetně workeru s Redisem), E2E a sestavení obrazů v CI (PR #27). Adaptér zatím jen na odpovědích podle dokumentace, ne skutečných.
+- 👤 Zbývá: nastavit Gmail v Google Cloud Console (z kroku 5.3) a zadat `GMAIL_CLIENT_ID` a `GMAIL_CLIENT_SECRET` i do služby worker na Railway. Pak nahrát skutečné odpovědi Gmailu místo odpovědí podle dokumentace.
+- Další krok: 5.5 Obrazovka Pošta.
+
 ## 2026-10-23 — krok 2.11 Rozložení podle Revolut Business a Stripe
 
 - Hotovo: nový shell (užší menu na šedé ploše, Nastavení dole, pod ním profil se šedým kolečkem s iniciálami, jménem, rolí s firmou a e-mailem; horní lišta jen s datem), Přehled ve dvou sloupcích (karta Po splatnosti s velkým číslem a tabulkou, karta zůstatku, widgety Dokonči nastavení / Odpovědět / Dnešní schůzky), menší nadpisy stránek, karty s rádiusem 16 px a stínem, stavové štítky jako ve Stripe, úpravy seznamu faktur, Nastavení a Propojení, logo Googlu na tlačítku přihlášení přes Google. Podklad z Mobbinu v `docs/design/ui-reference.md`.

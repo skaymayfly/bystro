@@ -1,0 +1,60 @@
+{
+  "_note": "Shape from https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.history/list (2026-10-24).",
+  "history": [
+    {
+      "id": "482950",
+      "messages": [
+        {
+          "id": "18f2a1b3c4d5e800",
+          "threadId": "18f2a1b3c4d5e800"
+        }
+      ],
+      "messagesAdded": [
+        {
+          "message": {
+            "id": "18f2a1b3c4d5e800",
+            "threadId": "18f2a1b3c4d5e800",
+            "labelIds": ["INBOX", "UNREAD"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "482960",
+      "messages": [
+        {
+          "id": "18f2a1b3c4d5e6f7",
+          "threadId": "18f2a1b3c4d5e6f7"
+        }
+      ],
+      "labelsRemoved": [
+        {
+          "message": {
+            "id": "18f2a1b3c4d5e6f7",
+            "threadId": "18f2a1b3c4d5e6f7",
+            "labelIds": ["IMPORTANT"]
+          },
+          "labelIds": ["INBOX"]
+        }
+      ]
+    },
+    {
+      "id": "482970",
+      "messages": [
+        {
+          "id": "18f2a1b3c4d5e555",
+          "threadId": "18f2a1b3c4d5e555"
+        }
+      ],
+      "messagesDeleted": [
+        {
+          "message": {
+            "id": "18f2a1b3c4d5e555",
+            "threadId": "18f2a1b3c4d5e555"
+          }
+        }
+      ]
+    }
+  ],
+  "historyId": "482999"
+}

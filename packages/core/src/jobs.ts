@@ -164,6 +164,35 @@ export const dispatchInvoiceSyncJob = defineJob<DispatchInvoiceSyncPayload>({
   retry: DEFAULT_RETRY_POLICY,
 });
 
+export const MAIL_SYNC_JOB_MODES = ["incremental", "full"] as const;
+
+const syncMailSchema = z.strictObject({
+  organizationId: z.uuid(),
+  connectionId: z.uuid(),
+  /** `incremental` = mailbox changes since the last run; `full` = the whole 30-day window. */
+  mode: z.enum(MAIL_SYNC_JOB_MODES),
+});
+export type SyncMailPayload = z.infer<typeof syncMailSchema>;
+
+/** Syncs the last 30 days of one connected mailbox. */
+export const syncMailJob = defineJob<SyncMailPayload>({
+  name: "sync.mail",
+  queue: QUEUE_NAMES.sync,
+  schema: syncMailSchema,
+  retry: DEFAULT_RETRY_POLICY,
+});
+
+const dispatchMailSyncSchema = z.strictObject({ mode: z.enum(MAIL_SYNC_JOB_MODES) });
+export type DispatchMailSyncPayload = z.infer<typeof dispatchMailSyncSchema>;
+
+/** Enqueues {@link syncMailJob} for every mailbox connection that can be synced. */
+export const dispatchMailSyncJob = defineJob<DispatchMailSyncPayload>({
+  name: "sync.dispatch-mail",
+  queue: QUEUE_NAMES.scheduled,
+  schema: dispatchMailSyncSchema,
+  retry: DEFAULT_RETRY_POLICY,
+});
+
 const executeActionSchema = z.strictObject({
   organizationId: z.uuid(),
   actionId: z.uuid(),
@@ -219,6 +248,12 @@ export const JOB_SCHEDULES: readonly JobSchedule[] = [
   schedule("cleanup-oauth-requests", "30 3 * * *", cleanupOAuthRequestsJob, {}),
   schedule("sync-invoices-hourly", "0 6-20 * * *", dispatchInvoiceSyncJob, { mode: "incremental" }),
   schedule("sync-invoices-weekly", "30 2 * * 0", dispatchInvoiceSyncJob, { mode: "full" }),
+  // Mail: an incremental run costs a few quota units when nothing changed (Gmail allows
+  // 6 000 a minute per user), so every 5 minutes by day and hourly at night. The nightly
+  // full run puts the labels right if a change was missed and drops what left the window.
+  schedule("sync-mail-day", "*/5 6-21 * * *", dispatchMailSyncJob, { mode: "incremental" }),
+  schedule("sync-mail-night", "0 0-5,22,23 * * *", dispatchMailSyncJob, { mode: "incremental" }),
+  schedule("sync-mail-daily-full", "15 3 * * *", dispatchMailSyncJob, { mode: "full" }),
 ];
 
 // ---------------------------------------------------------------------------------------

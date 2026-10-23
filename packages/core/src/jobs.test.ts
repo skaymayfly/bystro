@@ -5,6 +5,7 @@ import {
   cleanupOAuthRequestsJob,
   executeActionJob,
   dispatchInvoiceSyncJob,
+  dispatchMailSyncJob,
   decideRateLimit,
   DEFAULT_RETRY_POLICY,
   InvalidJobIdError,
@@ -16,6 +17,7 @@ import {
   retryDelayMs,
   sanitizeJobIdPart,
   syncInvoicesJob,
+  syncMailJob,
   SCHEDULE_TIME_ZONE,
   type RetryPolicy,
 } from "./jobs";
@@ -105,6 +107,9 @@ describe("job definitions and schedules", () => {
         ["cleanup-oauth-requests", "maintenance.cleanup-oauth-requests", {}],
         ["sync-invoices-hourly", "sync.dispatch-invoices", { mode: "incremental" }],
         ["sync-invoices-weekly", "sync.dispatch-invoices", { mode: "full" }],
+        ["sync-mail-day", "sync.dispatch-mail", { mode: "incremental" }],
+        ["sync-mail-night", "sync.dispatch-mail", { mode: "incremental" }],
+        ["sync-mail-daily-full", "sync.dispatch-mail", { mode: "full" }],
       ],
     );
   });
@@ -176,5 +181,22 @@ describe("jobErrorCode", () => {
     expect(jobErrorCode(error)).toBe("Error");
     expect(jobErrorCode("just a string")).toBe("unknown_error");
     expect(jobErrorCode(null)).toBe("unknown_error");
+  });
+});
+
+describe("mail sync jobs", () => {
+  it("carry identifiers and a mode only, and run on the sync and scheduled queues", () => {
+    const payload = {
+      organizationId: "6f1c1c6e-8c55-4f39-9a63-0d6b8b1f6d01",
+      connectionId: "0b9f7f2e-3a8c-4d6e-9f5b-2c1d4e6f8a90",
+      mode: "incremental",
+    };
+    expect(syncMailJob.schema.safeParse(payload).success).toBe(true);
+    expect(syncMailJob.schema.safeParse({ ...payload, emailAddress: "a@b.cz" }).success).toBe(
+      false,
+    );
+    expect(syncMailJob.queue).toBe("sync");
+    expect(dispatchMailSyncJob.queue).toBe("scheduled");
+    expect(dispatchMailSyncJob.schema.safeParse({ mode: "full" }).success).toBe(true);
   });
 });

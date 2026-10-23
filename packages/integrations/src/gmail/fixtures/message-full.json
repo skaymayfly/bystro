@@ -1,0 +1,119 @@
+{
+  "_note": "Shape from https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages (2026-10-24); made-up content, not recorded.",
+  "id": "18f2a1b3c4d5e6f7",
+  "threadId": "18f2a1b3c4d5e6f7",
+  "labelIds": ["INBOX", "UNREAD", "CATEGORY_PERSONAL", "IMPORTANT"],
+  "snippet": "Dobrý den, posílám fakturu za kuchyňskou linku.",
+  "historyId": "482913",
+  "internalDate": "1792396800000",
+  "sizeEstimate": 48211,
+  "payload": {
+    "partId": "",
+    "mimeType": "multipart/mixed",
+    "filename": "",
+    "headers": [
+      {
+        "name": "From",
+        "value": "Jana Nová <Jana.Nova@example.test>"
+      },
+      {
+        "name": "To",
+        "value": "Petr Dvořák <petr@dvorak-interiery.test>, \"Účetní, Eva\" <eva@ucetni.test>"
+      },
+      {
+        "name": "Cc",
+        "value": "info@dvorak-interiery.test"
+      },
+      {
+        "name": "Subject",
+        "value": "Faktura č. 2026-0142"
+      },
+      {
+        "name": "Message-ID",
+        "value": "<CAF1x2y3@mail.example.test>"
+      },
+      {
+        "name": "In-Reply-To",
+        "value": "<prev@mail.example.test>"
+      },
+      {
+        "name": "References",
+        "value": "<first@mail.example.test> <prev@mail.example.test>"
+      },
+      {
+        "name": "Content-Type",
+        "value": "multipart/mixed; boundary=\"b1\""
+      }
+    ],
+    "body": {
+      "size": 0
+    },
+    "parts": [
+      {
+        "partId": "0",
+        "mimeType": "multipart/alternative",
+        "filename": "",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "multipart/alternative; boundary=\"b2\""
+          }
+        ],
+        "body": {
+          "size": 0
+        },
+        "parts": [
+          {
+            "partId": "0.0",
+            "mimeType": "text/plain",
+            "filename": "",
+            "headers": [
+              {
+                "name": "Content-Type",
+                "value": "text/plain; charset=\"UTF-8\""
+              }
+            ],
+            "body": {
+              "size": 80,
+              "data": "RG9icsO9IGRlbiwNCnBvc8OtbMOhbSBmYWt0dXJ1IHphIGt1Y2h5xYhza291IGxpbmt1Lg0KDQpKYW5h"
+            }
+          },
+          {
+            "partId": "0.1",
+            "mimeType": "text/html",
+            "filename": "",
+            "headers": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=\"UTF-8\""
+              }
+            ],
+            "body": {
+              "size": 90,
+              "data": "PGRpdj5Eb2Jyw70gZGVuLDxicj5wb3PDrWzDoW0gPGI-ZmFrdHVydTwvYj4uPC9kaXY-"
+            }
+          }
+        ]
+      },
+      {
+        "partId": "1",
+        "mimeType": "application/pdf",
+        "filename": "faktura-2026-0142.pdf",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "application/pdf; name=\"faktura-2026-0142.pdf\""
+          },
+          {
+            "name": "Content-Disposition",
+            "value": "attachment; filename=\"faktura-2026-0142.pdf\""
+          }
+        ],
+        "body": {
+          "attachmentId": "ANGjdJ8x",
+          "size": 45321
+        }
+      }
+    ]
+  }
+}

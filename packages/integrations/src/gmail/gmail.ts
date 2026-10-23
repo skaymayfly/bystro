@@ -103,6 +103,11 @@ export const GMAIL_USER_QUOTA = { max: 6_000, windowMs: 60_000 } as const;
 
 export interface GmailClientOptions {
   accessToken: Secret;
+  /**
+   * Called before every request with its cost in quota units, so that the caller can hold
+   * back when the user's per-minute quota is used up.
+   */
+  onRequest?: (cost: number) => Promise<void>;
   /** Defaults to the real API. */
   apiBaseUrl?: string;
   timeoutMs?: number;
@@ -126,6 +131,11 @@ function errorForStatus(status: number, headers: Headers): ProviderError {
   return new ProviderError("invalid_response");
 }
 
+/** The resource does not exist (any more), or a history id is too old to continue from. */
+export class GmailNotFoundError extends Error {
+  override name = "GmailNotFoundError";
+}
+
 export class GmailClient {
   private readonly baseUrl: string;
   private readonly fetchFn: typeof fetch;
@@ -137,12 +147,23 @@ export class GmailClient {
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   }
 
-  /** GETs a resource of the signed-in user (`/users/me/…`). */
-  async getJson(path: string, query: Record<string, string> = {}): Promise<unknown> {
+  /**
+   * GETs a resource of the signed-in user (`/users/me/…`). `cost` is the request's price in
+   * quota units (see https://developers.google.com/workspace/gmail/api/reference/quota).
+   * Repeated query parameters are given as arrays.
+   */
+  async getJson(
+    path: string,
+    query: Record<string, string | readonly string[]> = {},
+    cost = 1,
+  ): Promise<unknown> {
     const url = new URL(`${this.baseUrl}/users/me${path}`);
     for (const [name, value] of Object.entries(query)) {
-      url.searchParams.set(name, value);
+      for (const item of typeof value === "string" ? [value] : value) {
+        url.searchParams.append(name, item);
+      }
     }
+    await this.options.onRequest?.(cost);
     let response: Response;
     try {
       response = await this.fetchFn(url, {
@@ -154,6 +175,9 @@ export class GmailClient {
       });
     } catch {
       throw new ProviderError("provider_unavailable");
+    }
+    if (response.status === 404) {
+      throw new GmailNotFoundError("Not found.");
     }
     if (!response.ok) {
       throw errorForStatus(response.status, response.headers);
