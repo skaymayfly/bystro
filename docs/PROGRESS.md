@@ -107,6 +107,17 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 
 ## Záznamy
 
+## 2026-10-24 — krok 5.5 Obrazovka Pošta
+
+- Dokumentace (2026-10-24): `users.threads.modify` (archivace odebráním štítku INBOX, platí pro celé vlákno) a jeho cena v kvótě (10 jednotek).
+- Hotovo: obrazovka `/app/posta` ve stylu Revolut/Stripe: složky Doručené (s počtem nepřečtených) a Odeslané, hledání, seznam vláken (avatar, protistrana, čas, předmět, úryvek, nepřečtené, příloha, počet zpráv) a detail vlákna vedle; na mobilu seznam, nebo detail se „Zpět“; stavy „Načítám poštu“ a „Prázdno“. Archivace přes `POST /api/mail/threads/{id}/archive` (Gmail, pak Bystro, audit). Funkce pro složky, hledání, detail a archivaci v `packages/db/src/mail.ts`; `archiveGmailThread` v adaptéru; obnova tokenu přesunutá do `packages/integrations`.
+- Rozhodnutí: doplněk [ADR 0006](decisions/0006-synchronizace-posty.md) (archivace bez Action engine, hledání jen v hlavičkách, otevření neoznačí jako přečtené).
+- Databáze beze změny. API: nový `POST /api/mail/threads/{id}/archive` → 204, nebo 404 / 409 `reauth_required` / 503.
+- Testy: adaptér (požadavek archivace, cena, chyby); DB (složky, protistrana, hledání včetně `%`, detail, archivace, izolace organizací); web (archivace proti napodobenému Gmailu, obnova tokenu, odmítnutí bez změny v Bystru, cizí vlákno, nenastavený Gmail); pomocné funkce (adresy, časy v Europe/Prague); E2E (složky, hledání, text s `<b>`/`<img>` jen jako text, archivace zavolá Gmail a vlákno zmizí z Doručených). Obrazovka prošlá v prohlížeči na počítači i mobilu.
+- 👤 Zbývá: na nasazené verzi archivovat jedno vlákno a ověřit, že zmizelo z Doručených i ve skutečném Gmailu.
+- Otevřené body: přílohy jen jako poznámka; označení jako přečtené; hledání v textu e-mailů (šifrovaný text by potřeboval jiné řešení, např. dotaz do Gmailu).
+- Další krok: 5.6 Odpověď a nový e-mail.
+
 ## 2026-10-24 — krok 5.4 Synchronizace pošty
 
 - Dokumentace (2026-10-24): návod k synchronizaci, `messages.list`, `messages.get` a formáty, zdroj Message a MessagePartBody, `history.list`, dávkové požadavky, chyby a kvóty Gmail API.

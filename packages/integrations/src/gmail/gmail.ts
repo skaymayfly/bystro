@@ -163,11 +163,30 @@ export class GmailClient {
         url.searchParams.append(name, item);
       }
     }
+    return this.request(url, { method: "GET" }, cost);
+  }
+
+  /** POSTs a JSON body to a resource of the signed-in user (e.g. `threads/{id}/modify`). */
+  async postJson(path: string, body: unknown, cost = 1): Promise<unknown> {
+    return this.request(
+      new URL(`${this.baseUrl}/users/me${path}`),
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      },
+      cost,
+    );
+  }
+
+  private async request(url: URL, init: RequestInit, cost: number): Promise<unknown> {
     await this.options.onRequest?.(cost);
     let response: Response;
     try {
       response = await this.fetchFn(url, {
+        ...init,
         headers: {
+          ...(init.headers as Record<string, string> | undefined),
           Authorization: `Bearer ${this.options.accessToken.reveal()}`,
           Accept: "application/json",
         },

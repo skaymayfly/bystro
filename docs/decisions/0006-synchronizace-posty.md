@@ -50,3 +50,12 @@ Krok 5.4: Bystro má mít poštu posledních 30 dní a průběžně ji držet ak
 - Předmět, odesílatel a příjemci jsou osobní údaje uložené čitelně kvůli seznamu a hledání (krok 5.5). Chrání je mazání po 30 dnech a po odpojení; do logů, auditu ani Sentry nejdou, tam jsou jen počty.
 - Adaptér je otestovaný na odpovědích podle dokumentace (`packages/integrations/src/gmail/fixtures/`). Skutečné odpovědi se nahrají, až bude nastavený testovací Gmail.
 - Úplná synchronizace pozná trvale smazanou zprávu jen přes historii; zpráva smazaná v době, kdy byla historie prošlá, zůstane v Bystru bez štítků, dokud nevypadne z okna 30 dní.
+
+## Doplněno v kroku 5.5 (obrazovka Pošta, 2026-10-24)
+
+- **Archivace** volá `threads.modify` s `removeLabelIds: ["INBOX"]` (dokumentace ověřená 2026-10-24; platí pro všechny zprávy vlákna, 10 jednotek kvóty). Nejdřív Gmail, teprve po úspěchu Bystro; odmítne-li Gmail, v Bystru se nic nezmění. Vlákno, které už v Gmailu není, zmizí z Doručených i v Bystru.
+- Archivace **nejde přes Action engine**: je to přímé kliknutí uživatele, dá se vrátit a nic neodesílá. Schvalování z CLAUDE.md platí pro odeslání e-mailu, kalendář a CRM. Audit `mail.thread_archived` nese jen ID vlákna a počet zpráv.
+- Web volá Gmail sám, proto se obnova tokenu přestěhovala z workeru do `packages/integrations` (`freshConnectionTokens`).
+- **Hledání** jen v předmětu, jménech a adresách; text e-mailu je šifrovaný, takže se v něm hledat nedá. Obrazovka to u prázdného výsledku říká.
+- **Otevření vlákna v Bystru ho v Gmailu neoznačí jako přečtené**; nepřečtené je podle Gmailu. Označování může přijít později.
+- Text e-mailu se vykresluje jen jako text (`white-space: pre-wrap`), nikdy jako HTML; odkazy zůstávají textem. Přílohy jen jako poznámka „otevřeš ji v Gmailu“.

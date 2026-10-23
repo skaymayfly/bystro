@@ -48,6 +48,7 @@ export {
   type GoogleEndpoints,
 } from "./gmail/gmail";
 export {
+  archiveGmailThread,
   getGmailMessage,
   GMAIL_COST,
   GmailMailbox,
@@ -111,3 +112,4 @@ export {
   type OAuthTokens,
   type StoredOAuthRequest,
 } from "./oauth/oauth";
+export { freshConnectionTokens, type TokenRefreshDeps } from "./oauth/connection-tokens";

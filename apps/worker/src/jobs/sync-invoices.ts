@@ -15,6 +15,7 @@ import {
   type IntegrationConnection,
 } from "@bystro/db";
 import {
+  freshConnectionTokens,
   OAuthError,
   syncInvoices,
   withRequestHook,
@@ -22,7 +23,6 @@ import {
 } from "@bystro/integrations";
 
 import { PermanentJobError, type JobHandler } from "../processing";
-import { freshConnectionTokens } from "./connection-tokens";
 import { RateLimitedError, type RateLimiter } from "../rate-limiter";
 
 /** Everything needed to talk to one invoicing system on behalf of one connection. */
