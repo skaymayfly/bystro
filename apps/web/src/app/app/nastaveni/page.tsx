@@ -194,7 +194,7 @@ export default async function SettingsPage(props: PageProps<"/app/nastaveni">) {
       <div className="flex flex-wrap items-start gap-3.5">
         <nav
           aria-label="Části nastavení"
-          className="flex max-w-full min-w-0 flex-[1_1_240px] flex-col gap-1 rounded-card border border-line bg-card p-2.5 md:max-w-[300px]"
+          className="flex max-w-full min-w-0 flex-[1_1_240px] flex-col gap-1 rounded-tile border border-line bg-card p-2 shadow-soft md:max-w-[300px]"
         >
           {TABS.map((tab) => (
             <Link
@@ -202,7 +202,7 @@ export default async function SettingsPage(props: PageProps<"/app/nastaveni">) {
               href={tab.key === "profil" ? "/app/nastaveni" : `/app/nastaveni?karta=${tab.key}`}
               aria-current={tab.key === active ? "page" : undefined}
               className={cn(
-                "flex items-center gap-3 rounded-box px-3.5 py-3 text-[15px] font-medium hover:bg-fill",
+                "flex items-center gap-3 rounded-control px-3 py-2.5 text-sm font-medium hover:bg-fill",
                 tab.key === active ? "bg-line-soft text-ink" : "text-ink-2",
               )}
             >

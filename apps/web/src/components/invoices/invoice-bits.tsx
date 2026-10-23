@@ -2,10 +2,10 @@ import type { InvoiceTone } from "@/lib/invoice-labels";
 import { relativeTime } from "@/lib/connection-status";
 import { cn } from "@/lib/utils";
 
-const TONE_TEXT: Record<InvoiceTone, string> = {
-  danger: "text-danger-strong",
-  neutral: "text-ink-2",
-  success: "text-success-strong",
+const TONE_PILL: Record<InvoiceTone, string> = {
+  danger: "bg-danger-soft text-danger-strong",
+  neutral: "bg-chip text-ink-2",
+  success: "bg-success-soft text-success-strong",
 };
 const TONE_DOT: Record<InvoiceTone, string> = {
   danger: "bg-danger-strong",
@@ -13,7 +13,7 @@ const TONE_DOT: Record<InvoiceTone, string> = {
   success: "bg-success-strong",
 };
 
-/** The prototype's status pill: a dot and a label in the colour of the state. */
+/** Status badge as Stripe draws it: a soft background and a dot in the colour of the state. */
 export function StatusPill({
   label,
   tone,
@@ -26,8 +26,8 @@ export function StatusPill({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-[7px] rounded-full border border-line-strong bg-fill px-3 py-1.5 text-xs font-medium whitespace-nowrap",
-        TONE_TEXT[tone],
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap",
+        TONE_PILL[tone],
         className,
       )}
     >

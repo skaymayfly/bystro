@@ -1,3 +1,4 @@
+import { formatDate, formatWeekday } from "@bystro/core";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -16,8 +17,10 @@ export default async function AppLayout({ children }: Readonly<{ children: React
     redirect(ONBOARDING_PATH);
   }
 
+  const now = new Date();
   return (
     <AppShell
+      today={`${formatWeekday(now)} ${formatDate(now, "long")}`}
       userName={user.name}
       userEmail={user.email}
       userRole={roleLabel(role)}

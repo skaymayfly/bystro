@@ -299,6 +299,20 @@ Výsledek fáze: uživatel připojí Fakturoid nebo iDoklad a vidí své skuteč
 
 **Hotovo když:** všechny obrazovky vypadají dobře v obou režimech na počítači i mobilu, kontrast textu splňuje WCAG AA a testy procházejí.
 
+### - [ ] 2.11 Rozložení podle Revolut Business a Stripe
+
+**Cíl:** aplikace působí jako finanční nástroj (Revolut Business, Stripe Dashboard); barvy a písmo z ADR 0003 zůstávají.
+
+**Udělej:**
+
+- Podklad se vzory z Mobbinu do `docs/design/ui-reference.md`, rozhodnutí do ADR 0005.
+- Shell: užší postranní menu na šedé ploše, horní lišta s datem a firmou jako pilulkou, obsah v bílých kartách přímo na ploše.
+- Přehled ve dvou sloupcích: vlevo hlavní karta s velkým číslem a tabulkou faktur po splatnosti, vpravo widgety (dokonči nastavení, propojeno, schůzky).
+- Sjednocené komponenty: nadpis stránky, karta, řádek tabulky, stavové štítky, zdroj a čas aktualizace u čísel.
+- Beze změny funkcí, databáze a API; texty z prototypu.
+
+**Hotovo když:** všechny obrazovky mají nové rozložení na počítači i mobilu v obou režimech a testy procházejí.
+
 ---
 
 ## Fáze 5 — Akce, upomínky a schvalování

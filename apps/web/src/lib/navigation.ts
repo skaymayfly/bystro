@@ -6,29 +6,41 @@ export interface NavItem {
   /** Shorter label for the mobile bottom bar. */
   shortLabel: string;
   icon: NavIcon;
-  /** The prototype splits the sidebar into two groups divided by a line. */
-  group: 1 | 2;
+  /** `main` = the list at the top of the sidebar, `footer` = pinned to its bottom (Revolut). */
+  group: "main" | "footer";
 }
 
-/** Main navigation, in the order of the prototype. */
+/** Main navigation, in the order of the prototype (also the order of the mobile tab bar). */
 export const NAV_ITEMS: readonly NavItem[] = [
-  { href: "/app", label: "Přehled", shortLabel: "Přehled", icon: "home", group: 1 },
-  { href: "/app/asistent", label: "Asistent", shortLabel: "Asistent", icon: "assistant", group: 1 },
-  { href: "/app/posta", label: "Pošta", shortLabel: "Pošta", icon: "mail", group: 1 },
+  { href: "/app", label: "Přehled", shortLabel: "Přehled", icon: "home", group: "main" },
+  {
+    href: "/app/asistent",
+    label: "Asistent",
+    shortLabel: "Asistent",
+    icon: "assistant",
+    group: "main",
+  },
+  { href: "/app/posta", label: "Pošta", shortLabel: "Pošta", icon: "mail", group: "main" },
   {
     href: "/app/hlidac-penez",
     label: "Hlídač peněz",
     shortLabel: "Peníze",
     icon: "cash",
-    group: 1,
+    group: "main",
   },
-  { href: "/app/faktury", label: "Faktury", shortLabel: "Faktury", icon: "invoices", group: 2 },
+  {
+    href: "/app/faktury",
+    label: "Faktury",
+    shortLabel: "Faktury",
+    icon: "invoices",
+    group: "main",
+  },
   {
     href: "/app/nastaveni",
     label: "Nastavení",
     shortLabel: "Nastavení",
     icon: "settings",
-    group: 2,
+    group: "footer",
   },
 ];
 

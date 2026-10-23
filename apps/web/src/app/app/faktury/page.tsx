@@ -146,7 +146,7 @@ export default async function InvoicesPage(props: PageProps<"/app/faktury">) {
             })}
             aria-current={filter === stat.filter ? "true" : undefined}
             className={cn(
-              "flex min-w-0 flex-col gap-2 rounded-card border bg-card px-6 py-[22px] transition-colors hover:bg-subtle",
+              "flex min-w-0 flex-col gap-2 rounded-tile border border-line bg-card px-5 py-[18px] shadow-soft transition-colors hover:bg-subtle",
               filter === stat.filter ? stat.border : "border-line",
             )}
           >
@@ -154,7 +154,7 @@ export default async function InvoicesPage(props: PageProps<"/app/faktury">) {
               <span aria-hidden className={cn("size-2 rounded-full", stat.dot)} />
               {stat.label}
             </span>
-            <span className="text-[30px] leading-tight font-semibold tracking-[-0.035em]">
+            <span className="text-[28px] leading-tight font-semibold tracking-[-0.03em] tabular-nums">
               {formatCzk(stat.sum)}
             </span>
             <span className="text-[13px] text-ink-3">{invoiceCountLabel(stat.count)}</span>
@@ -179,7 +179,7 @@ export default async function InvoicesPage(props: PageProps<"/app/faktury">) {
           <form
             action="/app/faktury"
             role="search"
-            className="flex h-[46px] w-[280px] max-w-full items-center gap-2.5 rounded-full border border-line-strong bg-card px-4 text-ink-3 focus-within:border-ink-2"
+            className="flex h-10 w-[280px] max-w-full items-center gap-2.5 rounded-full border border-line-strong bg-card px-4 text-ink-3 focus-within:border-ink-2"
           >
             <Search aria-hidden size={16} strokeWidth={1.7} className="flex-none" />
             {activeFilterParam !== "" && (
@@ -227,13 +227,16 @@ export default async function InvoicesPage(props: PageProps<"/app/faktury">) {
                   <li key={row.id} className="border-t border-line-soft">
                     <Link
                       href={`/app/faktury/${row.id}`}
-                      className={cn(ROW_GRID, "rounded-tile py-3.5 text-sm hover:bg-muted")}
+                      className={cn(
+                        ROW_GRID,
+                        "rounded-control py-3 text-sm transition-colors hover:bg-chip",
+                      )}
                     >
                       <span className="text-ink-3">{row.number}</span>
                       <span className="flex min-w-0 items-center gap-2.5">
                         <span
                           aria-hidden
-                          className="inline-flex size-8 flex-none items-center justify-center rounded-full bg-line-soft text-[11px] font-bold text-ink-2"
+                          className="inline-flex size-9 flex-none items-center justify-center rounded-full bg-chip text-[11px] font-semibold text-ink-2"
                         >
                           {initials(row.clientName ?? "")}
                         </span>
@@ -241,7 +244,7 @@ export default async function InvoicesPage(props: PageProps<"/app/faktury">) {
                           {row.clientName ?? "Bez klienta"}
                         </span>
                       </span>
-                      <span className="text-right font-semibold">
+                      <span className="text-right font-semibold tabular-nums">
                         {formatMoney(row.totalMinor, row.currency)}
                       </span>
                       <span className="text-ink-2">{formatDate(row.dueOn)}</span>

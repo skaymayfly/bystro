@@ -20,11 +20,11 @@ function AppPreview({ title, subtitle }: { title: string; subtitle: string }) {
               <div className="truncate text-[15px] text-ink-3">{subtitle}</div>
             </div>
           </div>
-          {[1, 2].map((group) => (
+          {(["main", "footer"] as const).map((group) => (
             <div
               key={group}
               className={
-                group === 1
+                group === "main"
                   ? "mt-10 flex flex-col border-y border-line-soft py-[22px]"
                   : "flex flex-col py-[22px]"
               }

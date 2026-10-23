@@ -20,7 +20,7 @@ import {
 import { ConnectionsList } from "./connections-list";
 import { ProviderPicker, type ProviderState, type ProviderStates } from "./provider-picker";
 
-const panelClass = "min-w-0 rounded-[18px] border border-line bg-card shadow-soft";
+const panelClass = "min-w-0 rounded-tile border border-line bg-card shadow-soft";
 
 /**
  * Connections of a company, the invoicing systems among them, and which invoicing systems

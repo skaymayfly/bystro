@@ -14,15 +14,15 @@ describe("navigation", () => {
     ]);
   });
 
-  it("splits the sections into the two sidebar groups of the prototype", () => {
-    expect(NAV_ITEMS.filter((item) => item.group === 1).map((item) => item.label)).toEqual([
+  it("keeps Nastavení apart at the bottom of the sidebar, as Revolut Business does", () => {
+    expect(NAV_ITEMS.filter((item) => item.group === "main").map((item) => item.label)).toEqual([
       "Přehled",
       "Asistent",
       "Pošta",
       "Hlídač peněz",
-    ]);
-    expect(NAV_ITEMS.filter((item) => item.group === 2).map((item) => item.label)).toEqual([
       "Faktury",
+    ]);
+    expect(NAV_ITEMS.filter((item) => item.group === "footer").map((item) => item.label)).toEqual([
       "Nastavení",
     ]);
   });
