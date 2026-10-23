@@ -39,29 +39,10 @@ function SidebarLink({ item, active }: { item: NavItem; active: boolean }) {
   );
 }
 
-/** The company as a pill with its initials, where Revolut Business shows its business switcher. */
-function CompanyPill({ name, className }: { name: string; className?: string }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex h-9 max-w-[260px] min-w-0 items-center gap-2 rounded-full border border-line bg-card py-1 pr-3.5 pl-1 text-[13px] font-medium shadow-soft",
-        className,
-      )}
-    >
-      <span
-        aria-hidden
-        className="flex size-7 flex-none items-center justify-center rounded-full bg-chip text-[11px] font-semibold text-ink-2"
-      >
-        {initials(name)}
-      </span>
-      <span className="truncate">{name}</span>
-    </span>
-  );
-}
-
 /**
  * Application frame after Revolut Business: the sidebar and the top bar sit on the grey
- * stage, the content lies on it in white cards. The sidebar narrows to icons below
+ * stage, the content lies on it in white cards. Who is signed in and for which company is
+ * shown once, at the bottom of the sidebar. The sidebar narrows to icons below
  * 1100 px; below 768 px there is a top bar and a bottom tab bar instead.
  */
 export function AppShell({
@@ -109,14 +90,16 @@ export function AppShell({
 
         <div className="mt-3 flex flex-col items-center gap-2 border-t border-line-soft pt-4 min-[1100px]:flex-row min-[1100px]:gap-2.5 min-[1100px]:px-1">
           <span
-            title={userName}
-            className="flex size-9 flex-none items-center justify-center rounded-full bg-ink text-xs font-semibold text-on-ink"
+            title={`${userName} · ${organizationName}`}
+            className="flex size-9 flex-none items-center justify-center rounded-full bg-chip text-xs font-semibold text-ink-2"
           >
             {initials(userName)}
           </span>
           <span className="hidden min-w-0 flex-1 min-[1100px]:block">
             <span className="block truncate text-[13px] font-medium">{userName}</span>
-            <span className="block truncate text-xs text-ink-3">{userRole}</span>
+            <span className="block truncate text-xs text-ink-3">
+              {userRole} · {organizationName}
+            </span>
             <span className="block truncate text-xs text-ink-4">{userEmail}</span>
           </span>
           <SignOutButton className="text-[11px] min-[1100px]:text-xs" />
@@ -131,10 +114,7 @@ export function AppShell({
           <p className="hidden truncate text-[13px] text-ink-3 first-letter:uppercase md:block">
             {today}
           </p>
-          <div className="flex min-w-0 items-center gap-2">
-            <CompanyPill name={organizationName} className="hidden sm:inline-flex" />
-            <SignOutButton className="text-sm md:hidden" />
-          </div>
+          <SignOutButton className="text-sm md:hidden" />
         </header>
 
         <main className="min-w-0 flex-1">

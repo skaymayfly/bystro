@@ -75,12 +75,11 @@ test("navigace na počítači projde všechny obrazovky s prázdnými stavy", as
   const page = await signedInPage(browser, DESKTOP);
   await page.goto("/app");
 
-  // Sidebar shows who is signed in and in which role; the top bar shows the company.
+  // Sidebar shows who is signed in, in which role and for which company.
   const sidebar = page.getByRole("complementary");
   await expect(sidebar.getByText("Petr Dvořák")).toBeVisible();
-  await expect(sidebar.getByText("Majitel")).toBeVisible();
+  await expect(sidebar.getByText(`Majitel · ${KNOWN_COMPANY_NAME}`)).toBeVisible();
   await expect(sidebar.getByText(email)).toBeVisible();
-  await expect(page.getByRole("banner").getByText(KNOWN_COMPANY_NAME)).toBeVisible();
 
   await visitEveryScreen(page, "desktop");
   await page.context().close();

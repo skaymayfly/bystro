@@ -39,7 +39,7 @@ function ProfileTab({ context }: { context: RequestContext }) {
     <>
       <Card>
         <div className="flex flex-wrap items-center gap-[18px]">
-          <span className="flex size-[72px] flex-none items-center justify-center rounded-full bg-ink text-2xl font-bold text-on-ink">
+          <span className="flex size-[72px] flex-none items-center justify-center rounded-full bg-chip text-2xl font-semibold text-ink-2">
             {initials(user.name)}
           </span>
           <div className="min-w-0 flex-1">
