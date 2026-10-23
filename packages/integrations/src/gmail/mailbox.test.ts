@@ -247,3 +247,46 @@ describe("archiveGmailThread", () => {
     });
   });
 });
+
+describe("Gmail's 403 reasons", () => {
+  const refusal = (reason: string, field: "errors" | "details" = "errors") => ({
+    status: 403,
+    body: { error: { code: 403, message: "secret text", [field]: [{ reason }] } },
+  });
+
+  it("waits out per-minute and daily limits instead of giving up", async () => {
+    for (const [answer, waitMs] of [
+      [refusal("userRateLimitExceeded"), 60_000],
+      [refusal("rateLimitExceeded"), 60_000],
+      [refusal("RATE_LIMIT_EXCEEDED", "details"), 60_000],
+      [refusal("dailyLimitExceeded"), 3_600_000],
+    ] as const) {
+      const { gmail } = client(() => answer);
+      const error = (await listGmailHistory(gmail, "1", null).catch(
+        (caught: unknown) => caught,
+      )) as ProviderError;
+      expect(error.code).toBe("rate_limited");
+      expect(error.retryable).toBe(true);
+      expect(error.retryAfterMs).toBe(waitMs);
+    }
+  });
+
+  it("tells a switched-off API, a domain policy and a missing scope apart", async () => {
+    for (const [answer, code] of [
+      [refusal("accessNotConfigured"), "api_disabled"],
+      [refusal("SERVICE_DISABLED", "details"), "api_disabled"],
+      [refusal("domainPolicy"), "account_blocked"],
+      [refusal("insufficientPermissions"), "reauth_required"],
+      [refusal("somethingNew"), "forbidden"],
+      [{ status: 403 }, "forbidden"],
+    ] as const) {
+      const { gmail } = client(() => answer);
+      const error = (await listGmailHistory(gmail, "1", null).catch(
+        (caught: unknown) => caught,
+      )) as ProviderError;
+      expect(error.code).toBe(code);
+      expect(error.retryable).toBe(false);
+      expect(String(error)).not.toContain("secret text");
+    }
+  });
+});

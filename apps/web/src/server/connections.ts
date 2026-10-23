@@ -480,7 +480,9 @@ export async function completeGmailConnection(
     if (error instanceof ProviderError) {
       await giveBack();
       throw new ConnectionFlowError(
-        error.code === "forbidden" ? "account_blocked" : "provider_unavailable",
+        error.code === "forbidden" || error.code === "account_blocked"
+          ? "account_blocked"
+          : "provider_unavailable",
         `account: ${error.code}`,
       );
     }

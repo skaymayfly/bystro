@@ -54,7 +54,9 @@ const FIRST_LOAD_PATIENCE_MS = 3 * MINUTE;
 const blockedText = (provider: string | undefined, app: ProviderWording) =>
   provider === "idoklad"
     ? "iDoklad mi teď nedovolí číst data: tvůj tarif u nich vypršel nebo nestačí. Vyřeš to u nich a pak dej Aktualizovat."
-    : `${app.name} má tvůj účet zablokovaný. Vyřeš to u nich a pak dej Aktualizovat.`;
+    : provider === "gmail"
+      ? "Správce tvé domény v Google Workspace nedovolil Bystru přístup k poště. Požádej ho o povolení."
+      : `${app.name} má tvůj účet zablokovaný. Vyřeš to u nich a pak dej Aktualizovat.`;
 
 function errorText(
   code: string | null,
@@ -69,7 +71,11 @@ function errorText(
     case "account_blocked":
       return blockedText(provider, app);
     case "forbidden":
-      return `Tvůj účet ${app.inside} mi nedovolí číst faktury.`;
+      return provider === "gmail"
+        ? "Gmail mi nedovolil číst poštu. Zkus Gmail odpojit a připojit znovu; kdyby to nepomohlo, napiš nám."
+        : `Tvůj účet ${app.inside} mi nedovolí číst faktury.`;
+    case "api_disabled":
+      return `Přístup k ${app.of} je u nás vypnutý v nastavení u poskytovatele. Je to chyba na naší straně; dáme to do pořádku.`;
     default:
       return undefined;
   }

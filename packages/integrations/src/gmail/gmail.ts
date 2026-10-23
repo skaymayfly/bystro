@@ -114,9 +114,34 @@ export interface GmailClientOptions {
   fetch?: typeof fetch;
 }
 
-function errorForStatus(status: number, headers: Headers): ProviderError {
+/**
+ * Reasons Google gives for a refusal, from `error.errors[].reason` and the newer
+ * `error.details[].reason` (https://developers.google.com/workspace/gmail/api/guides/handle-errors).
+ * Only these short codes are read; the messages are never kept or logged.
+ */
+function errorReasons(body: unknown): string[] {
+  const error = (body as { error?: { errors?: unknown; details?: unknown } } | null)?.error;
+  const reasons: string[] = [];
+  for (const list of [error?.errors, error?.details]) {
+    if (!Array.isArray(list)) continue;
+    for (const item of list) {
+      const reason = (item as { reason?: unknown } | null)?.reason;
+      if (typeof reason === "string") reasons.push(reason);
+    }
+  }
+  return reasons;
+}
+
+const PER_MINUTE_LIMITS = ["rateLimitExceeded", "userRateLimitExceeded", "RATE_LIMIT_EXCEEDED"];
+const DAILY_LIMITS = ["dailyLimitExceeded", "quotaExceeded"];
+const API_DISABLED = ["accessNotConfigured", "SERVICE_DISABLED"];
+const MISSING_SCOPE = ["insufficientPermissions", "ACCESS_TOKEN_SCOPE_INSUFFICIENT"];
+const DAILY_WAIT_MS = 60 * 60 * 1000;
+
+function errorForStatus(status: number, headers: Headers, reasons: string[]): ProviderError {
+  const has = (codes: string[]) => reasons.some((reason) => codes.includes(reason));
   if (status === 401) return new ProviderError("reauth_required");
-  if (status === 429) {
+  if (status === 429 || (status === 403 && has(PER_MINUTE_LIMITS))) {
     const retryAfter = Number(headers.get("retry-after"));
     return new ProviderError(
       "rate_limited",
@@ -125,8 +150,14 @@ function errorForStatus(status: number, headers: Headers): ProviderError {
         : DEFAULT_RATE_LIMIT_WAIT_MS,
     );
   }
-  // Missing scope, Gmail turned off for the account, or a usage limit.
-  if (status === 403) return new ProviderError("forbidden");
+  if (status === 403) {
+    // Google answers 403 for very different things; only some of them are worth waiting out.
+    if (has(DAILY_LIMITS)) return new ProviderError("rate_limited", DAILY_WAIT_MS);
+    if (has(API_DISABLED)) return new ProviderError("api_disabled");
+    if (has(["domainPolicy"])) return new ProviderError("account_blocked");
+    if (has(MISSING_SCOPE)) return new ProviderError("reauth_required");
+    return new ProviderError("forbidden");
+  }
   if (status >= 500) return new ProviderError("provider_unavailable");
   return new ProviderError("invalid_response");
 }
@@ -199,7 +230,8 @@ export class GmailClient {
       throw new GmailNotFoundError("Not found.");
     }
     if (!response.ok) {
-      throw errorForStatus(response.status, response.headers);
+      const body: unknown = await response.json().catch(() => null);
+      throw errorForStatus(response.status, response.headers, errorReasons(body));
     }
     try {
       return (await response.json()) as unknown;

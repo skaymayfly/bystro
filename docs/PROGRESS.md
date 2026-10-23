@@ -107,6 +107,13 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 
 ## Záznamy
 
+## 2026-10-24 — oprava: důvody chyby 403 od Gmailu
+
+- Problém: synchronizace pošty na nasazené verzi dostala od Gmailu 403 a Propojení ukázalo „Tvůj účet v Gmailu mi nedovolí číst faktury“. Bystro bralo každou 403 jako trvalý zákaz a text byl šablona pro fakturační systémy.
+- Hotovo: adaptér Gmailu čte z odpovědi důvod (`error.errors[].reason`, `error.details[].reason`, jen kód, nikdy text): minutové limity (`userRateLimitExceeded`, `rateLimitExceeded`, `RATE_LIMIT_EXCEEDED`) a denní limity se čekají a opakují, `accessNotConfigured`/`SERVICE_DISABLED` → nový kód `api_disabled`, `domainPolicy` → `account_blocked`, chybějící oprávnění → `reauth_required`, ostatní `forbidden`. Hlášky Gmailu v Propojení mluví o poště, ne o fakturách.
+- Testy: všechny důvody 403 v adaptéru; texty Gmailu v Propojení.
+- Další krok: zjistit z nového kódu chyby na nasazené verzi skutečnou příčinu; pak 5.6.
+
 ## 2026-10-24 — krok 5.5 Obrazovka Pošta
 
 - Dokumentace (2026-10-24): `users.threads.modify` (archivace odebráním štítku INBOX, platí pro celé vlákno) a jeho cena v kvótě (10 jednotek).

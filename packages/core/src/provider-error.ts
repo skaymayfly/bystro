@@ -17,6 +17,11 @@ export const PROVIDER_ERROR_CODES = [
   "provider_unavailable",
   /** The response does not match the provider's documentation. */
   "invalid_response",
+  /**
+   * The provider's API is switched off for Bystro's application (e.g. Gmail API not enabled
+   * in the Google Cloud project). Bystro's configuration has to change, not the user's.
+   */
+  "api_disabled",
 ] as const;
 
 export type ProviderErrorCode = (typeof PROVIDER_ERROR_CODES)[number];
