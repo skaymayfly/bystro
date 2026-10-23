@@ -82,6 +82,22 @@ function readIdoklad(env: Env): ProviderSettings["idoklad"] {
   return { clientId, clientSecret: new Secret(clientSecret) };
 }
 
+/**
+ * Gmail is optional in the same way. The worker needs the OAuth client to refresh the
+ * mailbox's access token; it is the same pair the web app uses.
+ */
+function readGmail(env: Env): ProviderSettings["gmail"] {
+  const clientId = env.GMAIL_CLIENT_ID?.trim() ?? "";
+  const clientSecret = env.GMAIL_CLIENT_SECRET?.trim() ?? "";
+  if (clientId === "" && clientSecret === "") {
+    return null;
+  }
+  if (clientId === "" || clientSecret === "") {
+    throw new EnvError("Set both GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET, or neither.");
+  }
+  return { clientId, clientSecret: new Secret(clientSecret) };
+}
+
 /** Reads everything the worker needs to start; throws {@link EnvError} on the first problem. */
 export function readWorkerEnv(env: Env = process.env): WorkerEnv {
   return {
@@ -89,6 +105,6 @@ export function readWorkerEnv(env: Env = process.env): WorkerEnv {
     databaseUrl: readDatabaseUrl(env),
     encryptionKey: readEncryptionKey(env),
     concurrency: readConcurrency(env),
-    providers: { fakturoid: readFakturoid(env), idoklad: readIdoklad(env) },
+    providers: { fakturoid: readFakturoid(env), idoklad: readIdoklad(env), gmail: readGmail(env) },
   };
 }

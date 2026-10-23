@@ -14,6 +14,7 @@ import {
   completeGmailConnection,
   completeIdokladConnection,
   ConnectionFlowError,
+  enqueueInitialMailSync,
   enqueueInitialSync,
   startFakturoidConnection,
   startGmailConnection,
@@ -24,7 +25,13 @@ import {
 } from "./connections";
 import { getRequestContext } from "./context";
 import { readAuthEnv } from "./env";
-import { enqueueInvoiceSync, getFakturoidFlow, getGmailFlow, getIdokladFlow } from "./integrations";
+import {
+  enqueueInvoiceSync,
+  enqueueMailSync,
+  getFakturoidFlow,
+  getGmailFlow,
+  getIdokladFlow,
+} from "./integrations";
 import { logger } from "./logger";
 
 /**
@@ -153,7 +160,9 @@ export async function finishConnection(request: Request, provider: ConnectProvid
       },
       { state: query.get("state"), code: query.get("code"), error: query.get("error") },
     );
-    const queued = await enqueueInitialSync(enqueueInvoiceSync, connection);
+    const queued =
+      (await enqueueInitialSync(enqueueInvoiceSync, connection)) ||
+      (await enqueueInitialMailSync(enqueueMailSync, connection));
     logger.info(
       { provider: connection.provider, connectionId: connection.id, needsAccountChoice, queued },
       "Integration connected",

@@ -9,6 +9,7 @@ import { and, asc, eq, inArray, isNull, lt } from "drizzle-orm";
 
 import { writeAudit, type AuditActor } from "./audit";
 import type { Db, DbExecutor } from "./client";
+import { deleteMailOfConnection } from "./mail";
 import { decrypt, encrypt } from "./crypto";
 import { requireUuid } from "./ids";
 import {
@@ -456,6 +457,8 @@ export async function disconnectConnection(
     await tx
       .delete(integrationCredentials)
       .where(eq(integrationCredentials.connectionId, current.id));
+    // A disconnected mailbox leaves nothing of its mail behind.
+    await deleteMailOfConnection(tx, orgId, current.id);
     const [updated] = await tx
       .update(integrationConnections)
       .set({ status })

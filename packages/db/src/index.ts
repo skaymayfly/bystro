@@ -76,6 +76,18 @@ export {
   type UpsertCounts,
 } from "./invoices";
 export {
+  deleteMailMessages,
+  deleteMailReceivedBefore,
+  listMailMessages,
+  listMailThreads,
+  listStoredMailLabels,
+  refreshMailThreads,
+  setMailLabels,
+  upsertMailMessages,
+  type StoredMailMessage,
+  type StoredMailThread,
+} from "./mail";
+export {
   createFirstOrganization,
   createOrganization,
   listOrganizationsForUser,

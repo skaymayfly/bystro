@@ -2,8 +2,10 @@ import {
   buildJobId,
   ProviderError,
   syncInvoicesJob,
+  syncMailJob,
   type Secret,
   type SyncInvoicesPayload,
+  type SyncMailPayload,
 } from "@bystro/core";
 import {
   ConnectionNotFoundError,
@@ -512,6 +514,7 @@ export async function completeGmailConnection(
 // ---------------------------------------------------------------------------------------
 
 export type EnqueueSync = (data: SyncInvoicesPayload, jobId: string) => Promise<boolean>;
+export type EnqueueMailSync = (data: SyncMailPayload, jobId: string) => Promise<boolean>;
 
 const SYNCABLE: ReadonlySet<IntegrationConnection["status"]> = new Set([
   "connected",
@@ -524,7 +527,7 @@ export async function enqueueInitialSync(
   enqueue: EnqueueSync,
   connection: IntegrationConnection,
 ): Promise<boolean> {
-  // Only invoicing systems sync invoices; mail gets its own sync (step 5.4).
+  // Only invoicing systems sync invoices; mail has its own sync (enqueueInitialMailSync).
   if (connection.category !== "invoicing" || connection.externalAccountId === null) {
     return false;
   }
@@ -539,6 +542,27 @@ export async function enqueueInitialSync(
     );
   } catch {
     // The hourly schedule picks the connection up.
+    return false;
+  }
+}
+
+/**
+ * Enqueues the first load of a newly connected mailbox (the last 30 days). Like the
+ * invoice sync, a queue outage must not undo the connection: the schedule picks it up.
+ */
+export async function enqueueInitialMailSync(
+  enqueue: EnqueueMailSync,
+  connection: IntegrationConnection,
+): Promise<boolean> {
+  if (connection.category !== "email") {
+    return false;
+  }
+  try {
+    return await enqueue(
+      { organizationId: connection.organizationId, connectionId: connection.id, mode: "full" },
+      buildJobId(syncMailJob.name, connection.id, "connected", String(Date.now())),
+    );
+  } catch {
     return false;
   }
 }

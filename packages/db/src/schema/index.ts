@@ -3,4 +3,5 @@ export * from "./actions";
 export * from "./auth";
 export * from "./integrations";
 export * from "./invoices";
+export * from "./mail";
 export * from "./tenant";

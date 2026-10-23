@@ -224,6 +224,18 @@ describe("rate limiter", () => {
     expect((await limiter.acquire(key, limit)).allowed).toBe(true);
   });
 
+  it("counts a call by its cost, as Gmail counts quota units", async () => {
+    const limiter = createRateLimiter(test.queues.connection, test.queues.prefix);
+    const key = rateLimitKey("gmail", "conn-1");
+    const units = { max: 100, windowMs: 60_000 };
+
+    expect((await limiter.acquire(key, units, 60)).allowed).toBe(true);
+    expect((await limiter.acquire(key, units, 20)).allowed).toBe(true);
+    // 60 + 20 + 60 is over the 100 units of the window.
+    expect((await limiter.acquire(key, units, 60)).allowed).toBe(false);
+    await expect(limiter.acquire(key, units, 0)).rejects.toThrow(RangeError);
+  });
+
   it("a rate-limited job is postponed without spending an attempt", async () => {
     // One attempt only: if postponing counted as a failure, the third job would be dead.
     const job = testJob("test.limited", { ...fastRetry, attempts: 1 });

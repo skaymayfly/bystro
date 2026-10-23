@@ -36,6 +36,13 @@
       "when": 1792415905251,
       "tag": "0004_action_executed_at",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792792793283,
+      "tag": "0005_mail",
+      "breakpoints": true
     }
   ]
 }

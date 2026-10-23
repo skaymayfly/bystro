@@ -1,6 +1,11 @@
 import { rateLimitKey, type Secret } from "@bystro/core";
 import {
   FAKTUROID_RATE_LIMIT,
+  GMAIL_SOURCE,
+  GMAIL_USER_QUOTA,
+  GmailClient,
+  GmailMailbox,
+  gmailOAuthConfig,
   FAKTUROID_SOURCE,
   FakturoidClient,
   fakturoidOAuthConfig,
@@ -14,6 +19,7 @@ import {
 } from "@bystro/integrations";
 
 import type { InvoiceProviderResolver } from "./jobs/sync-invoices";
+import type { MailboxResolver } from "./jobs/sync-mail";
 
 export interface FakturoidSettings {
   clientId: string;
@@ -27,11 +33,18 @@ export interface IdokladSettings {
   clientSecret: Secret;
 }
 
+export interface GmailSettings {
+  clientId: string;
+  clientSecret: Secret;
+}
+
 export interface ProviderSettings {
   /** `null` when Fakturoid is not configured in this environment. */
   fakturoid: FakturoidSettings | null;
   /** `null` when iDoklad is not configured in this environment. */
   idoklad: IdokladSettings | null;
+  /** `null` when Gmail is not configured in this environment. */
+  gmail: GmailSettings | null;
 }
 
 /**
@@ -77,5 +90,24 @@ export function createInvoiceProviderResolver(settings: ProviderSettings): Invoi
       };
     }
     return null;
+  };
+}
+
+/**
+ * Chooses the mailbox adapter for a mail connection. Gmail's quota belongs to the user's
+ * mailbox, so it is counted per connection.
+ */
+export function createMailboxResolver(settings: Pick<ProviderSettings, "gmail">): MailboxResolver {
+  return (connection) => {
+    const { gmail } = settings;
+    if (connection.provider !== GMAIL_SOURCE || gmail === null) {
+      return null;
+    }
+    return {
+      oauth: gmailOAuthConfig(gmail),
+      rateLimit: { key: rateLimitKey(GMAIL_SOURCE, connection.id), limit: GMAIL_USER_QUOTA },
+      create: (tokens, onRequest) =>
+        new GmailMailbox(new GmailClient({ accessToken: tokens.accessToken, onRequest })),
+    };
   };
 }

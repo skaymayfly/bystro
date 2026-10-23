@@ -9,7 +9,6 @@ import {
   applyConnectionEvent,
   getConnection,
   readConnectionTokens,
-  updateConnectionTokens,
   writeAudit,
   type ConnectionTokens,
   type Db,
@@ -17,13 +16,13 @@ import {
 } from "@bystro/db";
 import {
   OAuthError,
-  refreshAccessToken,
   syncInvoices,
   withRequestHook,
   type OAuthProviderConfig,
 } from "@bystro/integrations";
 
 import { PermanentJobError, type JobHandler } from "../processing";
+import { freshConnectionTokens } from "./connection-tokens";
 import { RateLimitedError, type RateLimiter } from "../rate-limiter";
 
 /** Everything needed to talk to one invoicing system on behalf of one connection. */
@@ -50,8 +49,6 @@ export interface SyncInvoicesDeps {
   fetch?: typeof fetch;
 }
 
-/** Refresh the access token when it expires within this time. */
-const REFRESH_AHEAD_MS = 5 * 60 * 1000;
 /** A sync marked as running for longer than this was interrupted (crash, deploy). */
 const STALE_SYNC_MS = 30 * 60 * 1000;
 
@@ -65,40 +62,6 @@ const SYSTEM = { actor: { type: "system" as const }, source: "worker" as const }
 export function syncInvoicesHandler(deps: SyncInvoicesDeps): JobHandler<SyncInvoicesPayload> {
   const now = deps.now ?? (() => new Date());
   const { db } = deps;
-
-  async function freshTokens(
-    connection: IntegrationConnection,
-    setup: InvoiceProviderSetup,
-    tokens: ConnectionTokens,
-  ): Promise<ConnectionTokens> {
-    const expiresSoon =
-      tokens.expiresAt !== null && tokens.expiresAt.getTime() - now().getTime() < REFRESH_AHEAD_MS;
-    if (!expiresSoon) {
-      return tokens;
-    }
-    if (setup.oauth === null || tokens.refreshToken === null) {
-      throw new ProviderError("reauth_required");
-    }
-    const refreshed = await refreshAccessToken(
-      setup.oauth,
-      { refreshToken: tokens.refreshToken },
-      { now: now(), ...(deps.fetch === undefined ? {} : { fetch: deps.fetch }) },
-    );
-    const updated: ConnectionTokens = {
-      accessToken: refreshed.accessToken,
-      // Providers that do not rotate refresh tokens return none: keep the one we have.
-      refreshToken: refreshed.refreshToken ?? tokens.refreshToken,
-      expiresAt: refreshed.expiresAt,
-    };
-    await updateConnectionTokens(
-      db,
-      connection.organizationId,
-      connection.id,
-      updated,
-      deps.encryptionKey,
-    );
-    return updated;
-  }
 
   return async ({ data, logger }) => {
     const { organizationId, connectionId, mode } = data;
@@ -141,7 +104,17 @@ export function syncInvoicesHandler(deps: SyncInvoicesDeps): JobHandler<SyncInvo
     }
 
     try {
-      const current = await freshTokens(connection, setup, tokens);
+      const current = await freshConnectionTokens(
+        {
+          db,
+          encryptionKey: deps.encryptionKey,
+          now,
+          ...(deps.fetch === undefined ? {} : { fetch: deps.fetch }),
+        },
+        connection,
+        setup.oauth,
+        tokens,
+      );
       const provider = withRequestHook(setup.create(current), () =>
         deps.rateLimiter.require(setup.rateLimit.key, setup.rateLimit.limit),
       );

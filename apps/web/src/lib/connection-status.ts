@@ -5,7 +5,7 @@ import { providerWording, type ProviderWording } from "./invoicing-providers";
 export interface ConnectionSummary {
   /** Provider id, e.g. `fakturoid`; decides how the texts name the application. */
   provider?: string;
-  /** `email` connections have no sync yet (step 5.4): nothing to wait for. */
+  /** `email` connections show no "waiting for the first load": a mailbox may take minutes. */
   category?: string;
   status: "connected" | "syncing" | "degraded" | "reauth_required" | "revoked" | "error";
   needsAccount: boolean;

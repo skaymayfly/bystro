@@ -2,7 +2,11 @@ import { Secret } from "@bystro/core";
 import type { IntegrationConnection } from "@bystro/db";
 import { describe, expect, it } from "vitest";
 
-import { createInvoiceProviderResolver, type ProviderSettings } from "./providers";
+import {
+  createInvoiceProviderResolver,
+  createMailboxResolver,
+  type ProviderSettings,
+} from "./providers";
 
 const settings: ProviderSettings = {
   fakturoid: {
@@ -11,10 +15,15 @@ const settings: ProviderSettings = {
     userAgent: "Bystro (vyvoj@bystro.example)",
   },
   idoklad: { clientId: "idoklad-id", clientSecret: new Secret("idoklad-secret") },
+  gmail: { clientId: "gmail-id", clientSecret: new Secret("gmail-secret") },
 };
 
 const connection = (provider: string, externalAccountId: string | null) =>
-  ({ provider, externalAccountId }) as IntegrationConnection;
+  ({
+    provider,
+    externalAccountId,
+    id: "0b9f7f2e-3a8c-4d6e-9f5b-2c1d4e6f8a90",
+  }) as IntegrationConnection;
 
 const tokens = { accessToken: new Secret("access"), refreshToken: null, expiresAt: null };
 
@@ -43,7 +52,7 @@ describe("createInvoiceProviderResolver", () => {
   });
 
   it("gives nothing for a provider that is not configured, has no account or is unknown", () => {
-    const none = createInvoiceProviderResolver({ fakturoid: null, idoklad: null });
+    const none = createInvoiceProviderResolver({ fakturoid: null, idoklad: null, gmail: null });
     expect(none(connection("fakturoid", "applecorp"))).toBeNull();
     expect(none(connection("idoklad", "4321"))).toBeNull();
 
@@ -51,5 +60,23 @@ describe("createInvoiceProviderResolver", () => {
     expect(resolve(connection("fakturoid", null))).toBeNull();
     expect(resolve(connection("idoklad", null))).toBeNull();
     expect(resolve(connection("pohoda", "x"))).toBeNull();
+  });
+});
+
+describe("createMailboxResolver", () => {
+  it("sets up Gmail with its quota counted per mailbox, in quota units", () => {
+    const setup = createMailboxResolver(settings)(connection("gmail", "petr@dvorak.test"));
+
+    expect(setup?.oauth?.id).toBe("gmail");
+    expect(setup?.rateLimit).toEqual({
+      key: "gmail.0b9f7f2e-3a8c-4d6e-9f5b-2c1d4e6f8a90",
+      limit: { max: 6_000, windowMs: 60_000 },
+    });
+    expect(setup?.create(tokens, async () => {}).source).toBe("gmail");
+  });
+
+  it("gives nothing for other providers or when Gmail is not configured here", () => {
+    expect(createMailboxResolver(settings)(connection("fakturoid", "x"))).toBeNull();
+    expect(createMailboxResolver({ gmail: null })(connection("gmail", "x"))).toBeNull();
   });
 });

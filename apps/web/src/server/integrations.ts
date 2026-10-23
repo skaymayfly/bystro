@@ -1,4 +1,4 @@
-import { syncInvoicesJob } from "@bystro/core";
+import { syncInvoicesJob, syncMailJob } from "@bystro/core";
 import { readEncryptionKey, type IntegrationConnection } from "@bystro/db";
 import type {
   FakturoidAppCredentials,
@@ -7,7 +7,13 @@ import type {
 } from "@bystro/integrations";
 import { createProducerConnection, createQueues, enqueue, type Queues } from "@bystro/queue";
 
-import type { EnqueueSync, FlowDeps, GmailFlowDeps, IdokladFlowDeps } from "./connections";
+import type {
+  EnqueueMailSync,
+  EnqueueSync,
+  FlowDeps,
+  GmailFlowDeps,
+  IdokladFlowDeps,
+} from "./connections";
 import { getDb } from "./db";
 import {
   readAuthEnv,
@@ -33,6 +39,10 @@ export function getQueues(): Queues {
 /** Adds an invoice sync to the worker's queue. */
 export const enqueueInvoiceSync: EnqueueSync = (data, jobId) =>
   enqueue(getQueues(), syncInvoicesJob, data, { jobId });
+
+/** Adds a mail sync to the worker's queue. */
+export const enqueueMailSync: EnqueueMailSync = (data, jobId) =>
+  enqueue(getQueues(), syncMailJob, data, { jobId });
 
 /** The configured Fakturoid application, or `null` when this environment has none. */
 export function getFakturoid(): FakturoidAppCredentials | null {

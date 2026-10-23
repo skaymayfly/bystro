@@ -30,7 +30,7 @@ describe("readWorkerEnv", () => {
       databaseUrl: valid.DATABASE_URL,
       encryptionKey: key,
       concurrency: 5,
-      providers: { fakturoid: null, idoklad: null },
+      providers: { fakturoid: null, idoklad: null, gmail: null },
     });
     expect(readWorkerEnv({ ...valid, WORKER_CONCURRENCY: "12" }).concurrency).toBe(12);
   });

@@ -7,6 +7,7 @@ import * as actionTables from "./schema/actions";
 import * as authTables from "./schema/auth";
 import * as integrationTables from "./schema/integrations";
 import * as invoiceTables from "./schema/invoices";
+import * as mailTables from "./schema/mail";
 import * as organizationTables from "./schema/tenant";
 
 /** Every table holding data of one organization. */
@@ -14,6 +15,7 @@ const tenantTables = {
   ...organizationTables,
   ...integrationTables,
   ...invoiceTables,
+  ...mailTables,
   ...actionTables,
 };
 
@@ -62,6 +64,8 @@ describe("public API of @bystro/db", () => {
       "invoice_lines",
       "invoice_payments",
       "invoices",
+      "mail_messages",
+      "mail_threads",
       "memberships",
       "oauth_requests",
       "organizations",

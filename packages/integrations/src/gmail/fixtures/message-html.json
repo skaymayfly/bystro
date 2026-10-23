@@ -1,0 +1,35 @@
+{
+  "_note": "Shape from https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages (2026-10-24); made-up content, not recorded.",
+  "id": "18f2a1b3c4d5e700",
+  "threadId": "18f2a1b3c4d5e6f7",
+  "labelIds": ["SENT"],
+  "snippet": "Děkuji, zaplatíme do pátku.",
+  "historyId": "482990",
+  "internalDate": "1792483200000",
+  "payload": {
+    "mimeType": "text/html",
+    "filename": "",
+    "headers": [
+      {
+        "name": "From",
+        "value": "petr@dvorak-interiery.test"
+      },
+      {
+        "name": "To",
+        "value": "=?utf-8?Q?Jana_Nov=C3=A1?= <jana.nova@example.test>"
+      },
+      {
+        "name": "Subject",
+        "value": "Re: Faktura   č. 2026-0142"
+      },
+      {
+        "name": "Content-Type",
+        "value": "text/html; charset=windows-1250"
+      }
+    ],
+    "body": {
+      "size": 60,
+      "data": "PHA-ROxrdWppLCB6YXBsYXTtbWUgZG8gcOF0a3UuPC9wPjxzY3JpcHQ-YWxlcnQoMSk8L3NjcmlwdD4"
+    }
+  }
+}

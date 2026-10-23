@@ -1,0 +1,15 @@
+{
+  "_note": "Shape from https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/list (2026-10-24).",
+  "messages": [
+    {
+      "id": "18f2a1b3c4d5e6f7",
+      "threadId": "18f2a1b3c4d5e6f7"
+    },
+    {
+      "id": "18f2a1b3c4d5e700",
+      "threadId": "18f2a1b3c4d5e6f7"
+    }
+  ],
+  "nextPageToken": "page-2",
+  "resultSizeEstimate": 3
+}

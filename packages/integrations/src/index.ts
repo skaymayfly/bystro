@@ -37,6 +37,7 @@ export {
   GMAIL_SOURCE,
   GMAIL_USER_QUOTA,
   GmailClient,
+  GmailNotFoundError,
   gmailOAuthConfig,
   GOOGLE_ENDPOINTS,
   hasGmailScopes,
@@ -46,6 +47,16 @@ export {
   type GmailProfile,
   type GoogleEndpoints,
 } from "./gmail/gmail";
+export {
+  getGmailMessage,
+  GMAIL_COST,
+  GmailMailbox,
+  listGmailHistory,
+  listGmailMessages,
+  MailHistoryExpiredError,
+  type GmailMessageRef,
+  type MailboxReader,
+} from "./gmail/mailbox";
 export {
   IDOKLAD_API_BASE_URL,
   IDOKLAD_IDENTITY_BASE_URL,
@@ -80,6 +91,13 @@ export {
   type InvoiceSyncMode,
   type InvoiceSyncResult,
 } from "./sync/invoice-sync";
+export {
+  MAIL_SYNC_MODES,
+  syncMail,
+  type MailSyncInput,
+  type MailSyncMode,
+  type MailSyncResult,
+} from "./sync/mail-sync";
 export {
   createAuthorizationRequest,
   exchangeAuthorizationCode,

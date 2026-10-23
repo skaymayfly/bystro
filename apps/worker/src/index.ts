@@ -1,19 +1,23 @@
 import {
   cleanupOAuthRequestsJob,
   dispatchInvoiceSyncJob,
+  dispatchMailSyncJob,
   executeActionJob,
   syncInvoicesJob,
+  syncMailJob,
 } from "@bystro/core";
 import { createDb, deleteExpiredOAuthRequests, listSyncTargets } from "@bystro/db";
 
 import { readWorkerEnv } from "./env";
 import { cleanupOAuthRequestsHandler } from "./jobs/cleanup-oauth-requests";
 import { dispatchInvoiceSyncHandler } from "./jobs/dispatch-invoice-sync";
+import { dispatchMailSyncHandler } from "./jobs/dispatch-mail-sync";
 import { executeActionHandler } from "./jobs/execute-action";
 import { syncInvoicesHandler } from "./jobs/sync-invoices";
+import { syncMailHandler } from "./jobs/sync-mail";
 import { logger } from "./logger";
 import { JobRegistry, startWorkers, type Workers } from "./processing";
-import { createInvoiceProviderResolver } from "./providers";
+import { createInvoiceProviderResolver, createMailboxResolver } from "./providers";
 import {
   createQueues,
   createRedisConnection,
@@ -49,6 +53,7 @@ async function start(): Promise<void> {
   });
   const queues = createQueues(connection);
 
+  const rateLimiter = createRateLimiter(connection, queues.prefix);
   const registry = new JobRegistry()
     .register(
       cleanupOAuthRequestsJob,
@@ -68,8 +73,24 @@ async function start(): Promise<void> {
       syncInvoicesHandler({
         db,
         encryptionKey: env.encryptionKey,
-        rateLimiter: createRateLimiter(connection, queues.prefix),
+        rateLimiter,
         resolveProvider: createInvoiceProviderResolver(env.providers),
+      }),
+    )
+    .register(
+      dispatchMailSyncJob,
+      dispatchMailSyncHandler({
+        listTargets: () => listSyncTargets(db, "email"),
+        enqueue: (data, jobId) => enqueue(queues, syncMailJob, data, { jobId }),
+      }),
+    )
+    .register(
+      syncMailJob,
+      syncMailHandler({
+        db,
+        encryptionKey: env.encryptionKey,
+        rateLimiter,
+        resolveMailbox: createMailboxResolver(env.providers),
       }),
     )
     // No action type can be carried out yet: sending reminders comes with steps 5.3 and 5.4.
@@ -108,6 +129,7 @@ async function start(): Promise<void> {
       concurrency: env.concurrency,
       fakturoidConfigured: env.providers.fakturoid !== null,
       idokladConfigured: env.providers.idoklad !== null,
+      gmailConfigured: env.providers.gmail !== null,
     },
     READY_MESSAGE,
   );

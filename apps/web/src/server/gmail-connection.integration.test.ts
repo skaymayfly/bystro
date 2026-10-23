@@ -10,6 +10,7 @@ import {
   completeGmailConnection,
   ConnectionFlowError,
   disconnect,
+  enqueueInitialMailSync,
   enqueueInitialSync,
   requestManualSync,
   startGmailConnection,
@@ -274,5 +275,38 @@ describe("connecting Gmail", () => {
     expect(new URLSearchParams(google.requests[0]?.body).get("token")).toBe("google-refresh-plain");
     expect(await readConnectionTokens(db, who.organization.id, connection.id, key)).toBeNull();
     expect((await getConnection(db, who.organization.id, connection.id))?.status).toBe("revoked");
+  });
+
+  it("starts the first load of the mailbox: identifiers only, the whole 30 days", async () => {
+    const deps = flow(fakeGoogle().fetchFn);
+    const who = await company();
+    const { state } = await started(deps, who);
+    const { connection } = await completeGmailConnection(deps, who, callback(state));
+    const jobs: { data: unknown; jobId: string }[] = [];
+
+    expect(
+      await enqueueInitialMailSync(async (data, jobId) => {
+        jobs.push({ data, jobId });
+        return true;
+      }, connection),
+    ).toBe(true);
+    expect(jobs).toEqual([
+      {
+        data: {
+          organizationId: who.organization.id,
+          connectionId: connection.id,
+          mode: "full",
+        },
+        jobId: expect.stringMatching(
+          new RegExp(`^sync\\.mail\\.${connection.id}\\.connected\\.\\d+$`),
+        ),
+      },
+    ]);
+    // A queue outage does not undo the connection.
+    expect(
+      await enqueueInitialMailSync(async () => {
+        throw new Error("redis down");
+      }, connection),
+    ).toBe(false);
   });
 });
