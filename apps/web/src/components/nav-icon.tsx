@@ -11,8 +11,16 @@ const ICONS = {
   settings: Settings,
 } as const;
 
-/** Line icon of a navigation item, drawn like the prototype's (thin stroke, 22 px). */
-export function NavIcon({ name, className }: { name: NavIconName; className?: string }) {
+/** Line icon of a navigation item: thin stroke, 22 px in the tab bar, smaller in the sidebar. */
+export function NavIcon({
+  name,
+  size = 22,
+  className,
+}: {
+  name: NavIconName;
+  size?: number;
+  className?: string | undefined;
+}) {
   const Icon = ICONS[name];
-  return <Icon aria-hidden size={22} strokeWidth={1.6} className={className} />;
+  return <Icon aria-hidden size={size} strokeWidth={1.7} className={className} />;
 }

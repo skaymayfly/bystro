@@ -61,7 +61,7 @@ export function Card({ className, children }: { className?: string; children: Re
   return (
     <section
       className={cn(
-        "flex min-w-0 flex-col gap-[18px] rounded-card border border-line bg-card px-6 py-[22px]",
+        "flex min-w-0 flex-col gap-[18px] rounded-tile border border-line bg-card px-6 py-5 shadow-soft",
         className,
       )}
     >
@@ -82,15 +82,15 @@ export function CardTitle({
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
-        <h2 className="text-lg font-medium tracking-[-0.01em]">{children}</h2>
-        {text !== undefined && <p className="mt-1 text-sm text-ink-3">{text}</p>}
+        <h2 className="text-base font-semibold tracking-[-0.01em]">{children}</h2>
+        {text !== undefined && <p className="mt-1 text-[13px] leading-normal text-ink-3">{text}</p>}
       </div>
       {aside}
     </div>
   );
 }
 
-/** Page heading of the app screens; `muted` continues the title in grey. */
+/** Page heading of the app screens, sized as Revolut Business titles its pages; `muted` continues it in grey. */
 export function PageHeader({
   title,
   muted,
@@ -103,13 +103,13 @@ export function PageHeader({
   children?: ReactNode;
 }) {
   return (
-    <header className="flex flex-wrap items-end justify-between gap-4 pt-[18px]">
-      <div className="flex min-w-0 flex-col gap-2">
-        <h1 className="text-[clamp(34px,3.4vw,46px)] leading-[1.05] font-medium tracking-[-0.035em]">
+    <header className="flex flex-wrap items-end justify-between gap-4 pt-2 pb-1">
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <h1 className="text-[28px] leading-[1.1] font-semibold tracking-[-0.03em]">
           {title}
           {muted !== undefined && <span className="text-ink-3"> {muted}</span>}
         </h1>
-        {text !== undefined && <p className="text-[15px] text-ink-3">{text}</p>}
+        {text !== undefined && <p className="text-sm text-ink-3">{text}</p>}
       </div>
       {children}
     </header>
@@ -129,20 +129,20 @@ export function ScreenEmpty({
   children?: ReactNode;
 }) {
   return (
-    <Card className="items-center gap-3.5 px-6 py-16 text-center sm:px-8">
-      <span className="flex size-16 items-center justify-center rounded-[20px] bg-fill text-ink">
+    <Card className="items-center gap-3 px-6 py-16 text-center sm:px-8">
+      <span className="flex size-14 items-center justify-center rounded-tile bg-chip text-ink">
         {icon}
       </span>
-      <h2 className="max-w-[520px] text-[26px] leading-tight font-medium tracking-[-0.02em]">
+      <h2 className="max-w-[520px] text-[22px] leading-tight font-semibold tracking-[-0.02em]">
         {title}
       </h2>
-      <p className="max-w-[460px] text-[15px] leading-[1.55] text-ink-3">{text}</p>
+      <p className="max-w-[460px] text-sm leading-[1.55] text-ink-3">{text}</p>
       {children}
     </Card>
   );
 }
 
-/** Compact bordered card of the Přehled screen. */
+/** A widget card of the Přehled screen: a title row and a body (Revolut Business widgets). */
 export function Panel({
   title,
   aside,
@@ -157,12 +157,12 @@ export function Panel({
   return (
     <section
       className={cn(
-        "flex min-w-0 flex-col gap-3.5 rounded-box border border-line px-5 py-[18px]",
+        "flex min-w-0 flex-col gap-3.5 rounded-tile border border-line bg-card px-5 py-[18px] shadow-soft",
         className,
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-medium">{title}</h2>
+        <h2 className="text-[15px] font-semibold tracking-[-0.01em]">{title}</h2>
         {aside}
       </div>
       {children}
