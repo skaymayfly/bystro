@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 
 import { Secret, type MailMessage } from "@bystro/core";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { createDb } from "./client";
@@ -80,7 +80,15 @@ describe("mail storage", () => {
       unchanged: 1,
     });
 
-    const [row] = await db.select().from(mailMessages).where(eq(mailMessages.externalId, "m1"));
+    const [row] = await db
+      .select()
+      .from(mailMessages)
+      .where(
+        and(
+          eq(mailMessages.organizationId, scope.organizationId),
+          eq(mailMessages.externalId, "m1"),
+        ),
+      );
     expect(row?.bodyEncrypted).not.toContain("fakturu");
     expect(row?.snippetEncrypted).not.toContain("posílám");
     expect(row?.subject).toBe("Faktura 2026-0142");
