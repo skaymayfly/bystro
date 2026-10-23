@@ -99,6 +99,34 @@ describe("describeConnection", () => {
     ).toContain("zablokovaný");
   });
 
+  it("speaks of mail, not invoices, when Gmail refuses", () => {
+    const gmail = (lastErrorCode: string) =>
+      describeConnection(
+        connection({ provider: "gmail", category: "email", status: "error", lastErrorCode }),
+        NOW,
+      ).text;
+
+    expect(gmail("forbidden")).toBe(
+      "Gmail mi nedovolil číst poštu. Zkus Gmail odpojit a připojit znovu; kdyby to nepomohlo, napiš nám.",
+    );
+    expect(gmail("account_blocked")).toContain("Správce tvé domény");
+    expect(gmail("api_disabled")).toContain("chyba na naší straně");
+    for (const code of ["forbidden", "account_blocked", "api_disabled"]) {
+      expect(gmail(code)).not.toContain("faktur");
+    }
+    expect(
+      describeConnection(
+        connection({
+          provider: "gmail",
+          category: "email",
+          status: "degraded",
+          lastErrorCode: "rate_limited",
+        }),
+        NOW,
+      ).text,
+    ).toBe("Gmail teď nepřijímá další dotazy. Zkusím to za chvíli.");
+  });
+
   it("names the application the connection belongs to", () => {
     const idoklad = (overrides: Partial<ConnectionSummary>) =>
       describeConnection(connection({ provider: "idoklad", ...overrides }), NOW).text;
