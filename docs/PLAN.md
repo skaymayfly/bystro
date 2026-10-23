@@ -368,7 +368,7 @@ Výsledek fáze: uživatel schválí upomínku k faktuře po splatnosti, odejde 
 
 **Hotovo když:** opakovaná synchronizace nic nezdvojí, změny (nová zpráva, archivace jinde) se projeví a testy proti nahraným odpovědím procházejí.
 
-### - [ ] 5.5 Obrazovka Pošta
+### - [x] 5.5 Obrazovka Pošta
 
 **Cíl:** pošta v Bystru podle prototypu.
 
