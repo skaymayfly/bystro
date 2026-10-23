@@ -1,13 +1,18 @@
 import { syncInvoicesJob } from "@bystro/core";
 import { readEncryptionKey, type IntegrationConnection } from "@bystro/db";
-import type { FakturoidAppCredentials, IdokladAppCredentials } from "@bystro/integrations";
+import type {
+  FakturoidAppCredentials,
+  GmailAppCredentials,
+  IdokladAppCredentials,
+} from "@bystro/integrations";
 import { createProducerConnection, createQueues, enqueue, type Queues } from "@bystro/queue";
 
-import type { EnqueueSync, FlowDeps, IdokladFlowDeps } from "./connections";
+import type { EnqueueSync, FlowDeps, GmailFlowDeps, IdokladFlowDeps } from "./connections";
 import { getDb } from "./db";
 import {
   readAuthEnv,
   readFakturoidEnv,
+  readGmailEnv,
   readIdokladEnv,
   readQueuePrefix,
   readRedisUrl,
@@ -67,10 +72,30 @@ export function getIdokladFlow(): IdokladFlowDeps | null {
   };
 }
 
+/** The configured Google client for Gmail, or `null` when this environment has none. */
+export function getGmail(): GmailAppCredentials | null {
+  return readGmailEnv();
+}
+
+/** Everything the Gmail connection flow needs, or `null` when Gmail is not configured. */
+export function getGmailFlow(): GmailFlowDeps | null {
+  const gmail = getGmail();
+  if (gmail === null) {
+    return null;
+  }
+  return {
+    db: getDb(),
+    encryptionKey: readEncryptionKey(),
+    gmail,
+    appBaseUrl: readAuthEnv().baseUrl,
+  };
+}
+
 /** What the browser may know about a connection. Never tokens, never internal error text. */
 export interface ConnectionView {
   id: string;
   provider: string;
+  category: IntegrationConnection["category"];
   status: IntegrationConnection["status"];
   displayName: string | null;
   /** The user still has to pick which account at the provider to read. */
@@ -84,6 +109,7 @@ export function toConnectionView(connection: IntegrationConnection): ConnectionV
   return {
     id: connection.id,
     provider: connection.provider,
+    category: connection.category,
     status: connection.status,
     displayName: connection.displayName,
     needsAccount: connection.externalAccountId === null && connection.status !== "revoked",

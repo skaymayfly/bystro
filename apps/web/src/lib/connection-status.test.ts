@@ -7,7 +7,7 @@ import {
   returnCookie,
   returnPath,
 } from "../server/connect-return";
-import { readFakturoidEnv, readIdokladEnv, WebEnvError } from "../server/env";
+import { readFakturoidEnv, readGmailEnv, readIdokladEnv, WebEnvError } from "../server/env";
 import {
   connectOutcomeNotice,
   describeConnection,
@@ -246,5 +246,73 @@ describe("readFakturoidEnv", () => {
     expect(() => readFakturoidEnv({ ...complete, FAKTUROID_BASE_URL: "not a url" })).toThrow(
       WebEnvError,
     );
+  });
+});
+
+describe("Gmail", () => {
+  it("returns to Pošta when the user started there", () => {
+    expect(returnPath("mail", "ok", "gmail")).toBe(
+      "/app/posta?zdroj=propojeni&propojeni=ok&aplikace=gmail",
+    );
+    expect(parseReturnTarget("mail")).toBe("mail");
+    expect(readReturnTarget("bystro_connect_return=mail")).toBe("mail");
+  });
+
+  it("speaks of the mailbox, not of invoices", () => {
+    expect(connectOutcomeNotice("ok", "gmail")).toEqual({
+      tone: "ok",
+      text: "Gmail je propojený.",
+    });
+    expect(connectOutcomeNotice("opravneni", "gmail")?.text).toContain("s Gmailem");
+    expect(connectOutcomeNotice("nedostupne", "gmail")?.text).toBe(
+      "Gmail teď neodpovídá. Zkus to prosím za chvíli.",
+    );
+  });
+
+  it("does not wait for a first load of a mailbox, which has no sync yet", () => {
+    const mailbox = connection({
+      provider: "gmail",
+      category: "email",
+      lastSyncAt: null,
+      updatedAt: "2026-10-11T07:00:00Z",
+    });
+    expect(describeConnection(mailbox, NOW)).toEqual({
+      tone: "ok",
+      label: "Připojeno",
+      text: null,
+      busy: false,
+    });
+    expect(describeConnection({ ...mailbox, status: "reauth_required" }, NOW).text).toBe(
+      "Gmail mi přestal dávat přístup. Připoj ho prosím znovu.",
+    );
+  });
+});
+
+describe("readGmailEnv", () => {
+  const complete = { GMAIL_CLIENT_ID: "google-id", GMAIL_CLIENT_SECRET: "google-secret" };
+
+  it("is off without variables and on with both", () => {
+    expect(readGmailEnv({})).toBeNull();
+    const settings = readGmailEnv(complete);
+    expect(settings?.clientId).toBe("google-id");
+    expect(settings?.clientSecret.reveal()).toBe("google-secret");
+    expect(settings?.endpoints).toBeUndefined();
+    expect(JSON.stringify(settings)).not.toContain("google-secret");
+  });
+
+  it("points everything at one stand-in for tests", () => {
+    expect(
+      readGmailEnv({ ...complete, GMAIL_TEST_BASE_URL: "http://localhost:3104" })?.endpoints,
+    ).toEqual({
+      authorization: "http://localhost:3104/o/oauth2/v2/auth",
+      token: "http://localhost:3104/token",
+      revocation: "http://localhost:3104/revoke",
+      gmailApi: "http://localhost:3104/gmail/v1",
+    });
+  });
+
+  it("refuses half a configuration", () => {
+    expect(() => readGmailEnv({ GMAIL_CLIENT_ID: "google-id" })).toThrow(WebEnvError);
+    expect(() => readGmailEnv({ ...complete, GMAIL_TEST_BASE_URL: "nope" })).toThrow(WebEnvError);
   });
 });

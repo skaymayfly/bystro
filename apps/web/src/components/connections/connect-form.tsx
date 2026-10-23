@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
 import type { InvoicingProviderId } from "@/lib/invoicing-providers";
 
-export type ConnectReturnTarget = "settings" | "onboarding";
+export type ConnectableProvider = InvoicingProviderId | "gmail";
+
+export type ConnectReturnTarget = "settings" | "onboarding" | "mail";
 
 /**
- * Starts connecting an invoicing system. A plain form post: the server answers with a
+ * Starts connecting an application (an invoicing system or a mailbox). A plain form post: the server answers with a
  * redirect to the provider, where the user signs in and allows the access.
  */
 export function ConnectForm({
@@ -14,7 +16,7 @@ export function ConnectForm({
   size = "default",
   className,
 }: {
-  provider: InvoicingProviderId;
+  provider: ConnectableProvider;
   returnTo: ConnectReturnTarget;
   label?: string;
   size?: "default" | "sm" | "form";

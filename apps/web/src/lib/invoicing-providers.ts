@@ -14,7 +14,8 @@ export interface ProviderWording {
   withIt: string;
 }
 
-const WORDING: Record<InvoicingProviderId, ProviderWording> = {
+const WORDING: Record<InvoicingProviderId | "gmail", ProviderWording> = {
+  gmail: { name: "Gmail", of: "Gmailu", inside: "v Gmailu", withIt: "s Gmailem" },
   fakturoid: {
     name: "Fakturoid",
     of: "Fakturoidu",
@@ -37,6 +38,7 @@ export function parseInvoicingProvider(value: unknown): InvoicingProviderId | nu
 
 /** Wording for a provider id; an unknown one is spoken of as "fakturační systém". */
 export function providerWording(provider: string | null | undefined): ProviderWording {
+  if (provider === "gmail") return WORDING.gmail;
   const known = parseInvoicingProvider(provider);
   return known === null ? GENERIC : WORDING[known];
 }

@@ -11,10 +11,12 @@ import {
 } from "./connect-return";
 import {
   completeFakturoidConnection,
+  completeGmailConnection,
   completeIdokladConnection,
   ConnectionFlowError,
   enqueueInitialSync,
   startFakturoidConnection,
+  startGmailConnection,
   startIdokladConnection,
   type CallbackParams,
   type CompletedConnection,
@@ -22,7 +24,7 @@ import {
 } from "./connections";
 import { getRequestContext } from "./context";
 import { readAuthEnv } from "./env";
-import { enqueueInvoiceSync, getFakturoidFlow, getIdokladFlow } from "./integrations";
+import { enqueueInvoiceSync, getFakturoidFlow, getGmailFlow, getIdokladFlow } from "./integrations";
 import { logger } from "./logger";
 
 /**
@@ -42,6 +44,15 @@ interface ProviderFlow {
 
 /** The provider's flow, or `null` when this environment has no application for it. */
 function providerFlow(provider: ConnectProvider): ProviderFlow | null {
+  if (provider === "gmail") {
+    const flow = getGmailFlow();
+    return flow === null
+      ? null
+      : {
+          start: (who) => startGmailConnection(flow, who),
+          complete: (who, params) => completeGmailConnection(flow, who, params),
+        };
+  }
   if (provider === "idoklad") {
     const flow = getIdokladFlow();
     return flow === null
@@ -66,6 +77,7 @@ const FAILURES: Record<ConnectionFlowErrorCode, ConnectOutcome> = {
   provider_unavailable: "nedostupne",
   no_account: "bez-uctu",
   account_blocked: "tarif",
+  missing_scope: "opravneni",
 };
 
 /**

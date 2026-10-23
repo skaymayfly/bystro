@@ -58,12 +58,12 @@ export interface Provider {
   /** Official logo shown instead of the letter mark, where we have one and may use it. */
   logo?: "fakturoid";
   /** Set for applications that can be connected: the id of their connection flow. */
-  connect?: "fakturoid" | "idoklad";
+  connect?: "fakturoid" | "idoklad" | "gmail";
 }
 
 /** Provider tiles of the prototype's app picker, in its order. */
 export const PROVIDERS: readonly Provider[] = [
-  { name: "Gmail", mark: "G", background: "#EA4335", color: "#FFFFFF" },
+  { name: "Gmail", mark: "G", background: "#EA4335", color: "#FFFFFF", connect: "gmail" },
   { name: "Outlook", mark: "O", background: "#0F6CBD", color: "#FFFFFF" },
   { name: "Seznam", mark: "S", background: "#CC0000", color: "#FFFFFF" },
   { name: "Google Kalendář", mark: "31", background: "#1A73E8", color: "#FFFFFF" },

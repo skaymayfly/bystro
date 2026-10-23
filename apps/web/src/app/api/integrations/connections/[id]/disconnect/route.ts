@@ -4,7 +4,7 @@ import { json } from "@/server/api";
 import { connectionRequest } from "@/server/connection-route";
 import { disconnect } from "@/server/connections";
 import { getDb } from "@/server/db";
-import { getFakturoid, getIdoklad } from "@/server/integrations";
+import { getFakturoid, getGmail, getIdoklad } from "@/server/integrations";
 import { logger } from "@/server/logger";
 
 /**
@@ -24,6 +24,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       encryptionKey: readEncryptionKey(),
       fakturoid: getFakturoid(),
       idoklad: getIdoklad(),
+      gmail: getGmail(),
     },
     input,
   );

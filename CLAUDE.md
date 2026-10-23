@@ -6,7 +6,7 @@ Tento soubor čti na začátku každého sezení. Platí vždy, i když ti uživ
 
 Bystro je SaaS pro majitele malých českých firem (typicky řemeslník nebo služby, 1–20 lidí). Propojí fakturaci, banku, e-mail, kalendář a CRM, každé ráno řekne, co je důležité, hlídá, aby firmě nedošly peníze, a pomůže věci rovnou vyřešit (upomínka, odpověď, úkol) — citlivé akce vždy až po schválení uživatelem.
 
-Pořadí vývoje: faktury → upomínky a schvalování → AI asistent a ranní přehled → banka a párování plateb → cashflow („Hlídač peněz“). Banka jde na konec, protože je nejnáročnější (rozhodl uživatel 2026-10-19); do té doby se o zaplacení faktury Bystro dozví z fakturačního systému. E-mail a kalendář přicházejí až po betě.
+Pořadí vývoje: faktury → upomínky a schvalování (včetně Pošty s Gmailem) → AI asistent a ranní přehled → banka a párování plateb → cashflow („Hlídač peněz“). Banka jde na konec, protože je nejnáročnější (rozhodl uživatel 2026-10-19); do té doby se o zaplacení faktury Bystro dozví z fakturačního systému. Gmail (čtení, posílání, sekce Pošta) je před betou, upomínky odcházejí z vlastní schránky uživatele (rozhodl uživatel 2026-10-23); Outlook, Seznam a kalendář přicházejí až po betě.
 
 ## Zdroje pravdy
 
@@ -121,7 +121,7 @@ Pravidla závislostí: `core` nezávisí na ničem z ostatních balíčků. `obs
 
 ## Příkazy
 
-Stav po kroku 5.2. Při každé změně skriptů tuto sekci aktualizuj podle skutečnosti.
+Stav po kroku 5.3. Při každé změně skriptů tuto sekci aktualizuj podle skutečnosti.
 
 ```
 pnpm install             # na Windows vyžaduje zapnutý Režim pro vývojáře (symlinky)

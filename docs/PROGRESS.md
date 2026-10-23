@@ -41,6 +41,8 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **Měsíční limit požadavků Fakturoidu:** účet uživatele má 1 500 API požadavků za měsíc (vidět v Nastavení → Napojení na jiné aplikace; dokumentace API ho neuvádí a jinde může být jiný). Synchronizace je proto hodinová jen přes den (zhruba 450 požadavků měsíčně, když se nic nemění) a úplné porovnání týdenní. Nevíme, jak API odpoví po vyčerpání limitu, ani jak zbývající počet zjistit; sledovat při prvním provozu a případně počítat požadavky u nás.
 - **Smazaná faktura se v Bystru projeví až při týdenním úplném porovnání** (neděle 2:30), změny a platby do hodiny. Rychlejší by byly webhooky; ty Fakturoid nabízí jen na placených tarifech a pro OAuth aplikace až po domluvě s podporou (jinak 403).
 - **Skutečné připojení Fakturoidu od začátku do konce** (přihlášení u Fakturoidu → návrat → worker → faktury v databázi) jde vyzkoušet jen na nasazené adrese a zatím neproběhlo. Udělat hned po nasazení kroku 2.6: na Railway doplnit proměnné Fakturoidu do webu i workeru a v Nastavení → Propojení kliknout na „Propojit“. Při tom ověřit i kódování hlavičky Basic a to, že nová platba změní `updated_at` faktury.
+- **👤 Ověření Gmailu u Googlu před betou** (krok 8.3): `gmail.modify` je restricted scope, veřejný provoz potřebuje ověření aplikace a bezpečnostní posouzení. Do té doby Gmail jen pro testovací uživatele a s přístupem na 7 dní.
+- **Upomínky pro firmy bez Gmailu:** Outlook přijde ve fázi 8; Seznam.cz nemá OAuth API pro poštu (jen SMTP/IMAP s heslem, hesla neukládáme). Rozhodnout, co nabídnout firmám na Seznamu.
 - **Vypršelé akce se zatím neoznačují samy.** Akce po platnosti se označí `expired` až ve chvíli, kdy ji někdo zkusí schválit nebo spustit. Pravidelnou úlohu, která je označí, přidat v kroku 5.2 nebo 5.4, až budou akce vznikat.
 - **Akce, kterou worker začal provádět a pak spadl** (nasazení, pád), zůstane ve stavu `executing`. Úloha se neopakuje, aby se nic neodeslalo dvakrát. Až budou akce něco odesílat (5.3/5.4), vyřešit: po čase ji označit `failed` s kódem `interrupted`, nebo ověřit u poskytovatele, jestli zpráva odešla.
 - **Schválená akce, kterou se nepodařilo zařadit do fronty** (Redis nedostupný), čeká, dokud uživatel schválení nezopakuje. Pravidelnou úlohu, která schválené a nezahájené akce zařadí znovu, přidat spolu s označováním vypršelých akcí v kroku 5.4.
@@ -103,6 +105,19 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 ---
 
 ## Záznamy
+
+## 2026-10-23 — krok 5.3 Propojení Gmailu a sekce Pošta
+
+- Rozhodnutí uživatele: upomínky z vlastní schránky, ne přes Fakturoid ani iDoklad ani z domény Bystra; a rovnou celá sekce Pošta (i čtení). Pravidlo v `CLAUDE.md` změněné: Gmail je před betou. Plán fáze 5 přepsaný: 5.3 propojení a Pošta, 5.4 synchronizace pošty, 5.5 obrazovka Pošta, 5.6 odpověď a nový e-mail, pak původní upomínka (nově 5.7), obrazovka Akce (5.8) a hlídání výsledku (5.9). Asistent nad poštou je nový krok 6.6b; fáze 8 má místo Gmailu jeho ověření u Googlu (8.3). ADR 0004.
+- Dokumentace (2026-10-23): Google OAuth pro webové aplikace a jeho OpenID konfigurace (endpointy, PKCE S256, `access_type=offline`, `prompt=consent`, odvolání), Gmail scopes (`gmail.modify` restricted, `gmail.send` sensitive), `users.getProfile`, `messages.modify` (scopes), návod k synchronizaci a limity (6 000 jednotek/min na uživatele), vypršení refresh tokenu v testovacím režimu (7 dní) a limit 100 refresh tokenů na účet a klienta.
+- Hotovo: adaptér `packages/integrations/src/gmail` (OAuth konfigurace, kontrola udělených oprávnění, odvolání přístupu, klient Gmail API, adresa schránky); tok připojení a odpojení v `apps/web/src/server/connections.ts`, cesty `/api/integrations/gmail/connect` a `/callback`; návrat na Poštu (`returnTo=mail`) a nový výsledek `propojeni=opravneni` (odškrtnuté oprávnění); položka Pošta v menu (i v mobilní liště) a obrazovka `/app/posta`; dlaždice Gmailu v Propojení; tlačítko „Připojit e-mail“ na Přehledu vede na Poštu; proměnné `GMAIL_CLIENT_ID` a `GMAIL_CLIENT_SECRET`.
+- Rozhodnutí:
+  - Gmail se nezapíná s přihlášením přes Google; má vlastní proměnné (klient může být stejný).
+  - Připojení e-mailu nespouští synchronizaci faktur ani ruční „Aktualizovat“; e-mail zatím nečeká na „první načtení“ (synchronizace pošty je krok 5.4).
+  - Text na kartě Přidat aplikaci: „Faktury jen čtu. E-mail pošlu jen ten, který odešleš nebo schválíš.“ (dřív „Přístup je vždy jen pro čtení“, což už neplatí).
+- Databáze beze změny (připojení `category = email`).
+- Testy: adaptér (autorizační adresa, výměna kódu, oprávnění, odvolání, profil, chyby); tok proti databázi (PKCE, uložení, odškrtnuté oprávnění, nečitelná schránka, `state`, odmítnutí, žádná synchronizace faktur, odpojení s odvoláním); texty a návratové adresy; E2E: Přehled → Pošta → propojení přes náhradní server Googlu (ověřuje PKCE) → stav v Propojení → odpojení; podvržený návrat. Nové položky menu v testech navigace.
+- 👤 Zbývá: nastavit Google Cloud Console podle `docs/deploy.md` (sekce Gmail) a zadat proměnné do Railway; ověřit propojení s tvým účtem.
 
 ## 2026-10-23 — krok 2.10 Paleta podle libraries.dev a tmavý režim
 

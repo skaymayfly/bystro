@@ -1,9 +1,9 @@
 /**
  * Where the browser goes after a connection attempt, and how the outcome is told to the
- * page. Only two fixed pages are possible, so the flow can never be used as an open redirect.
+ * page. Only fixed pages are possible, so the flow can never be used as an open redirect.
  */
 
-export const RETURN_TARGETS = ["settings", "onboarding"] as const;
+export const RETURN_TARGETS = ["settings", "onboarding", "mail"] as const;
 export type ReturnTarget = (typeof RETURN_TARGETS)[number];
 
 /** Outcome codes shown by the page; they are words, not messages, so nothing leaks. */
@@ -15,6 +15,7 @@ export const CONNECT_OUTCOMES = [
   "nedostupne",
   "bez-uctu",
   "tarif",
+  "opravneni",
 ] as const;
 export type ConnectOutcome = (typeof CONNECT_OUTCOMES)[number];
 
@@ -22,7 +23,7 @@ export const RETURN_COOKIE = "bystro_connect_return";
 const RETURN_COOKIE_MAX_AGE_SECONDS = 15 * 60;
 
 export function parseReturnTarget(value: unknown): ReturnTarget {
-  return value === "onboarding" ? "onboarding" : "settings";
+  return value === "onboarding" || value === "mail" ? value : "settings";
 }
 
 export function parseConnectOutcome(value: unknown): ConnectOutcome | null {
@@ -30,7 +31,7 @@ export function parseConnectOutcome(value: unknown): ConnectOutcome | null {
 }
 
 /** Applications that can be connected through these routes. */
-export const CONNECT_PROVIDERS = ["fakturoid", "idoklad"] as const;
+export const CONNECT_PROVIDERS = ["fakturoid", "idoklad", "gmail"] as const;
 export type ConnectProvider = (typeof CONNECT_PROVIDERS)[number];
 
 /**
@@ -46,7 +47,9 @@ export function returnPath(
   const page =
     target === "onboarding" && outcome !== "vybrat-ucet"
       ? "/onboarding?krok=2"
-      : "/app/nastaveni?karta=propojeni";
+      : target === "mail"
+        ? "/app/posta?zdroj=propojeni"
+        : "/app/nastaveni?karta=propojeni";
   return `${page}&propojeni=${outcome}&aplikace=${provider}`;
 }
 

@@ -6,14 +6,10 @@ import { useId, useState } from "react";
 import fakturoidLogo from "@/assets/fakturoid-logo.svg";
 import { SoonBadge } from "@/components/bits";
 import { PROVIDERS } from "@/lib/content";
-import {
-  INVOICING_PROVIDERS,
-  providerWording,
-  type InvoicingProviderId,
-} from "@/lib/invoicing-providers";
+import { INVOICING_PROVIDERS, providerWording } from "@/lib/invoicing-providers";
 import { cn } from "@/lib/utils";
 
-import { ConnectForm, type ConnectReturnTarget } from "./connect-form";
+import { ConnectForm, type ConnectableProvider, type ConnectReturnTarget } from "./connect-form";
 
 /**
  * - `connect`: the application can be connected now.
@@ -21,7 +17,7 @@ import { ConnectForm, type ConnectReturnTarget } from "./connect-form";
  * - `unavailable`: this environment has no application configured for it.
  */
 export type ProviderState = "connect" | "connected" | "unavailable";
-export type ProviderStates = Record<InvoicingProviderId, ProviderState>;
+export type ProviderStates = Record<ConnectableProvider, ProviderState>;
 
 interface PanelContent {
   /** What the prototype lists before connecting an invoicing system. */
@@ -30,7 +26,15 @@ interface PanelContent {
   note: string;
 }
 
-const PANELS: Record<InvoicingProviderId, PanelContent> = {
+const PANELS: Record<ConnectableProvider, PanelContent> = {
+  gmail: {
+    requirements: [
+      "Účet Google s Gmailem",
+      "Povolení číst a posílat poštu",
+      "Zatím jen pro testovací účty (aplikace čeká na ověření u Googlu)",
+    ],
+    note: "Gmail provozuje Google. Bystro z tvé schránky posílá jen to, co sám odešleš nebo schválíš.",
+  },
   fakturoid: {
     requirements: [
       "Účet ve Fakturoidu",
@@ -64,9 +68,9 @@ export function ProviderPicker({
   /** Grid columns of the tiles, e.g. `grid-cols-5`. */
   className?: string;
 }) {
-  const [open, setOpen] = useState<InvoicingProviderId | null>(null);
+  const [open, setOpen] = useState<ConnectableProvider | null>(null);
   const panelId = useId();
-  const toggle = (provider: InvoicingProviderId) =>
+  const toggle = (provider: ConnectableProvider) =>
     setOpen((current) => (current === provider ? null : provider));
 
   const app = open === null ? null : providerWording(open);
@@ -74,7 +78,7 @@ export function ProviderPicker({
   // Another invoicing system that is already connected: the same invoice kept in both
   // would be counted twice, which the user should know before connecting.
   const alreadyConnected =
-    open === null
+    open === null || open === "gmail"
       ? []
       : INVOICING_PROVIDERS.filter(
           (provider) => provider !== open && states[provider] === "connected",

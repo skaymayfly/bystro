@@ -10,6 +10,10 @@ import {
   type ConnectionTone,
 } from "@/lib/connection-status";
 import { parseInvoicingProvider } from "@/lib/invoicing-providers";
+
+/** Applications whose connection can be renewed with the "Znovu připojit" button. */
+const reconnectable = (provider: string) =>
+  provider === "gmail" ? "gmail" : parseInvoicingProvider(provider);
 import { cn } from "@/lib/utils";
 
 import { ConnectForm, type ConnectReturnTarget } from "./connect-form";
@@ -17,12 +21,14 @@ import { ConnectForm, type ConnectReturnTarget } from "./connect-form";
 export interface ConnectionItem extends ConnectionSummary {
   id: string;
   provider: string;
+  category: string;
   displayName: string | null;
 }
 
 const PROVIDER_NAMES: Record<string, { name: string; category: string }> = {
   fakturoid: { name: "Fakturoid", category: "Fakturace" },
   idoklad: { name: "iDoklad", category: "Fakturace" },
+  gmail: { name: "Gmail", category: "E-mail" },
 };
 
 const TONE_CLASSES: Record<ConnectionTone, string> = {
@@ -140,8 +146,9 @@ export function ConnectionsList({
           category: "Aplikace",
         };
         const state = describeConnection(connection, now);
-        const reconnect = parseInvoicingProvider(connection.provider);
+        const reconnect = reconnectable(connection.provider);
         const canSync =
+          connection.category === "invoicing" &&
           !connection.needsAccount &&
           (connection.status === "connected" ||
             connection.status === "degraded" ||

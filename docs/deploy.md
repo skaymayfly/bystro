@@ -73,6 +73,8 @@ Zadej je v záložce proměnných služby `web`. Hodnoty označené jako tajné 
 | `INTEGRATIONS_CONTACT_EMAIL` | kontaktní e-mail                                | jde do hlavičky `User-Agent`, kterou Fakturoid vyžaduje           |
 | `IDOKLAD_CLIENT_ID`          | Client Id aplikace z Developer portálu iDokladu | nepovinné; bez něj je iDoklad v aplikaci „Připravujeme“           |
 | `IDOKLAD_CLIENT_SECRET`      | Client secret aplikace                          | **tajné**; nepovinné                                              |
+| `GMAIL_CLIENT_ID`            | Client ID OAuth klienta z Google Cloud Console  | nepovinné; bez něj je Gmail v aplikaci „Připravujeme“             |
+| `GMAIL_CLIENT_SECRET`        | Client secret téhož klienta                     | **tajné**; nepovinné                                              |
 | `RESEND_API_KEY`             | nový klíč z Resendu                             | **tajné**                                                         |
 | `EMAIL_FROM`                 | `Bystro <onboarding@resend.dev>`                | zkušební odesílatel; doručí jen na e-mail tvého účtu u Resendu    |
 | `GOOGLE_CLIENT_ID`           | Client ID z Google Cloud Console                |                                                                   |
@@ -104,6 +106,21 @@ Adresu pro `localhost` tam nech, ať funguje i lokální vývoj.
 3. Client ID a Client Secret zadej do proměnných služby **web** i **worker** spolu s `INTEGRATIONS_CONTACT_EMAIL`. Na obou službách musí být stejné hodnoty.
 4. Po nasazení je v aplikaci v Nastavení → Propojení u Fakturoidu tlačítko „Propojit“.
 
+### Gmail (sekce Pošta)
+
+Gmail používá oprávnění `gmail.modify` (čtení, archivace a posílání pošty). Do ověření aplikace u Googlu (krok 8.3) běží v testovacím režimu: funguje jen pro účty na seznamu testovacích uživatelů a přístup vyprší po 7 dnech (pak stačí Gmail znovu připojit). Viz ADR 0004.
+
+Postup v [Google Cloud Console](https://console.cloud.google.com/), ve stejném projektu jako přihlášení přes Google (názvy položek se u Googlu občas mění):
+
+1. **APIs & Services → Library**: vyhledej **Gmail API** a dej **Enable**.
+2. **Google Auth Platform → Data access → Add or remove scopes**: přidej `https://www.googleapis.com/auth/gmail.modify` (ručně do pole „Manually add scopes“) a ulož.
+3. **Google Auth Platform → Audience → Test users**: přidej svůj e-mail (a e-maily dalších testerů).
+4. **Google Auth Platform → Clients**: otevři webového klienta (nebo vytvoř nový typu „Web application“) a do **Authorized redirect URIs** přidej:
+   - `https://<veřejná doména webu>/api/integrations/gmail/callback`
+   - `http://localhost:3000/api/integrations/gmail/callback` (lokální vývoj)
+5. Client ID a Client secret zadej jako `GMAIL_CLIENT_ID` a `GMAIL_CLIENT_SECRET` do služby **web** i **worker** (worker je bude potřebovat od kroku 5.4) a do lokálního `.env`.
+6. Po nasazení je v menu **Pošta** s tlačítkem „Propojit e-mail“. Google ukáže varování, že aplikace není ověřená; v testovacím režimu je to v pořádku (pokračuj přes „Pokračovat“).
+
 ### iDoklad
 
 1. Zaregistruj se na Developer portálu iDokladu: <https://developer.idoklad.cz>. Účet na portálu je něco jiného než účet v iDokladu, i když mají stejný e-mail.
@@ -133,6 +150,8 @@ iDoklad povoluje API jen na některých tarifech (dokumentace uvádí měsíčn�
 | `INTEGRATIONS_CONTACT_EMAIL` | kontaktní e-mail, který Fakturoid uvidí v hlavičce `User-Agent`; nepovinné |
 | `IDOKLAD_CLIENT_ID`          | Client Id aplikace z Developer portálu iDokladu; nepovinné                 |
 | `IDOKLAD_CLIENT_SECRET`      | Client secret aplikace; **tajné**, nepovinné                               |
+| `GMAIL_CLIENT_ID`            | Client ID OAuth klienta pro Gmail; nepovinné (potřeba od kroku 5.4)        |
+| `GMAIL_CLIENT_SECRET`        | Client secret téhož klienta; **tajné**, nepovinné                          |
 | `SENTRY_DSN`                 | DSN ze Sentry                                                              |
 | `SENTRY_ENVIRONMENT`         | `staging`                                                                  |
 | `WORKER_CONCURRENCY`         | nepovinné; kolik úloh jedné fronty běží najednou (výchozí 5)               |

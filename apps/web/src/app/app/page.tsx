@@ -7,7 +7,7 @@ import { Panel, PanelEmpty, SoonBadge } from "@/components/bits";
 import { loadConnections } from "@/components/connections/connections-tab";
 import { InvoicingCta } from "@/components/connections/invoicing-cta";
 import { OverduePanel } from "@/components/invoices/overdue-panel";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { overdueSentence } from "@/lib/invoice-labels";
 import { describeInvoicingSources } from "@/lib/invoicing-providers";
 import { requireRequestContext } from "@/server/context";
@@ -24,9 +24,9 @@ const detailLinkClass = "text-[13px] text-link hover:text-link-hover";
 export default async function DashboardPage() {
   const { organization } = await requireRequestContext();
   const now = new Date();
-  const { invoicing, invoicingAvailable } =
+  const { invoicing, invoicingAvailable, mailbox, mailAvailable } =
     organization === null
-      ? { invoicing: [], invoicingAvailable: false }
+      ? { invoicing: [], invoicingAvailable: false, mailbox: null, mailAvailable: false }
       : await loadConnections(organization.id);
   const sources = describeInvoicingSources(invoicing);
   const invoices =
@@ -108,15 +108,30 @@ export default async function DashboardPage() {
         </Panel>
 
         <Panel title="Odpovědět" className="flex-[1_1_340px]">
-          <PanelEmpty
-            title="E-mail zatím není propojený"
-            text="Připoj schránku a každé ráno ti řeknu, kdo čeká na odpověď."
-          >
-            <Button size="sm" disabled>
-              Připojit e-mail
-            </Button>
-            <SoonBadge />
-          </PanelEmpty>
+          {mailbox !== null ? (
+            <PanelEmpty
+              title="Schránka je propojená"
+              text="Kdo čeká na odpověď, ti tu ukážu, jakmile načtu poštu."
+            />
+          ) : (
+            <PanelEmpty
+              title="E-mail zatím není propojený"
+              text="Připoj schránku a každé ráno ti řeknu, kdo čeká na odpověď."
+            >
+              {mailAvailable ? (
+                <Link href="/app/posta" className={buttonVariants({ size: "sm" })}>
+                  Připojit e-mail
+                </Link>
+              ) : (
+                <>
+                  <Button size="sm" disabled>
+                    Připojit e-mail
+                  </Button>
+                  <SoonBadge />
+                </>
+              )}
+            </PanelEmpty>
+          )}
         </Panel>
       </div>
     </div>

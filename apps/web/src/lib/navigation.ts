@@ -1,4 +1,4 @@
-export type NavIcon = "home" | "assistant" | "cash" | "invoices" | "settings";
+export type NavIcon = "home" | "assistant" | "mail" | "cash" | "invoices" | "settings";
 
 export interface NavItem {
   href: string;
@@ -14,6 +14,7 @@ export interface NavItem {
 export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/app", label: "Přehled", shortLabel: "Přehled", icon: "home", group: 1 },
   { href: "/app/asistent", label: "Asistent", shortLabel: "Asistent", icon: "assistant", group: 1 },
+  { href: "/app/posta", label: "Pošta", shortLabel: "Pošta", icon: "mail", group: 1 },
   {
     href: "/app/hlidac-penez",
     label: "Hlídač peněz",

@@ -25,7 +25,14 @@ import {
   FAKTUROID_SOURCE,
   FakturoidClient,
   fakturoidOAuthConfig,
+  getGmailProfile,
   getIdokladAgenda,
+  GMAIL_SCOPES,
+  GMAIL_SOURCE,
+  GmailClient,
+  gmailOAuthConfig,
+  hasGmailScopes,
+  revokeGoogleAccess,
   hashOAuthState,
   IDOKLAD_SCOPES,
   IDOKLAD_SOURCE,
@@ -38,6 +45,8 @@ import {
   verifyCallback,
   type FakturoidAccount,
   type FakturoidAppCredentials,
+  type GmailAppCredentials,
+  type GmailProfile,
   type IdokladAgenda,
   type IdokladAppCredentials,
   type OAuthProviderConfig,
@@ -52,6 +61,7 @@ import {
 
 export const FAKTUROID_CALLBACK_PATH = "/api/integrations/fakturoid/callback";
 export const IDOKLAD_CALLBACK_PATH = "/api/integrations/idoklad/callback";
+export const GMAIL_CALLBACK_PATH = "/api/integrations/gmail/callback";
 
 /** How often a user may ask for a sync by hand; the provider's request allowance is small. */
 export const MANUAL_SYNC_INTERVAL_MS = 5 * 60 * 1000;
@@ -66,7 +76,9 @@ export type ConnectionFlowErrorCode =
   /** The user has no account at the provider that may read invoices. */
   | "no_account"
   /** The provider refuses the API for this account (e.g. a plan without API access). */
-  | "account_blocked";
+  | "account_blocked"
+  /** The user did not grant everything Bystro needs (Google lets them untick scopes). */
+  | "missing_scope";
 
 /** A failed connection attempt. Carries a code for the UI and never any secret. */
 export class ConnectionFlowError extends Error {
@@ -99,6 +111,10 @@ export interface FlowDeps extends BaseFlowDeps {
 
 export interface IdokladFlowDeps extends BaseFlowDeps {
   idoklad: IdokladAppCredentials;
+}
+
+export interface GmailFlowDeps extends BaseFlowDeps {
+  gmail: GmailAppCredentials;
 }
 
 const callbackUri = (deps: BaseFlowDeps, path: string) => new URL(path, deps.appBaseUrl).toString();
@@ -412,6 +428,86 @@ export async function chooseFakturoidAccount(
 }
 
 // ---------------------------------------------------------------------------------------
+// Gmail
+// ---------------------------------------------------------------------------------------
+
+/** Starts connecting Gmail: the request is remembered with its PKCE verifier (encrypted). */
+export async function startGmailConnection(
+  deps: GmailFlowDeps,
+  who: { organizationId: string; userId: string },
+): Promise<string> {
+  return startAuthorization(deps, gmailOAuthConfig(deps.gmail), GMAIL_CALLBACK_PATH, who);
+}
+
+/**
+ * Finishes connecting Gmail. Google lets the user untick access to mail on its consent
+ * screen; without it the grant is given back and nothing is saved. The mailbox's address is
+ * read from Gmail itself and kept with the connection (never logged).
+ */
+export async function completeGmailConnection(
+  deps: GmailFlowDeps,
+  who: { organization: { id: string }; userId: string },
+  params: CallbackParams,
+): Promise<CompletedConnection> {
+  const tokens = await finishAuthorization(
+    deps,
+    gmailOAuthConfig(deps.gmail),
+    GMAIL_CALLBACK_PATH,
+    { organizationId: who.organization.id, userId: who.userId },
+    params,
+  );
+  const giveBack = () =>
+    revokeGoogleAccess(deps.gmail, tokens.refreshToken ?? tokens.accessToken, fetchOption(deps));
+
+  if (!hasGmailScopes(tokens.scopes)) {
+    await giveBack();
+    throw new ConnectionFlowError("missing_scope");
+  }
+  let profile: GmailProfile;
+  try {
+    profile = await getGmailProfile(
+      new GmailClient({
+        accessToken: tokens.accessToken,
+        ...(deps.gmail.endpoints === undefined
+          ? {}
+          : { apiBaseUrl: deps.gmail.endpoints.gmailApi }),
+        ...fetchOption(deps),
+      }),
+    );
+  } catch (error) {
+    if (error instanceof ProviderError) {
+      await giveBack();
+      throw new ConnectionFlowError(
+        error.code === "forbidden" ? "account_blocked" : "provider_unavailable",
+        `account: ${error.code}`,
+      );
+    }
+    throw error;
+  }
+
+  const connection = await saveConnection(
+    deps.db,
+    who.organization.id,
+    {
+      provider: GMAIL_SOURCE,
+      category: "email",
+      externalAccountId: profile.emailAddress,
+      displayName: profile.emailAddress,
+      scopes: tokens.scopes ?? [...GMAIL_SCOPES],
+      tokens: {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresAt: tokens.expiresAt,
+      },
+      userId: who.userId,
+      source: "web",
+    },
+    deps.encryptionKey,
+  );
+  return { connection, needsAccountChoice: false };
+}
+
+// ---------------------------------------------------------------------------------------
 // Sync on request
 // ---------------------------------------------------------------------------------------
 
@@ -428,7 +524,8 @@ export async function enqueueInitialSync(
   enqueue: EnqueueSync,
   connection: IntegrationConnection,
 ): Promise<boolean> {
-  if (connection.externalAccountId === null) {
+  // Only invoicing systems sync invoices; mail gets its own sync (step 5.4).
+  if (connection.category !== "invoicing" || connection.externalAccountId === null) {
     return false;
   }
   try {
@@ -460,7 +557,11 @@ export async function requestManualSync(
   if (connection === null) {
     return "not_found";
   }
-  if (!SYNCABLE.has(connection.status) || connection.externalAccountId === null) {
+  if (
+    connection.category !== "invoicing" ||
+    !SYNCABLE.has(connection.status) ||
+    connection.externalAccountId === null
+  ) {
     return "not_syncable";
   }
   const now = (deps.now ?? new Date()).getTime();
@@ -491,6 +592,7 @@ export async function disconnect(
     encryptionKey: Buffer;
     fakturoid: FakturoidAppCredentials | null;
     idoklad: IdokladAppCredentials | null;
+    gmail?: GmailAppCredentials | null;
     fetch?: typeof fetch;
   },
   who: { organizationId: string; connectionId: string; userId: string },
@@ -521,6 +623,14 @@ export async function disconnect(
       tokens.refreshToken !== null
     ) {
       await revokeIdokladAccess(deps.idoklad, tokens.refreshToken, fetchOption(deps));
+    }
+    if (connection.provider === GMAIL_SOURCE && deps.gmail != null && tokens !== null) {
+      // Revoking the refresh token at Google also ends its access tokens.
+      await revokeGoogleAccess(
+        deps.gmail,
+        tokens.refreshToken ?? tokens.accessToken,
+        fetchOption(deps),
+      );
     }
     try {
       await disconnectConnection(deps.db, who.organizationId, who.connectionId, {

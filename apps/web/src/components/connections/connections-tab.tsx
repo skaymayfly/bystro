@@ -11,6 +11,7 @@ import { ConnectionFlowError, listSelectableFakturoidAccounts } from "@/server/c
 import { getDb } from "@/server/db";
 import {
   getFakturoidFlow,
+  getGmail,
   getIdoklad,
   toConnectionView,
   type ConnectionView,
@@ -41,9 +42,12 @@ export async function loadConnections(organizationId: string) {
         : "unavailable";
   const fakturoidAvailable = getFakturoidFlow() !== null;
   const idokladAvailable = getIdoklad() !== null;
+  const gmailAvailable = getGmail() !== null;
+  const mailbox = connections.find((connection) => connection.provider === "gmail") ?? null;
   const states: ProviderStates = {
     fakturoid: state("fakturoid", fakturoidAvailable),
     idoklad: state("idoklad", idokladAvailable),
+    gmail: mailbox !== null ? "connected" : gmailAvailable ? "connect" : "unavailable",
   };
   return {
     connections,
@@ -51,6 +55,9 @@ export async function loadConnections(organizationId: string) {
     states,
     /** Some invoicing system can be connected here. */
     invoicingAvailable: fakturoidAvailable || idokladAvailable,
+    /** The connected mailbox, if any. */
+    mailbox,
+    mailAvailable: gmailAvailable,
   };
 }
 
@@ -155,7 +162,8 @@ export async function ConnectionsTab({
   outcome: string | undefined;
   provider: string | undefined;
 }) {
-  const { connections, states, invoicingAvailable } = await loadConnections(organizationId);
+  const { connections, states, invoicingAvailable, mailAvailable } =
+    await loadConnections(organizationId);
   // Only Fakturoid lets one user into several accounts; at iDoklad the user picks the
   // company while signing in.
   const fakturoid = connections.find((connection) => connection.provider === "fakturoid") ?? null;
@@ -177,12 +185,14 @@ export async function ConnectionsTab({
           <div className="flex items-start justify-between gap-2">
             <div>
               <h2 className="text-[17px] font-medium">Přidat aplikaci</h2>
-              <p className="mt-[3px] text-sm text-ink-3">Přístup je vždy jen pro čtení.</p>
+              <p className="mt-[3px] text-sm text-ink-3">
+                Faktury jen čtu. E-mail pošlu jen ten, který odešleš nebo schválíš.
+              </p>
             </div>
-            {!invoicingAvailable && <SoonBadge />}
+            {!invoicingAvailable && !mailAvailable && <SoonBadge />}
           </div>
           <ProviderPicker states={states} returnTo="settings" className="grid-cols-5" />
-          {invoicingAvailable && (
+          {(invoicingAvailable || mailAvailable) && (
             <p className="text-xs text-ink-3">Ostatní aplikace teprve chystáme.</p>
           )}
         </section>

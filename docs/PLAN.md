@@ -329,19 +329,53 @@ Výsledek fáze: uživatel schválí upomínku k faktuře po splatnosti, odejde 
 
 **Hotovo když:** test: dva souběžné požadavky na schválení vedou k jednomu provedení; akce nad mezitím zaplacenou fakturou se neprovede.
 
-### - [ ] 5.3 Odesílání e-mailů
+### - [x] 5.3 Propojení Gmailu a sekce Pošta
 
-**Cíl:** upomínka se dá skutečně odeslat.
+**Cíl:** schránka uživatele je propojená a Bystro má kde ukázat poštu. Upomínky budou odcházet z vlastní adresy uživatele (ADR 0004).
 
 **Udělej:**
 
-- Ověř, jestli Fakturoid API umí odeslat upomínku za uživatele. Rozhodnutí zapiš do ADR.
-- Pokud ne: odesílání přes `EmailSender` (Resend) z ověřené domény, reply-to na e-mail firmy uživatele.
-- Ukládat ID odeslané zprávy jako výsledek akce.
+- 👤 Uživatel v Google Cloud Console zapne Gmail API, přidá oprávnění `gmail.modify`, sebe jako testovacího uživatele a adresy pro přesměrování.
+- OAuth s Googlem (PKCE, offline přístup), oprávnění `gmail.modify`; adresa schránky z `users.getProfile`. Odpojení odvolá přístup u Googlu.
+- Položka Pošta v menu a obrazovka Pošta (prázdný stav s „Propojit e-mail“, stav propojení); dlaždice Gmailu v Nastavení → Propojení; tlačítko na Přehledu.
 
-**Hotovo když:** testovací upomínka dorazí do testovací schránky a v akci je uložené ID zprávy.
+**Hotovo když:** propojení a odpojení funguje proti testovacímu účtu Google, tokeny jsou jen na serveru a šifrované.
 
-### - [ ] 5.4 Akce „Upomínka faktury“
+### - [ ] 5.4 Synchronizace pošty
+
+**Cíl:** Bystro má poštu posledních 30 dní a průběžně ji drží aktuální.
+
+**Udělej:**
+
+- Ověř dokumentaci `messages.list`, `messages.get`, `history.list` a limity.
+- První načtení Doručených a Odeslaných za 30 dní, pak každých pár minut jen změny od uloženého `historyId`; při 404 (stará historie) znovu celé. Obnova tokenu (v testovacím režimu Googlu platí 7 dní).
+- Tabulky vláken a zpráv se standardními externími sloupci; hlavičky čitelně, text e-mailu šifrovaný (`ENCRYPTION_KEY`). Starší než 30 dní mazat; po odpojení obsah smazat.
+- Idempotence a limity jako u faktur; nic z obsahu e-mailů v logu ani v auditu.
+
+**Hotovo když:** opakovaná synchronizace nic nezdvojí, změny (nová zpráva, archivace jinde) se projeví a testy proti nahraným odpovědím procházejí.
+
+### - [ ] 5.5 Obrazovka Pošta
+
+**Cíl:** pošta v Bystru podle prototypu.
+
+**Udělej:**
+
+- Složky Doručené a Odeslané, seznam vláken, detail vlákna, hledání, archivace (odebere štítek Doručené, audit).
+- E-mail jen jako text, nikdy HTML (nedůvěryhodný obsah); odkazy jen jako text.
+
+**Hotovo když:** E2E: vlákno se otevře, archivace ho přesune a projeví se v Gmailu; žádné HTML z e-mailu se nevykreslí.
+
+### - [ ] 5.6 Odpověď a nový e-mail
+
+**Cíl:** odpovídat a psát rovnou z Bystra.
+
+**Udělej:**
+
+- Psaní odpovědi (ve správném vlákně) a nového e-mailu; odeslání přes Action engine, kliknutí na „Odeslat“ je schválení, odejde právě jednou. ID zprávy jako výsledek akce.
+
+**Hotovo když:** testovací e-mail dorazí do testovací schránky, v akci je ID zprávy a dvojklik nic nezdvojí.
+
+### - [ ] 5.7 Akce „Upomínka faktury“
 
 **Cíl:** první akce, za kterou má uživatel důvod platit.
 
@@ -354,7 +388,7 @@ Výsledek fáze: uživatel schválí upomínku k faktuře po splatnosti, odejde 
 
 **Hotovo když:** E2E: faktura po splatnosti → návrh → úprava textu → schválení → odesláno → stav Připomenuto.
 
-### - [ ] 5.5 Obrazovka Akce
+### - [ ] 5.8 Obrazovka Akce
 
 **Cíl:** všechny návrhy na jednom místě.
 
@@ -366,7 +400,7 @@ Výsledek fáze: uživatel schválí upomínku k faktuře po splatnosti, odejde 
 
 **Hotovo když:** schválení i zamítnutí funguje z fronty i z Přehledu.
 
-### - [ ] 5.6 Hlídání výsledku
+### - [ ] 5.9 Hlídání výsledku
 
 **Cíl:** Bystro dotáhne věc do konce.
 
@@ -456,6 +490,18 @@ Výsledek fáze: uživatel se ptá česky a dostává odpovědi z vlastních dat
 
 **Hotovo když:** přehled chodí každý den ve správný čas a každé číslo v něm sedí s daty.
 
+### - [ ] 6.6b Pošta s asistentem
+
+**Cíl:** „Shrnutí od asistenta“ a „Návrh odpovědi“ z prototypu.
+
+**Udělej:**
+
+- Rozpoznání vláken čekajících na odpověď (deterministické signály + klasifikace modelem), propojení e-mailů s klienty z fakturace.
+- Shrnutí vlákna a návrh odpovědi; obsah e-mailu je nedůvěryhodný text, nikdy instrukce. Návrh odchází jen přes schválení (krok 5.6).
+- Nástroje `email.search`, `email.draftReply`; „Komu je potřeba odpovědět“ v ranním přehledu.
+
+**Hotovo když:** testy prompt injection z obsahu e-mailu projdou a nic neodejde bez schválení.
+
 ### - [ ] 6.7 Evaluace a bezpečnost AI
 
 **Cíl:** víme, že AI nelže a nedá se zmanipulovat.
@@ -474,7 +520,7 @@ Výsledek fáze: uživatel se ptá česky a dostává odpovědi z vlastních dat
 
 Výsledek fáze: Bystro vidí zůstatek a pohyby na účtu Fio a samo pozná zaplacené faktury.
 
-Fáze se dělá až po fázích 5 a 6. Kromě kroků níže doplní do už hotových částí: hlídání výsledku upomínky (5.6) podle spárované platby, nástroj AI `finance.getCashPosition` a zůstatek v ranním přehledu.
+Fáze se dělá až po fázích 5 a 6. Kromě kroků níže doplní do už hotových částí: hlídání výsledku upomínky (5.9) podle spárované platby, nástroj AI `finance.getCashPosition` a zůstatek v ranním přehledu.
 
 ### - [ ] 3.1 Doménový model banky
 
@@ -709,7 +755,7 @@ Výsledek fáze: 3–10 skutečných firem používá Bystro na svých datech.
 
 ## Fáze 8 — E-mail a kalendář
 
-Výsledek fáze: ranní přehled zahrnuje e-maily bez odpovědi a dnešní schůzky. Pořadí: kalendáře a Outlook nejdřív, Gmail až po ověření aplikace u Googlu.
+Výsledek fáze: dnešní schůzky a pošta i z Outlooku. Gmail a sekce Pošta jsou už ve fázi 5 (kroky 5.3–5.6), asistent nad poštou v 6.6b.
 
 ### - [ ] 8.1 Kalendáře jen pro čtení
 
@@ -735,18 +781,17 @@ Výsledek fáze: ranní přehled zahrnuje e-maily bez odpovědi a dnešní schů
 
 **Hotovo když:** sync funguje idempotentně a scopes jsou minimální.
 
-### - [ ] 8.3 👤 + Gmail
+### - [ ] 8.3 👤 Ověření Gmailu u Googlu
 
-**Cíl:** e-maily z Google Workspace a Gmailu.
+**Cíl:** Gmail pro všechny uživatele, ne jen testovací účty.
 
 **Udělej:**
 
-- 👤 Uživatel dokončí ověření aplikace u Googlu (vč. bezpečnostního posouzení pro omezené scopes).
-- Adapter Gmail API: nejdřív jen čtení, odesílání až později.
+- 👤 Uživatel dokončí ověření aplikace u Googlu včetně bezpečnostního posouzení pro omezené oprávnění `gmail.modify` (ověř aktuální postup a cenu). Musí být hotové před betou (fáze 7).
 
-**Hotovo když:** Gmail funguje pro ověřenou aplikaci a scopes odpovídají schválení od Googlu.
+**Hotovo když:** aplikace je ve stavu „In production“ a připojení Gmailu funguje i pro účty mimo testovací seznam.
 
-### - [ ] 8.4 Důležité e-maily a návrhy odpovědí
+### - [ ] 8.4 Důležité e-maily a návrhy odpovědí z Outlooku
 
 **Cíl:** „Komu je potřeba odpovědět“.
 
