@@ -114,7 +114,7 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - Rozhodnutí: doplněk [ADR 0006](decisions/0006-synchronizace-posty.md) (archivace bez Action engine, hledání jen v hlavičkách, otevření neoznačí jako přečtené).
 - Databáze beze změny. API: nový `POST /api/mail/threads/{id}/archive` → 204, nebo 404 / 409 `reauth_required` / 503.
 - Testy: adaptér (požadavek archivace, cena, chyby); DB (složky, protistrana, hledání včetně `%`, detail, archivace, izolace organizací); web (archivace proti napodobenému Gmailu, obnova tokenu, odmítnutí bez změny v Bystru, cizí vlákno, nenastavený Gmail); pomocné funkce (adresy, časy v Europe/Prague); E2E (složky, hledání, text s `<b>`/`<img>` jen jako text, archivace zavolá Gmail a vlákno zmizí z Doručených). Obrazovka prošlá v prohlížeči na počítači i mobilu.
-- 👤 Zbývá: na nasazené verzi archivovat jedno vlákno a ověřit, že zmizelo z Doručených i ve skutečném Gmailu.
+- Ověřeno: CI (lint, typecheck, unit, integrační, E2E, obrazy) na PR #28 i na `main`; uživatel na nasazené verzi archivoval vlákno a zmizelo z Doručených i ve skutečném Gmailu (2026-10-24).
 - Otevřené body: přílohy jen jako poznámka; označení jako přečtené; hledání v textu e-mailů (šifrovaný text by potřeboval jiné řešení, např. dotaz do Gmailu).
 - Další krok: 5.6 Odpověď a nový e-mail.
 
