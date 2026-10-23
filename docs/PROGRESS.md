@@ -16,7 +16,7 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 
 ## Otevřené body
 
-- **Vývoj na Intel Macu bez Dockeru (2026-10-23):** Homebrew už Intel nepodporuje; Node 24 je nainstalovaný z oficiálního balíčku a pnpm se spouští přes `npx -y pnpm@12.9.1`. Docker Desktop zatím chybí, proto integrační testy a E2E na tomhle počítači neběží. Pro prohlížení obrazovek běžel Postgres dočasně jako PGlite (`@electric-sql/pglite-socket`, port 5433) mimo repozitář; Redis chybí úplně. Do repozitáře se z toho nic nedostalo. Před zaškrtnutím kroku 2.11 nainstalovat Docker Desktop pro Intel (nebo pustit testy v CI).
+- **Vývoj na Intel Macu bez Dockeru (2026-10-23):** Homebrew už Intel nepodporuje; Node 24 je nainstalovaný z oficiálního balíčku a pnpm se spouští přes `npx -y pnpm@12.9.1`. Docker Desktop zatím chybí, proto integrační testy a E2E na tomhle počítači neběží. Pro prohlížení obrazovek běžel Postgres dočasně jako PGlite (`@electric-sql/pglite-socket`, port 5433) mimo repozitář; Redis chybí úplně. Do repozitáře se z toho nic nedostalo. Integrační testy a E2E se zatím ověřují jen v CI; pro lokální běh nainstalovat Docker Desktop pro Intel.
 - **Rozpor zadání × CLAUDE.md (tech stack):** kapitola 22 zadání uvádí backend NestJS/Fastify, pgvector, S3 storage, OpenTelemetry a Secret Manager/KMS. CLAUDE.md určuje Next.js route handlers, Drizzle, pino + Sentry a `ENCRYPTION_KEY` v proměnných prostředí. Platí CLAUDE.md; případná změna jen přes ADR.
 - **TypeScript připnutý na 6.0.x:** `typescript-eslint` 8.71 podporuje jen `<6.1.0`. Na TypeScript 7 přejít, až ho podpoří.
 - **ESLint pro Next.js:** `eslint-config-next` táhne pluginy bez podpory ESLint 10, proto je použit přímo `@next/eslint-plugin-next` + `eslint-plugin-react-hooks`. Pravidla pro přístupnost (jsx-a11y) zatím chybí; doplnit, až budou kompatibilní.
@@ -107,14 +107,14 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 
 ## Záznamy
 
-## 2026-10-23 — krok 2.11 Rozložení podle Revolut Business a Stripe (rozpracováno)
+## 2026-10-23 — krok 2.11 Rozložení podle Revolut Business a Stripe
 
-- Hotovo: nový shell (užší menu na šedé ploše, Nastavení dole, horní lišta s datem a firmou jako pilulkou), Přehled ve dvou sloupcích (karta Po splatnosti s velkým číslem a tabulkou, karta zůstatku, widgety Dokonči nastavení / Odpovědět / Dnešní schůzky), menší nadpisy stránek, karty s rádiusem 16 px a stínem, stavové štítky jako ve Stripe, úpravy seznamu faktur, Nastavení a Propojení. Podklad z Mobbinu v `docs/design/ui-reference.md`.
-- Rozhodnutí: [ADR 0005](decisions/0005-rozlozeni-revolut-stripe.md).
-- Ověřeno: `pnpm lint`, `pnpm typecheck`, unit testy bez databáze (`core`, `observability`, `ai`, `apps/web/src/lib`). Obrazovky prošlé v prohlížeči na počítači i mobilu, ve světlém i tmavém režimu, s prázdnými stavy i s ukázkovými fakturami (lokální databáze, viz otevřené body); nic nepřetéká do strany.
-- Neověřeno: integrační testy (`db`, `integrations`, `worker`, `web`) a E2E; na vývojovém Macu zatím chybí Docker s Postgresem a Redisem. Krok zůstává nezaškrtnutý, dokud neprojdou.
+- Hotovo: nový shell (užší menu na šedé ploše, Nastavení dole, pod ním profil se šedým kolečkem s iniciálami, jménem, rolí s firmou a e-mailem; horní lišta jen s datem), Přehled ve dvou sloupcích (karta Po splatnosti s velkým číslem a tabulkou, karta zůstatku, widgety Dokonči nastavení / Odpovědět / Dnešní schůzky), menší nadpisy stránek, karty s rádiusem 16 px a stínem, stavové štítky jako ve Stripe, úpravy seznamu faktur, Nastavení a Propojení, logo Googlu na tlačítku přihlášení přes Google. Podklad z Mobbinu v `docs/design/ui-reference.md`.
+- Rozhodnutí: [ADR 0005](decisions/0005-rozlozeni-revolut-stripe.md). Pilulka s firmou vpravo nahoře byla na přání uživatele odebraná, protože opakovala profil vlevo dole.
+- Ověřeno: lint, typecheck, unit, integrační testy, E2E a sestavení obrazů v CI (PR #26). Obrazovky prošlé v prohlížeči na počítači i mobilu, ve světlém i tmavém režimu, s prázdnými stavy i s ukázkovými fakturami.
+- Poučení: PR #25 byl mergnutý dřív, než doběhlo CI, a `main` měl do mergnutí PR #26 jeden padající E2E test (firma v postranním menu). Mergovat až po zeleném CI.
 - Otevřené body: boční panel detailu faktury, rychlé vytvoření „+“, hledání v liště a seskupené seznamy v Nastavení (ADR 0005, „Co z podkladu zatím není“).
-- Další krok: spustit integrační testy a E2E (hlavně `app-shell.spec.ts` a `invoices.spec.ts`), pak zaškrtnout 2.11 a pokračovat krokem 5.4.
+- Další krok: 5.4 Synchronizace pošty.
 
 ## 2026-10-23 — krok 5.3 Propojení Gmailu a sekce Pošta
 

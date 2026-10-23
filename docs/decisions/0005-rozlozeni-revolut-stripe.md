@@ -14,8 +14,8 @@ Uživatel chce, aby aplikace víc připomínala Revolut Business (web) a Stripe 
 ### Shell
 
 - Celá aplikace stojí na šedé ploše (`bg-chrome`); obsah leží přímo na ní v bílých kartách. Bílý list se zaobleným rohem z ADR 0002 je pryč.
-- Postranní menu 232 px (pod 1100 px jen ikony, 72 px): logo nahoře, položky výšky 40 px s ikonou 18 px, aktivní položka na šedém chipu s modrou ikonou. Nastavení je oddělené dole (Revolut), pod ním uživatel, role, e-mail a Odhlásit.
-- Horní lišta (sticky, průsvitná): vlevo dnešní datum, vpravo firma jako pilulka s iniciálami tam, kde má Revolut přepínač firem. Přepínač zatím není, protože účet má jen jednu firmu (otevřený bod v `PROGRESS.md`).
+- Postranní menu 232 px (pod 1100 px jen ikony, 72 px): logo nahoře, položky výšky 40 px s ikonou 18 px, aktivní položka na šedém chipu s modrou ikonou. Nastavení je oddělené dole (Revolut), pod ním profil: šedé kolečko s iniciálami, jméno, role s firmou, e-mail a Odhlásit. Kdo je přihlášený a za jakou firmu, je vidět jen tady.
+- Horní lišta (sticky, průsvitná) ukazuje vlevo dnešní datum. Pilulka s firmou vpravo (místo přepínače firem Revolutu) byla na přání uživatele odebraná, protože opakovala profil vlevo dole; přepínač firem zatím není, účet má jen jednu firmu (otevřený bod v `PROGRESS.md`).
 - Mobil beze změny principu: horní lišta s logem a Odhlásit, spodní lišta se šesti položkami.
 
 ### Přehled
@@ -41,5 +41,4 @@ Boční panel pro detail faktury, rychlé vytvoření „+“, hledání v horn�
 ## Důsledky
 
 - `NAV_ITEMS` mají skupiny `main` a `footer` místo `1` a `2`.
-- E2E test hledá firmu v horní liště (`banner`), ne v postranním menu.
 - Datum v horní liště formátuje server (Europe/Prague) a posílá ho do klientského shellu, aby se kolem půlnoci nelišilo vykreslení na serveru a v prohlížeči.
