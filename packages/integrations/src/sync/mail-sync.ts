@@ -57,6 +57,11 @@ export interface MailSyncInput {
   mode: MailSyncMode;
   encryptionKey: Buffer;
   now?: Date;
+  /**
+   * Called after every stored batch with the number of messages stored so far in this run,
+   * so that a long first load can report that it is alive.
+   */
+  onProgress?: (stored: number) => Promise<void>;
 }
 
 export interface MailSyncResult {
@@ -70,6 +75,16 @@ export interface MailSyncResult {
   deleted: number;
   /** Removed because they are older than the window. */
   expired: number;
+}
+
+/**
+ * Orders message ids so that the newest come first. Gmail's ids are hexadecimal numbers
+ * that grow over time, so a longer id, or a larger one of the same length, is newer. The
+ * first load then fills Pošta from the top.
+ */
+function newestFirst(a: string, b: string): number {
+  if (a.length !== b.length) return b.length - a.length;
+  return a < b ? 1 : a > b ? -1 : 0;
 }
 
 export async function syncMail(input: MailSyncInput): Promise<MailSyncResult> {
@@ -94,6 +109,9 @@ export async function syncMail(input: MailSyncInput): Promise<MailSyncResult> {
     const counts = await upsertMailMessages(db, scope, pending.splice(0), encryptionKey);
     result.created += counts.created;
     result.updated += counts.updated;
+    // The batch shows up in Pošta right away, not only when the whole run is done.
+    await refreshMailThreads(db, scope);
+    await input.onProgress?.(result.created + result.updated);
   }
 
   /** Fetches a message and queues it if it belongs in Bystro. */
@@ -137,11 +155,13 @@ export async function syncMail(input: MailSyncInput): Promise<MailSyncResult> {
     result.deleted += await deleteMailMessages(db, scope, discarded);
     result.labelsChanged += await setMailLabels(db, scope, labelUpdates);
 
+    const toFetch = [...labelsById]
+      .filter(([id, labels]) => !stored.has(id) && isMailInScope([...labels]))
+      .map(([id]) => id)
+      .sort(newestFirst);
     try {
-      for (const [id, labels] of labelsById) {
-        if (!stored.has(id) && isMailInScope([...labels])) {
-          await fetchAndQueue(id);
-        }
+      for (const id of toFetch) {
+        await fetchAndQueue(id);
       }
     } finally {
       // Keep what was fetched even if the run stops halfway; the next one goes on from here.

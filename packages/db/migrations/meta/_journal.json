@@ -43,6 +43,13 @@
       "when": 1792792793283,
       "tag": "0005_mail",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792798239918,
+      "tag": "0006_sync_progress",
+      "breakpoints": true
     }
   ]
 }

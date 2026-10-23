@@ -36,6 +36,8 @@ class InMemoryMailbox implements MailboxReader {
   /** `getMessage` fails on this call number, to simulate an interrupted run. */
   failOnGet: number | null = null;
   readonly calls = { list: 0, get: 0, history: 0 };
+  /** Ids in the order they were fetched. */
+  readonly fetched: string[] = [];
 
   private record(record: Partial<MailHistoryRecord>) {
     this.historyId += 1;
@@ -80,6 +82,7 @@ class InMemoryMailbox implements MailboxReader {
   async getMessage(id: string) {
     this.calls.get += 1;
     if (this.failOnGet === this.calls.get) throw new Error("connection reset");
+    this.fetched.push(id);
     const message = this.messages.get(id);
     return message === undefined ? null : { ...message, labels: [...message.labels] };
   }
@@ -248,7 +251,8 @@ describe("syncMail", () => {
     reader.failOnGet = 3;
 
     await expect(run(scope, reader, "incremental")).rejects.toThrow("connection reset");
-    expect(Object.keys(await stored(scope)).sort()).toEqual(["m1", "m2"]);
+    // Newest first: the two that made it are the latest ones.
+    expect(Object.keys(await stored(scope)).sort()).toEqual(["m3", "m4"]);
     // No marker yet: the next run is a full one again.
     expect(await getSyncCursor(db, scope.organizationId, scope.connectionId, "mail")).toBeNull();
 
@@ -256,5 +260,36 @@ describe("syncMail", () => {
     const gets = reader.calls.get;
     expect(await run(scope, reader, "incremental")).toMatchObject({ mode: "full", created: 2 });
     expect(reader.calls.get - gets).toBe(2);
+  });
+
+  it("fills Pošta batch by batch, newest first, and reports progress as it goes", async () => {
+    const scope = await mailbox("Postupné načítání");
+    const reader = new InMemoryMailbox();
+    // Gmail-like ids: hexadecimal numbers that grow over time.
+    const ids = Array.from({ length: 45 }, (_, index) =>
+      (0x18f2a1b3c4d5e600n + BigInt(index)).toString(16),
+    );
+    for (const id of ids) reader.add(id);
+
+    const progress: { stored: number; threads: number }[] = [];
+    await syncMail({
+      db,
+      scope,
+      reader,
+      mode: "full",
+      encryptionKey: key,
+      now: NOW,
+      onProgress: async (count) => {
+        progress.push({ stored: count, threads: (await listMailThreads(db, scope)).length });
+      },
+    });
+
+    expect(reader.fetched).toEqual([...ids].reverse());
+    // Batches of 20: the threads were already listed while the run was still going.
+    expect(progress).toEqual([
+      { stored: 20, threads: 20 },
+      { stored: 40, threads: 40 },
+      { stored: 45, threads: 45 },
+    ]);
   });
 });

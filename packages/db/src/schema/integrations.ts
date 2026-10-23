@@ -47,6 +47,11 @@ export const integrationConnections = pgTable(
       .notNull()
       .default(sql`'{}'::text[]`),
     lastSyncStartedAt: timestamptz("last_sync_started_at"),
+    /**
+     * Last sign of life of the running sync. A long sync (a mailbox's first load) reports
+     * progress, so that it is not mistaken for a crashed one and started a second time.
+     */
+    syncProgressAt: timestamptz("sync_progress_at"),
     /** Last successful sync. */
     lastSyncAt: timestamptz("last_sync_at"),
     /** Short machine code of the last problem (never a provider message or a token). */

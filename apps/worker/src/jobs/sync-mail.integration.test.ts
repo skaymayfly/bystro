@@ -8,10 +8,12 @@ import {
   type SyncMailPayload,
 } from "@bystro/core";
 import {
+  applyConnectionEvent,
   createDb,
   forOrganization,
   getConnection,
   listMailMessages,
+  markSyncProgress,
   readConnectionTokens,
   saveConnection,
   type ConnectionTokens,
@@ -141,6 +143,7 @@ interface RunOptions {
   fail?: () => Error;
   usedTokens?: ConnectionTokens[];
   sleeps?: number[];
+  now?: () => Date;
 }
 
 function run(data: SyncMailPayload, options: RunOptions = {}) {
@@ -148,7 +151,7 @@ function run(data: SyncMailPayload, options: RunOptions = {}) {
     db,
     encryptionKey: key,
     rateLimiter: options.limiter ?? openLimiter,
-    now: () => NOW,
+    now: options.now ?? (() => NOW),
     sleep: async (ms) => {
       options.sleeps?.push(ms);
     },
@@ -274,6 +277,44 @@ describe("syncMailHandler", () => {
     expect((await getConnection(db, organizationId, connectionId))?.lastErrorCode).toBe(
       "provider_not_configured",
     );
+  });
+});
+
+describe("syncMailHandler and a long first load", () => {
+  const system = { actor: { type: "system" as const }, source: "worker" as const };
+  const minutes = (base: number, count: number) => new Date(base + count * 60_000);
+
+  it("records progress while it runs", async () => {
+    const { data, organizationId, connectionId } = await connected();
+    const before = Date.now();
+    await run(data, { now: () => new Date() });
+    const connection = await getConnection(db, organizationId, connectionId);
+    // Progress is only recorded while syncing; the run finished, but it left its mark.
+    expect(connection?.syncProgressAt?.getTime()).toBeGreaterThanOrEqual(before - 1000);
+  });
+
+  it("does not start a second run while the first keeps reporting, however long it takes", async () => {
+    const { data, organizationId, connectionId } = await connected();
+    await applyConnectionEvent(db, organizationId, connectionId, "sync_started", system);
+    const started = Date.now();
+    await markSyncProgress(db, organizationId, connectionId, minutes(started, 35));
+    const usedTokens: ConnectionTokens[] = [];
+
+    await run(data, { now: () => minutes(started, 40), usedTokens });
+
+    expect(usedTokens).toEqual([]);
+    expect(await statusOf(organizationId, connectionId)).toBe("syncing");
+  });
+
+  it("takes over from a run that went silent", async () => {
+    const { data, organizationId, connectionId } = await connected();
+    await applyConnectionEvent(db, organizationId, connectionId, "sync_started", system);
+    const usedTokens: ConnectionTokens[] = [];
+
+    await run(data, { now: () => minutes(Date.now(), 20), usedTokens });
+
+    expect(usedTokens).toHaveLength(1);
+    expect(await statusOf(organizationId, connectionId)).toBe("connected");
   });
 });
 

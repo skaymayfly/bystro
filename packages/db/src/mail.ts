@@ -431,6 +431,16 @@ export async function listMailFolder(
   });
 }
 
+/** How many messages of the connection are stored (progress of the first load). */
+export async function countMailMessages(db: Db, scope: SyncScope): Promise<number> {
+  const valid = validScope(scope);
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(mailMessages)
+    .where(ofConnection(valid));
+  return row?.count ?? 0;
+}
+
 /** How many threads in Doručené have an unread message. */
 export async function countUnreadInboxThreads(db: Db, scope: SyncScope): Promise<number> {
   const valid = validScope(scope);
