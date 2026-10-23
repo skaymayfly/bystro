@@ -5,6 +5,8 @@ import { providerWording, type ProviderWording } from "./invoicing-providers";
 export interface ConnectionSummary {
   /** Provider id, e.g. `fakturoid`; decides how the texts name the application. */
   provider?: string;
+  /** `email` connections have no sync yet (step 5.4): nothing to wait for. */
+  category?: string;
   status: "connected" | "syncing" | "degraded" | "reauth_required" | "revoked" | "error";
   needsAccount: boolean;
   lastSyncAt: string | null;
@@ -95,6 +97,9 @@ export function describeConnection(
     case "syncing":
       return { tone: "busy", label: "Synchronizuji…", text: null, busy: true };
     case "connected": {
+      if (connection.category === "email" && updated === null) {
+        return { tone: "ok", label: "Připojeno", text: null, busy: false };
+      }
       if (updated !== null) {
         return { tone: "ok", label: "Připojeno", text: updated, busy: false };
       }
@@ -158,7 +163,9 @@ export function connectOutcomeNotice(
   const app = providerWording(provider);
   switch (outcome) {
     case "ok":
-      return { tone: "ok", text: `${app.name} je propojený. Faktury načtu během chvilky.` };
+      return provider === "gmail"
+        ? { tone: "ok", text: "Gmail je propojený." }
+        : { tone: "ok", text: `${app.name} je propojený. Faktury načtu během chvilky.` };
     case "vybrat-ucet":
       return { tone: "ok", text: "Skoro hotovo. Ještě vyber, který účet mám číst." };
     case "zamitnuto":
@@ -176,6 +183,11 @@ export function connectOutcomeNotice(
       return {
         tone: "error",
         text: `${app.name} mi nedovolí číst data: tvůj tarif u nich vypršel nebo nestačí. Vyřeš to u nich a zkus to znovu.`,
+      };
+    case "opravneni":
+      return {
+        tone: "error",
+        text: `Bez povolení číst a posílat poštu ${app.withIt} pracovat nemůžu. Zkus to znovu a nech zaškrtnuté všechny volby.`,
       };
     default:
       return null;

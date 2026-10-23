@@ -6,6 +6,7 @@ import { completeOnboarding, createSignedInUser, KNOWN_COMPANY_NAME, signIn } fr
 const SCREENS = [
   { label: "Přehled", path: "/app", text: "Faktury zatím nevidím" },
   { label: "Asistent", path: "/app/asistent", text: "Na co se chceš zeptat?" },
+  { label: "Pošta", path: "/app/posta", text: "E-mail zatím není propojený" },
   { label: "Hlídač peněz", path: "/app/hlidac-penez", text: "Bez banky nevím, kolik ti zbude" },
   { label: "Faktury", path: "/app/faktury", text: "Zatím tu žádné faktury nejsou" },
   {
@@ -139,7 +140,11 @@ test("prvky z pozdějších fází jsou neaktivní a označené jako Připravuje
     "/app/nastaveni?karta=propojeni",
   );
   await expect(page.getByRole("button", { name: "Připojit banku" })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Připojit e-mail" })).toBeDisabled();
+  // Gmail can be connected (step 5.3): the button leads to Pošta.
+  await expect(page.getByRole("link", { name: "Připojit e-mail" })).toHaveAttribute(
+    "href",
+    "/app/posta",
+  );
   await expect(page.getByText("Připravujeme").first()).toBeVisible();
 
   await page.goto("/app/asistent");
@@ -157,7 +162,7 @@ test("prvky z pozdějších fází jsou neaktivní a označené jako Připravuje
   const tabs = page.getByRole("navigation", { name: "Části nastavení" });
   await tabs.getByRole("link", { name: "Propojení" }).click();
   await expect(page).toHaveURL("/app/nastaveni?karta=propojeni");
-  await expect(page.getByText("Přístup je vždy jen pro čtení.")).toBeVisible();
+  await expect(page.getByText("Faktury jen čtu.", { exact: false })).toBeVisible();
   await tabs.getByRole("link", { name: "Upozornění" }).click();
   await expect(page).toHaveURL("/app/nastaveni?karta=upozorneni");
   await expect(page.getByRole("button", { name: "7:00" })).toBeDisabled();

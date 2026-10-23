@@ -3,10 +3,11 @@ import { describe, expect, it } from "vitest";
 import { initials, isNavItemActive, NAV_ITEMS, roleLabel } from "./navigation";
 
 describe("navigation", () => {
-  it("lists the five sections in prototype order", () => {
+  it("lists the six sections in prototype order", () => {
     expect(NAV_ITEMS.map((item) => item.label)).toEqual([
       "Přehled",
       "Asistent",
+      "Pošta",
       "Hlídač peněz",
       "Faktury",
       "Nastavení",
@@ -17,6 +18,7 @@ describe("navigation", () => {
     expect(NAV_ITEMS.filter((item) => item.group === 1).map((item) => item.label)).toEqual([
       "Přehled",
       "Asistent",
+      "Pošta",
       "Hlídač peněz",
     ]);
     expect(NAV_ITEMS.filter((item) => item.group === 2).map((item) => item.label)).toEqual([

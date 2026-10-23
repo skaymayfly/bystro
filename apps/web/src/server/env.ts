@@ -2,6 +2,7 @@ import { Secret } from "@bystro/core";
 import {
   fakturoidUserAgent,
   type FakturoidAppCredentials,
+  type GmailAppCredentials,
   type IdokladAppCredentials,
 } from "@bystro/integrations";
 
@@ -132,6 +133,41 @@ export function readIdokladEnv(env: Env = process.env): IdokladAppCredentials | 
     clientSecret: new Secret(clientSecret),
     ...(baseUrl === undefined ? {} : { baseUrl }),
     ...(identityBaseUrl === undefined ? {} : { identityBaseUrl }),
+  };
+}
+
+/**
+ * Google OAuth client for Gmail (reading and sending mail), or `null` when it is not
+ * configured: the app then shows Gmail as not available yet. It may be the same client as
+ * the Google sign-in; it is configured separately so that Gmail is switched on on purpose.
+ * GMAIL_TEST_BASE_URL exists for E2E tests only (one local stand-in for Google).
+ */
+export function readGmailEnv(env: Env = process.env): GmailAppCredentials | null {
+  const clientId = optional(env, "GMAIL_CLIENT_ID");
+  const clientSecret = optional(env, "GMAIL_CLIENT_SECRET");
+  if (clientId === undefined && clientSecret === undefined) {
+    return null;
+  }
+  if (clientId === undefined || clientSecret === undefined) {
+    throw new WebEnvError("Set both GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET, or neither.");
+  }
+  const testBase = optional(env, "GMAIL_TEST_BASE_URL");
+  if (testBase !== undefined && !URL.canParse(testBase)) {
+    throw new WebEnvError("GMAIL_TEST_BASE_URL must be a URL.");
+  }
+  return {
+    clientId,
+    clientSecret: new Secret(clientSecret),
+    ...(testBase === undefined
+      ? {}
+      : {
+          endpoints: {
+            authorization: `${testBase}/o/oauth2/v2/auth`,
+            token: `${testBase}/token`,
+            revocation: `${testBase}/revoke`,
+            gmailApi: `${testBase}/gmail/v1`,
+          },
+        }),
   };
 }
 

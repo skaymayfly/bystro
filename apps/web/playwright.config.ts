@@ -10,6 +10,8 @@ import {
   E2E_PORT,
   FAKTUROID_STUB_PORT,
   FAKTUROID_STUB_URL,
+  GOOGLE_STUB_PORT,
+  GOOGLE_STUB_URL,
   IDOKLAD_STUB_PORT,
   IDOKLAD_STUB_URL,
 } from "./e2e/config";
@@ -67,6 +69,13 @@ export default defineConfig({
       env: { IDOKLAD_STUB_PORT: String(IDOKLAD_STUB_PORT) },
     },
     {
+      // Stands in for Google OAuth and Gmail; E2E never calls Google.
+      command: "node e2e/google-stub.mjs",
+      url: `${GOOGLE_STUB_URL}/health`,
+      reuseExistingServer: false,
+      env: { GOOGLE_STUB_PORT: String(GOOGLE_STUB_PORT) },
+    },
+    {
       command: `pnpm exec next build && pnpm exec next start --port ${PORT}`,
       url: baseURL,
       timeout: 180_000,
@@ -88,6 +97,10 @@ export default defineConfig({
         IDOKLAD_IDENTITY_BASE_URL: `${IDOKLAD_STUB_URL}/server`,
         IDOKLAD_CLIENT_ID: "e2e-idoklad-id",
         IDOKLAD_CLIENT_SECRET: "e2e-idoklad-secret",
+        // And for Gmail.
+        GMAIL_TEST_BASE_URL: GOOGLE_STUB_URL,
+        GMAIL_CLIENT_ID: "e2e-google-id",
+        GMAIL_CLIENT_SECRET: "e2e-google-secret",
         ENCRYPTION_KEY: E2E_ENCRYPTION_KEY,
         // Jobs added by E2E go to their own queues, away from a locally running worker.
         QUEUE_PREFIX: "bystro-e2e",

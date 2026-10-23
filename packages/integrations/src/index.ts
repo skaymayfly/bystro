@@ -31,6 +31,22 @@ export {
   type FakturoidAppCredentials,
 } from "./fakturoid/fakturoid";
 export {
+  getGmailProfile,
+  GMAIL_MODIFY_SCOPE,
+  GMAIL_SCOPES,
+  GMAIL_SOURCE,
+  GMAIL_USER_QUOTA,
+  GmailClient,
+  gmailOAuthConfig,
+  GOOGLE_ENDPOINTS,
+  hasGmailScopes,
+  revokeGoogleAccess,
+  type GmailAppCredentials,
+  type GmailClientOptions,
+  type GmailProfile,
+  type GoogleEndpoints,
+} from "./gmail/gmail";
+export {
   IDOKLAD_API_BASE_URL,
   IDOKLAD_IDENTITY_BASE_URL,
   IDOKLAD_PAGE_SIZE,

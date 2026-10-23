@@ -1,10 +1,11 @@
-import { FileText, House, MessageSquare, Settings, TrendingUp } from "lucide-react";
+import { FileText, House, Mail, MessageSquare, Settings, TrendingUp } from "lucide-react";
 
 import type { NavIcon as NavIconName } from "@/lib/navigation";
 
 const ICONS = {
   home: House,
   assistant: MessageSquare,
+  mail: Mail,
   cash: TrendingUp,
   invoices: FileText,
   settings: Settings,
