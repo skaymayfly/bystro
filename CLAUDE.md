@@ -10,14 +10,14 @@ Pořadí vývoje: faktury → upomínky a schvalování → AI asistent a ranní
 
 ## Zdroje pravdy
 
-| Soubor             | K čemu                                                                                                                                                                                                                       |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/PLAN.md`     | Co přesně dělat teď. Kroky jdou po sobě.                                                                                                                                                                                     |
-| `docs/PROGRESS.md` | Deník: co je hotovo, jaká padla rozhodnutí, co zůstalo otevřené.                                                                                                                                                             |
-| `docs/zadani.pdf`  | Kompletní produktové a technické zadání. Kapitola 22 = závazná pravidla.                                                                                                                                                     |
-| `docs/prototyp/`   | Klikací prototyp v4 (`prototyp-v4.dc.html`, potřebuje `support.js` vedle sebe), logo a maskot Bystrouš (`maskot/`): vzhled, texty, obrazovky, prázdné stavy. UI texty přebírej odsud; odchylky od prototypu jsou v ADR 0002. |
-| `docs/decisions/`  | Zapsaná architektonická rozhodnutí (ADR), jeden soubor na rozhodnutí.                                                                                                                                                        |
-| `docs/deploy.md`   | Návod na nasazení (Railway): služby, proměnné, migrace, kontrola po nasazení.                                                                                                                                                |
+| Soubor             | K čemu                                                                                                                                                                                                                                                                |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/PLAN.md`     | Co přesně dělat teď. Kroky jdou po sobě.                                                                                                                                                                                                                              |
+| `docs/PROGRESS.md` | Deník: co je hotovo, jaká padla rozhodnutí, co zůstalo otevřené.                                                                                                                                                                                                      |
+| `docs/zadani.pdf`  | Kompletní produktové a technické zadání. Kapitola 22 = závazná pravidla.                                                                                                                                                                                              |
+| `docs/prototyp/`   | Klikací prototyp v4 (`prototyp-v4.dc.html`, potřebuje `support.js` vedle sebe), logo a paleta (`paleta-libraries-dev.html`): vzhled, texty, obrazovky, prázdné stavy. UI texty přebírej odsud; odchylky od prototypu jsou v ADR 0002, barvy a tmavý režim v ADR 0003. |
+| `docs/decisions/`  | Zapsaná architektonická rozhodnutí (ADR), jeden soubor na rozhodnutí.                                                                                                                                                                                                 |
+| `docs/deploy.md`   | Návod na nasazení (Railway): služby, proměnné, migrace, kontrola po nasazení.                                                                                                                                                                                         |
 
 Když si zdroje odporují, platí: tento soubor → `docs/PLAN.md` → `docs/zadani.pdf` → prototyp. Rozpor zapiš do `PROGRESS.md` a upozorni na něj.
 

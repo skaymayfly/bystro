@@ -104,6 +104,19 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 
 ## Záznamy
 
+## 2026-10-23 — krok 2.10 Paleta podle libraries.dev a tmavý režim
+
+- Zadání uživatele: podle podkladu „Bystro paleta z libraries.dev“ změnit celý branding, přidat tmavý režim, modrá hlavní tlačítka, mono popisky, inspirovat se i webem libraries.dev; maskota Bystrouše odebrat úplně. Krok vložený před 5.3 (Gmail), plán 5.3 zatím čeká na schválení.
+- Hotovo: barvy jako proměnné pro světlý a tmavý režim (`globals.css`), tmavý režim podle systému a přepínač Vzhled v Nastavení → Profil (volba v prohlížeči, bez probliknutí), modrá tlačítka-pilulky se stiskem, akcent na odkazech a aktivní položce menu, segmentové přepínače, mono popisky (Roboto Mono), jemné objevení obrazovek, stránka chyby v nové paletě. Maskot odebraný i s podklady (`docs/prototyp/maskot/`), prázdné stavy mají zpátky ikony. Podklad palety je v `docs/prototyp/paleta-libraries-dev.html`.
+- Rozhodnutí (ADR 0003):
+  - Tlačítková modrá `#006FF5` místo `#0071FC` z podkladu: bílý text na `#0071FC` má kontrast 4,40 : 1, pod WCAG AA.
+  - Barvy stavů zůstávají z Bystra, v tmavém režimu zesvětlené.
+  - Tmavé hodnoty jsou v CSS dvakrát (podle systému a podle volby); test hlídá, že jsou stejné.
+  - Dlaždice Fakturoidu má i v tmavém režimu bílé pozadí (pravidla jeho loga).
+  - Písmo zůstává Geist; Roboto Mono jen na drobné popisky.
+- Databáze ani API beze změny.
+- Testy: kontrast hlavních dvojic barev v obou režimech, shoda tmavých bloků, úplnost tmavé palety, volba vzhledu; E2E: všechny obrazovky v tmavém režimu na počítači i mobilu (barva pozadí, nic nepřetéká, snímky), přepnutí vzhledu v Nastavení a jeho trvání po obnovení stránky; snímky seznamu faktur a přihlášení v obou režimech.
+
 ## 2026-10-19 — krok 5.2 API pro schválení
 
 - Hotovo: `POST /api/v1/actions/{id}/approve` (tělo `{ "approval": true }`) a `POST /api/v1/actions/{id}/reject`; logika v `apps/web/src/server/actions.ts` (`decideOnAction`), společná obsluha cest v `action-route.ts`; kontrola aktuálnosti dat `checkActionStillValid` v `packages/db`; úloha `actions.execute` a její zpracování ve workeru (`apps/worker/src/jobs/execute-action.ts`) s registrem vykonavatelů podle typu akce.

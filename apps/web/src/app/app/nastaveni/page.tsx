@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { Card, CardTitle, PageHeader, PillOptions, SoonBadge } from "@/components/bits";
 import { ConnectionsTab } from "@/components/connections/connections-tab";
+import { ThemeSwitch } from "@/components/theme-switch";
 import { Input } from "@/components/ui/input";
 import {
   BRIEF_CHANNELS,
@@ -38,7 +39,7 @@ function ProfileTab({ context }: { context: RequestContext }) {
     <>
       <Card>
         <div className="flex flex-wrap items-center gap-[18px]">
-          <span className="flex size-[72px] flex-none items-center justify-center rounded-full bg-ink text-2xl font-bold text-white">
+          <span className="flex size-[72px] flex-none items-center justify-center rounded-full bg-ink text-2xl font-bold text-on-ink">
             {initials(user.name)}
           </span>
           <div className="min-w-0 flex-1">
@@ -70,6 +71,13 @@ function ProfileTab({ context }: { context: RequestContext }) {
       </Card>
 
       <Card>
+        <CardTitle text="Tmavý režim se podle systému přepne sám. Volba platí v tomhle prohlížeči.">
+          Vzhled
+        </CardTitle>
+        <ThemeSwitch />
+      </Card>
+
+      <Card>
         <CardTitle
           text="Ovlivní ranní přehled, odpovědi asistenta i návrhy e-mailů klientům."
           aside={<SoonBadge />}
@@ -92,8 +100,8 @@ function ProfileTab({ context }: { context: RequestContext }) {
                   <span
                     aria-hidden
                     className={cn(
-                      "size-[18px] rounded-full border-2 shadow-[inset_0_0_0_3px_#fff]",
-                      selected ? "border-ink-2 bg-ink-2" : "border-line-dark",
+                      "size-[18px] rounded-full border-2 shadow-[inset_0_0_0_3px_var(--bz-surface)]",
+                      selected ? "border-link bg-link" : "border-line-dark",
                     )}
                   />
                 </div>

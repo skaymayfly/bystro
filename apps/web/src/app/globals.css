@@ -3,35 +3,202 @@
 @import "shadcn/tailwind.css";
 
 /*
- * Design tokens taken from docs/prototyp/prototyp-v4.dc.html.
- * The reasoning and the full table live in docs/decisions/0002-design-tokens-v4.md.
+ * Design tokens: the palette taken from libraries.dev (podklad "Bystro paleta z
+ * libraries.dev", 2026-10-23) with Bystro's own state colours. Light and dark mode; the
+ * dark one follows the system unless the user picked a theme (`data-theme` on <html>).
+ * The reasoning and the full table live in docs/decisions/0003-paleta-libraries-dev.md.
+ *
+ * Every colour is a variable here and only referenced from `@theme`, so that one switch of
+ * the variables re-colours the whole app.
  */
 :root {
-  /* shadcn/ui roles mapped to the Bystro palette */
-  --background: #ffffff;
-  --foreground: #111111;
-  --card: #ffffff;
-  --card-foreground: #111111;
-  --popover: #ffffff;
-  --popover-foreground: #111111;
-  --primary: #111111;
-  --primary-foreground: #ffffff;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #111111;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --accent: #f1f1f2;
-  --accent-foreground: #111111;
-  --destructive: #dc2626;
-  --border: #e7e7e9;
-  --input: #e4e4e7;
-  --ring: #111111;
+  color-scheme: light;
+
+  /* Surfaces */
+  --bz-bg: #fdfdfd;
+  --bz-surface: #ffffff;
+  --bz-stage: #f9f9f9;
+  --bz-chip: #f4f4f4;
+  --bz-chip-hover: #f1f1f1;
+  --bz-chip-pressed: #eae9e9;
+  /* The selected segment of a segmented control. */
+  --bz-pill: #ffffff;
+
+  /* Text */
+  --bz-text: #0d0d0d;
+  --bz-text-hover: #2a2a2a;
+  --bz-text-2: #3a3a3a;
+  --bz-text-muted: #6c6c6c;
+  --bz-text-faint: #8f8f8f;
+  /* Text on a surface of the main text colour (avatars, the logo's slash). */
+  --bz-on-text: #ffffff;
+  --bz-label-mono: #5e6073;
+
+  /* Lines */
+  --bz-border: rgb(0 0 0 / 0.06);
+  --bz-line: #eeeeee;
+  --bz-line-strong: rgb(0 0 0 / 0.1);
+  --bz-line-dark: #d6d6d6;
+
+  /* Accent */
+  --bz-accent: #0073e5;
+  --bz-accent-hover: #0064c8;
+  --bz-accent-soft: rgb(0 115 229 / 0.09);
+  --bz-accent-soft-hover: rgb(0 115 229 / 0.15);
+  /* The palette has #0071FC; one shade darker so that its white label passes WCAG AA. */
+  --bz-cta: #006ff5;
+  --bz-cta-hover: #0062d6;
+  --bz-cta-text: #ffffff;
+  --bz-tint-bg: rgb(0 113 252 / 0.1);
+  --bz-tint-ink: #0062d6;
+
+  /* States: Bystro's own, they carry meaning (paid, overdue, warning). */
+  --bz-danger: #dc2626;
+  --bz-danger-strong: #b91c1c;
+  --bz-danger-soft: #fef2f2;
+  --bz-success: #16a34a;
+  --bz-success-strong: #15803d;
+  --bz-success-soft: #f0fdf4;
+  --bz-warning-strong: #b45309;
+  --bz-warning-soft: #fffbeb;
+
+  /* Shadows */
+  --bz-shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.04);
+  --bz-shadow-pop:
+    0 0 0 1px rgb(0 0 0 / 0.06), 0 2px 6px rgb(0 0 0 / 0.05), 0 4px 42px rgb(0 0 0 / 0.06);
+  --bz-shadow-focus: 0 0 0 4px rgb(0 115 229 / 0.18);
+
+  /* shadcn/ui roles mapped to the palette */
+  --background: var(--bz-bg);
+  --foreground: var(--bz-text);
+  --card: var(--bz-surface);
+  --card-foreground: var(--bz-text);
+  --popover: var(--bz-surface);
+  --popover-foreground: var(--bz-text);
+  --primary: var(--bz-cta);
+  --primary-foreground: var(--bz-cta-text);
+  --secondary: var(--bz-chip);
+  --secondary-foreground: var(--bz-text);
+  --muted: var(--bz-chip);
+  --muted-foreground: var(--bz-text-muted);
+  --accent: var(--bz-chip-hover);
+  --accent-foreground: var(--bz-text);
+  --destructive: var(--bz-danger);
+  --border: var(--bz-border);
+  --input: var(--bz-line-strong);
+  --ring: var(--bz-accent);
   --radius: 0.625rem;
+}
+
+/* Dark: libraries.dev's own default. Depth comes only from #121212, #131313 and #181818. */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --bz-bg: #121212;
+    --bz-surface: #181818;
+    --bz-stage: #131313;
+    --bz-chip: rgb(255 255 255 / 0.07);
+    --bz-chip-hover: rgb(255 255 255 / 0.1);
+    --bz-chip-pressed: rgb(255 255 255 / 0.08);
+    --bz-pill: #2a2a2a;
+
+    --bz-text: #ffffff;
+    --bz-text-hover: #e8e8e8;
+    --bz-text-2: #dedede;
+    --bz-text-muted: rgb(202 202 202 / 0.7);
+    --bz-text-faint: #8f8f8f;
+    --bz-on-text: #0d0d0d;
+    --bz-label-mono: #8a8ca0;
+
+    --bz-border: rgb(255 255 255 / 0.08);
+    --bz-line: rgb(255 255 255 / 0.08);
+    --bz-line-strong: rgb(255 255 255 / 0.12);
+    --bz-line-dark: rgb(255 255 255 / 0.22);
+
+    --bz-accent: #55cfff;
+    --bz-accent-hover: #74d8ff;
+    --bz-accent-soft: rgb(85 207 255 / 0.12);
+    --bz-accent-soft-hover: rgb(85 207 255 / 0.2);
+    --bz-cta: #006ff5;
+    --bz-cta-hover: #0062d6;
+    --bz-cta-text: #ffffff;
+    --bz-tint-bg: rgb(0 113 252 / 0.18);
+    --bz-tint-ink: #7db4ff;
+
+    /* The state colours lightened so that they stay readable on a dark surface. */
+    --bz-danger: #f87171;
+    --bz-danger-strong: #fca5a5;
+    --bz-danger-soft: rgb(248 113 113 / 0.12);
+    --bz-success: #4ade80;
+    --bz-success-strong: #86efac;
+    --bz-success-soft: rgb(74 222 128 / 0.12);
+    --bz-warning-strong: #fbbf24;
+    --bz-warning-soft: rgb(251 191 36 / 0.12);
+
+    --bz-shadow-card: 0 0 0 1px rgb(255 255 255 / 0.04);
+    --bz-shadow-pop:
+      0 0 0 1px rgb(255 255 255 / 0.08), 0 2px 6px rgb(0 0 0 / 0.3), 0 4px 42px rgb(0 0 0 / 0.24);
+    --bz-shadow-focus: 0 0 0 4px rgb(85 207 255 / 0.22);
+  }
+}
+
+/* The same values again for an explicit choice; a test keeps the two blocks identical. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bz-bg: #121212;
+  --bz-surface: #181818;
+  --bz-stage: #131313;
+  --bz-chip: rgb(255 255 255 / 0.07);
+  --bz-chip-hover: rgb(255 255 255 / 0.1);
+  --bz-chip-pressed: rgb(255 255 255 / 0.08);
+  --bz-pill: #2a2a2a;
+
+  --bz-text: #ffffff;
+  --bz-text-hover: #e8e8e8;
+  --bz-text-2: #dedede;
+  --bz-text-muted: rgb(202 202 202 / 0.7);
+  --bz-text-faint: #8f8f8f;
+  --bz-on-text: #0d0d0d;
+  --bz-label-mono: #8a8ca0;
+
+  --bz-border: rgb(255 255 255 / 0.08);
+  --bz-line: rgb(255 255 255 / 0.08);
+  --bz-line-strong: rgb(255 255 255 / 0.12);
+  --bz-line-dark: rgb(255 255 255 / 0.22);
+
+  --bz-accent: #55cfff;
+  --bz-accent-hover: #74d8ff;
+  --bz-accent-soft: rgb(85 207 255 / 0.12);
+  --bz-accent-soft-hover: rgb(85 207 255 / 0.2);
+  --bz-cta: #006ff5;
+  --bz-cta-hover: #0062d6;
+  --bz-cta-text: #ffffff;
+  --bz-tint-bg: rgb(0 113 252 / 0.18);
+  --bz-tint-ink: #7db4ff;
+
+  /* The state colours lightened so that they stay readable on a dark surface. */
+  --bz-danger: #f87171;
+  --bz-danger-strong: #fca5a5;
+  --bz-danger-soft: rgb(248 113 113 / 0.12);
+  --bz-success: #4ade80;
+  --bz-success-strong: #86efac;
+  --bz-success-soft: rgb(74 222 128 / 0.12);
+  --bz-warning-strong: #fbbf24;
+  --bz-warning-soft: rgb(251 191 36 / 0.12);
+
+  --bz-shadow-card: 0 0 0 1px rgb(255 255 255 / 0.04);
+  --bz-shadow-pop:
+    0 0 0 1px rgb(255 255 255 / 0.08), 0 2px 6px rgb(0 0 0 / 0.3), 0 4px 42px rgb(0 0 0 / 0.24);
+  --bz-shadow-focus: 0 0 0 4px rgb(85 207 255 / 0.22);
 }
 
 @theme inline {
   --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-sans);
+  --font-mono: var(--font-roboto-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* shadcn/ui roles */
   --color-background: var(--background);
@@ -53,47 +220,67 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Bystro palette: text */
-  --color-ink: #111111;
-  --color-ink-hover: #333333;
-  --color-ink-2: #3f3f46;
-  --color-ink-3: #71717a;
-  --color-ink-4: #a1a1aa;
+  /* Text */
+  --color-ink: var(--bz-text);
+  --color-ink-hover: var(--bz-text-hover);
+  --color-ink-2: var(--bz-text-2);
+  --color-ink-3: var(--bz-text-muted);
+  --color-ink-4: var(--bz-text-faint);
+  --color-on-ink: var(--bz-on-text);
+  --color-label: var(--bz-label-mono);
 
   /* Surfaces */
-  --color-chrome: #f5f5f5;
-  --color-subtle: #fafafa;
-  --color-fill: #f1f1f2;
+  --color-chrome: var(--bz-stage);
+  --color-subtle: var(--bz-stage);
+  --color-fill: var(--bz-chip-hover);
+  --color-chip: var(--bz-chip);
+  --color-chip-pressed: var(--bz-chip-pressed);
+  --color-pill: var(--bz-pill);
 
   /* Lines */
-  --color-line: #e7e7e9;
-  --color-line-soft: #efeff0;
-  --color-line-strong: #e4e4e7;
-  --color-line-dark: #d4d4d8;
+  --color-line: var(--bz-border);
+  --color-line-soft: var(--bz-line);
+  --color-line-strong: var(--bz-line-strong);
+  --color-line-dark: var(--bz-line-dark);
+
+  /* Accent and the main button */
+  --color-link: var(--bz-accent);
+  --color-link-hover: var(--bz-accent-hover);
+  --color-link-soft: var(--bz-accent-soft);
+  --color-link-soft-hover: var(--bz-accent-soft-hover);
+  --color-cta: var(--bz-cta);
+  --color-cta-hover: var(--bz-cta-hover);
+  --color-cta-text: var(--bz-cta-text);
+  --color-tint: var(--bz-tint-bg);
+  --color-tint-ink: var(--bz-tint-ink);
 
   /* States */
-  --color-danger: #dc2626;
-  --color-danger-strong: #b91c1c;
-  --color-danger-soft: #fef2f2;
-  --color-success: #16a34a;
-  --color-success-strong: #15803d;
-  --color-success-soft: #f0fdf4;
-  --color-warning-strong: #b45309;
-  --color-warning-soft: #fffbeb;
+  --color-danger: var(--bz-danger);
+  --color-danger-strong: var(--bz-danger-strong);
+  --color-danger-soft: var(--bz-danger-soft);
+  --color-success: var(--bz-success);
+  --color-success-strong: var(--bz-success-strong);
+  --color-success-soft: var(--bz-success-soft);
+  --color-warning-strong: var(--bz-warning-strong);
+  --color-warning-soft: var(--bz-warning-soft);
 
-  /* Radii: pills are `rounded-full` */
+  /* Radii: pills are `rounded-full` (buttons) or `rounded-pill` (24 px, libraries.dev) */
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-control: 10px;
   --radius-box: 14px;
   --radius-tile: 16px;
+  --radius-pill: 24px;
   --radius-card: 26px;
   --radius-panel: 28px;
 
-  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.04);
-  --shadow-focus: 0 0 0 4px rgb(17 17 17 / 0.08);
-  --shadow-raised: 0 24px 60px -12px rgb(0 0 0 / 0.25);
+  --shadow-soft: var(--bz-shadow-card);
+  --shadow-focus: var(--bz-shadow-focus);
+  --shadow-raised: var(--bz-shadow-pop);
+
+  /* Motion, from libraries.dev */
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @layer base {
@@ -105,5 +292,32 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+  }
+}
+
+@layer components {
+  /* Small label in the monospace face, as libraries.dev labels sections and columns. */
+  .label-mono {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--bz-label-mono);
+  }
+}
+
+/* Pages fade in, as on libraries.dev; not for users who asked for less motion. */
+@keyframes bz-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .page-in {
+    animation: bz-page-in 250ms var(--ease-smooth) both;
   }
 }

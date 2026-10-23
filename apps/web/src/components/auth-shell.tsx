@@ -117,7 +117,7 @@ export function FormError({ children }: { children: ReactNode }) {
 
 export const authStyles = {
   hint: "text-center text-base text-ink-3",
-  link: "text-ink-2 underline decoration-dotted underline-offset-4 hover:text-ink",
+  link: "text-link underline decoration-link/40 underline-offset-4 hover:text-link-hover",
   notice:
     "rounded-control border border-line-strong bg-card px-4 py-3.5 text-sm leading-normal text-ink-2",
 } as const;

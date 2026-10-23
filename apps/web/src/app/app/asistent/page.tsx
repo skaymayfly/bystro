@@ -7,7 +7,7 @@ import { ASSISTANT_SUGGESTIONS, ASSISTANT_TOPICS, CONNECTION_CATEGORIES } from "
 
 export const metadata: Metadata = { title: "Asistent – Bystro" };
 
-const eyebrowClass = "text-xs font-semibold tracking-[0.08em] text-ink-3 uppercase";
+const eyebrowClass = "label-mono";
 
 /** Asistent before the AI layer exists (phase 6): the prototype's empty conversation. */
 export default function AssistantPage() {

@@ -191,6 +191,16 @@ test("seznam faktur ukáže součty, které sedí s daty, a řadí od nejdéle p
   await expect(page.getByText("2026-0099")).toHaveCount(0);
   await expect(page.getByText("1 500 EUR")).toBeVisible();
 
+  // For looking over the design in both themes.
+  for (const colorScheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme });
+    await page.screenshot({
+      path: test.info().outputPath(`faktury-${colorScheme}.png`),
+      fullPage: true,
+    });
+  }
+  await page.emulateMedia({ colorScheme: "light" });
+
   // Nothing overflows sideways on a phone; the table scrolls inside its card.
   await page.setViewportSize({ width: 390, height: 844 });
   const overflow = await page.evaluate(
@@ -249,7 +259,6 @@ test("detail faktury a karta Po splatnosti na Přehledu", async ({ browser }) =>
   const overdue = 11_200_000n - 1_200_000n + 1_840_000n;
   await expect(page.getByText(formatCzk(overdue))).toBeVisible();
   await expect(page.getByText("2 faktury · nejstarší 12 dní po splatnosti")).toBeVisible();
-  await expect(page.getByRole("img", { name: "Bystrouš hlídá" })).toBeVisible();
   await expect(page.getByText("Zdroj: Fakturoid · aktualizováno před")).toBeVisible();
 
   await page.getByRole("link", { name: /Novák s\.r\.o\..*2026-0142/ }).click();

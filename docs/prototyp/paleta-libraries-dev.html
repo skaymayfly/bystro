@@ -1,0 +1,582 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <style>
+      :root {
+        color-scheme: light;
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      html {
+        scroll-padding-top: env(safe-area-inset-top, 0px);
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        font:
+          14px -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        background: #fff;
+        color: #000;
+      }
+      img {
+        max-width: 100%;
+      }
+      [hidden]:not([hidden="until-found" i]) {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <title>Bystro paleta z libraries.dev</title>
+    <meta name="claude:viewport-fit-sides" content="cover" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Roboto+Mono:wght@400;500&display=swap"
+    />
+    <style>
+      /* Layout: jeden sloupec jako handoff list — vzorník světlý / tmavý, mapování, kód */
+      :root {
+        --bg: #fdfdfd;
+        --surface: #ffffff;
+        --stage: #f9f9f9;
+        --chip: #f4f4f4;
+        --fg: #0d0d0d;
+        --muted: #6c6c6c;
+        --faint: #8f8f8f;
+        --mono-ink: #5e6073;
+        --line: rgba(0, 0, 0, 0.06);
+        --accent: #0073e5;
+        --accent-soft: rgba(0, 115, 229, 0.09);
+        --sans: "Geist", "Inter", -apple-system, system-ui, sans-serif;
+        --mono: "Roboto Mono", ui-monospace, Menlo, monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #121212;
+          --surface: #181818;
+          --stage: #131313;
+          --chip: rgba(255, 255, 255, 0.07);
+          --fg: #ffffff;
+          --muted: rgba(202, 202, 202, 0.7);
+          --faint: #8f8f8f;
+          --mono-ink: #8a8ca0;
+          --line: rgba(255, 255, 255, 0.08);
+          --accent: #55cfff;
+          --accent-soft: rgba(85, 207, 255, 0.12);
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme="dark"] {
+        --bg: #121212;
+        --surface: #181818;
+        --stage: #131313;
+        --chip: rgba(255, 255, 255, 0.07);
+        --fg: #ffffff;
+        --muted: rgba(202, 202, 202, 0.7);
+        --faint: #8f8f8f;
+        --mono-ink: #8a8ca0;
+        --line: rgba(255, 255, 255, 0.08);
+        --accent: #55cfff;
+        --accent-soft: rgba(85, 207, 255, 0.12);
+        color-scheme: dark;
+      }
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font: 15px/1.55 var(--sans);
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        padding-block: 40px 64px;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+        display: flex;
+        flex-direction: column;
+        gap: 48px;
+      }
+      .label {
+        font: 500 11px/1 var(--mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--mono-ink);
+      }
+      h1 {
+        font-size: clamp(28px, 5vw, 42px);
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        margin: 10px 0 12px;
+        text-wrap: balance;
+      }
+      h2 {
+        font-size: 20px;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        margin: 0 0 4px;
+      }
+      p {
+        margin: 0;
+        color: var(--muted);
+        max-width: 65ch;
+      }
+      .sec {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .panel {
+        border-radius: 20px;
+        padding: 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 12px;
+      }
+      .panel.light {
+        background: #fdfdfd;
+        color: #0d0d0d;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+      }
+      .panel.dark {
+        background: #121212;
+        color: #fff;
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+      }
+      .sw {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+      }
+      .chipc {
+        height: 64px;
+        border-radius: 12px;
+      }
+      .light .chipc {
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+      }
+      .dark .chipc {
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+      }
+      .sw b {
+        font-weight: 500;
+        font-size: 13px;
+      }
+      .sw code {
+        font: 12px/1.3 var(--mono);
+        opacity: 0.65;
+        word-break: break-all;
+      }
+      .accent-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 12px;
+      }
+      .demo {
+        border-radius: 20px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        align-items: flex-start;
+      }
+      .demo.light {
+        background: #fdfdfd;
+        color: #0d0d0d;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+      }
+      .demo.dark {
+        background: #121212;
+        color: #fff;
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+      }
+      .demo .big {
+        font-size: 26px;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        line-height: 1.15;
+      }
+      .btns {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        border: 0;
+        border-radius: 24px;
+        padding: 9px 16px;
+        font: 500 14px var(--sans);
+      }
+      .pro {
+        font: 500 11px var(--sans);
+        padding: 3px 8px;
+        border-radius: 8px;
+      }
+      .tbl {
+        overflow-x: auto;
+        border-radius: 16px;
+        box-shadow: 0 0 0 1px var(--line);
+        background: var(--surface);
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        min-width: 560px;
+        font-size: 14px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: middle;
+      }
+      th {
+        font: 500 11px var(--mono);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--mono-ink);
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      .dot {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        vertical-align: -2px;
+        margin-right: 8px;
+        box-shadow: inset 0 0 0 1px rgba(128, 128, 128, 0.3);
+      }
+      td code {
+        font: 13px var(--mono);
+      }
+      .arrow {
+        color: var(--faint);
+      }
+      .note {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .codebox {
+        position: relative;
+        background: var(--stage);
+        border-radius: 16px;
+        box-shadow: 0 0 0 1px var(--line);
+      }
+      pre {
+        margin: 0;
+        padding: 20px;
+        overflow-x: auto;
+        font: 12.5px/1.6 var(--mono);
+        color: var(--fg);
+        max-height: 420px;
+      }
+      .copy {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        border: 0;
+        border-radius: 24px;
+        padding: 7px 14px;
+        font: 500 13px var(--sans);
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+      }
+      :root[data-theme="dark"] .copy {
+        color: #0d0d0d;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) .copy {
+          color: #0d0d0d;
+        }
+      }
+      .copy:focus-visible,
+      .btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .fonts {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+      }
+      .font {
+        background: var(--surface);
+        border-radius: 16px;
+        box-shadow: 0 0 0 1px var(--line);
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .font .s {
+        font-size: 24px;
+        letter-spacing: -0.01em;
+      }
+    </style>
+
+    <div class="wrap">
+      <header>
+        <div class="label">Branding podklad · zdroj libraries.dev · 23. 10. 2026</div>
+        <h1>Bystro paleta podle libraries.dev</h1>
+        <p>
+          Barvy jsou vytažené přímo z CSS proměnných webu libraries.dev, ne odhadem ze screenshotu.
+          Web je skoro celý v neutrálních šedých, jediná výrazná barva je modrý akcent. Ve světlém
+          režimu je akcent modrý #0073E5, v tmavém tyrkysový #55CFFF. Tmavý režim je jejich výchozí
+          vzhled.
+        </p>
+      </header>
+
+      <section class="sec">
+        <div>
+          <h2>Světlý režim</h2>
+          <p>Plochy, text a linky.</p>
+        </div>
+        <div class="panel light" id="light"></div>
+      </section>
+
+      <section class="sec">
+        <div>
+          <h2>Tmavý režim</h2>
+          <p>
+            Výchozí vzhled libraries.dev. Hloubku dělají jen jemné rozdíly mezi #121212, #131313 a
+            #181818.
+          </p>
+        </div>
+        <div class="panel dark" id="dark"></div>
+      </section>
+
+      <section class="sec">
+        <div>
+          <h2>Akcent v praxi</h2>
+          <p>
+            Tlačítka jsou pilulky s radiusem 24 px. Sekundární tlačítko je šedý chip, primární plná
+            modrá #0071FC.
+          </p>
+        </div>
+        <div class="accent-row">
+          <div class="demo light">
+            <span class="pro" style="background: rgba(0, 113, 252, 0.1); color: #0062d6">Pro</span>
+            <div class="big">Faktura 2026-118 je 6 dní po splatnosti</div>
+            <div style="color: #6c6c6c; font-size: 14px">Novák Stavby s.r.o. · 48 400 Kč</div>
+            <div class="btns">
+              <button class="btn" style="background: #f4f4f4; color: #0d0d0d">Odložit</button
+              ><button class="btn" style="background: #0071fc; color: #fff">Poslat upomínku</button>
+            </div>
+            <a style="color: #0073e5; font-size: 14px; font-weight: 500; text-decoration: none"
+              >Zobrazit fakturu →</a
+            >
+          </div>
+          <div class="demo dark">
+            <span class="pro" style="background: rgba(0, 113, 252, 0.18); color: #7db4ff">Pro</span>
+            <div class="big">Faktura 2026-118 je 6 dní po splatnosti</div>
+            <div style="color: rgba(202, 202, 202, 0.7); font-size: 14px">
+              Novák Stavby s.r.o. · 48 400 Kč
+            </div>
+            <div class="btns">
+              <button class="btn" style="background: rgba(255, 255, 255, 0.07); color: #fff">
+                Odložit</button
+              ><button class="btn" style="background: #0071fc; color: #fff">Poslat upomínku</button>
+            </div>
+            <a style="color: #55cfff; font-size: 14px; font-weight: 500; text-decoration: none"
+              >Zobrazit fakturu →</a
+            >
+          </div>
+        </div>
+      </section>
+
+      <section class="sec">
+        <div>
+          <h2>Co se v Bystru mění</h2>
+          <p>
+            Bystro je dnes černobílé v zinc šedých (Tailwind). Libraries.dev je skoro stejně
+            neutrální, jen šedé jsou čistší bez modrého nádechu a přibývá modrý akcent.
+          </p>
+        </div>
+        <div class="tbl">
+          <table>
+            <thead>
+              <tr>
+                <th>Role</th>
+                <th>Bystro teď</th>
+                <th></th>
+                <th>Nově</th>
+              </tr>
+            </thead>
+            <tbody id="map"></tbody>
+          </table>
+        </div>
+        <p class="note">
+          Červenou, zelenou a jantarovou pro Hlídač peněz libraries.dev nemá. Nechávám je z Bystra,
+          protože nesou stav (zaplaceno, po splatnosti, varování) a nemají se plést s akcentem.
+        </p>
+      </section>
+
+      <section class="sec">
+        <div>
+          <h2>Písmo</h2>
+          <p>
+            Libraries.dev používá tři rodiny. Saans je placený font od Displaay, takže pro Bystro
+            doporučuju zůstat u Geistu, který má podobný charakter a je zdarma.
+          </p>
+        </div>
+        <div class="fonts">
+          <div class="font">
+            <span class="label">Nadpisy · Saans 500</span
+            ><span class="s" style="font-weight: 500">Geist jako náhrada</span
+            ><span class="note">H1 42 px, letter-spacing −0,21 px</span>
+          </div>
+          <div class="font">
+            <span class="label">Text · Inter</span
+            ><span class="s" style="font-family: Inter, var(--sans)">Inter / Geist</span
+            ><span class="note">Běžný text a ovládací prvky</span>
+          </div>
+          <div class="font">
+            <span class="label">Popisky · Roboto Mono</span
+            ><span class="s" style="font-family: var(--mono); font-size: 20px">48 400 Kč</span
+            ><span class="note">Mono popisky v barvě #5E6073</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="sec">
+        <div>
+          <h2>Tokeny pro vložení</h2>
+          <p>
+            Stejný obsah je ve složce Bystro jako
+            <code style="font-family: var(--mono)">bystro-barvy-libraries.css</code>.
+          </p>
+        </div>
+        <div class="codebox">
+          <button class="copy" id="copy">Kopírovat CSS</button>
+          <pre id="css"></pre>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const light = [
+        ["Pozadí", "#FDFDFD"],
+        ["Karta / plocha", "#FFFFFF"],
+        ["Stage", "#F9F9F9"],
+        ["Chip", "#F4F4F4"],
+        ["Chip hover", "#F1F1F1"],
+        ["Chip pressed", "#EAE9E9"],
+        ["Skeleton", "#EEEEEF"],
+        ["Linka", "#EEEEEE"],
+        ["Okraj karty", "rgba(0,0,0,.06)"],
+        ["Text", "#0D0D0D"],
+        ["Text muted", "#6C6C6C"],
+        ["Text subtle", "#767676"],
+        ["Text faint", "#8F8F8F"],
+        ["Mono popisek", "#5E6073"],
+        ["Akcent", "#0073E5"],
+        ["Akcent hover", "#0064C8"],
+        ["CTA tlačítko", "#0071FC"],
+        ["Pro štítek ink", "#0062D6"],
+      ];
+      const dark = [
+        ["Pozadí", "#121212"],
+        ["Stage", "#131313"],
+        ["Karta / plocha", "#181818"],
+        ["Pilulka", "#2A2A2A"],
+        ["Menu linka", "#262626"],
+        ["Chip", "rgba(255,255,255,.07)"],
+        ["Linka", "rgba(255,255,255,.08)"],
+        ["Text", "#FFFFFF"],
+        ["Ikony", "#EDEDED"],
+        ["Text muted", "rgba(202,202,202,.7)"],
+        ["Text faint", "#8F8F8F"],
+        ["Akcent", "#55CFFF"],
+        ["Akcent hover", "#74D8FF"],
+        ["CTA tlačítko", "#0071FC"],
+        ["Pro štítek ink", "#7DB4FF"],
+      ];
+      const map = [
+        ["Hlavní text, logo", "#111111", "#0D0D0D"],
+        ["Sekundární text", "#71717A", "#6C6C6C"],
+        ["Placeholder, lomítko v logu", "#A1A1AA", "#8F8F8F"],
+        ["Okraje karet", "#E7E7E9", "rgba(0,0,0,.06)"],
+        ["Šedé chipy", "#F4F4F5", "#F4F4F4"],
+        ["Pozadí stránky", "#FFFFFF", "#FDFDFD"],
+        ["Odkazy, aktivní stav", "#1D4ED8", "#0073E5"],
+        ["Primární tlačítko", "#111111", "#0071FC"],
+      ];
+      const sw = (arr, el) => {
+        document.getElementById(el).innerHTML = arr
+          .map(
+            ([n, c]) =>
+              `<div class="sw"><div class="chipc" style="background:${c}"></div><b>${n}</b><code>${c}</code></div>`,
+          )
+          .join("");
+      };
+      sw(light, "light");
+      sw(dark, "dark");
+      document.getElementById("map").innerHTML = map
+        .map(
+          ([r, a, b]) =>
+            `<tr><td>${r}</td><td><span class="dot" style="background:${a}"></span><code>${a}</code></td><td class="arrow">→</td><td><span class="dot" style="background:${b}"></span><code>${b}</code></td></tr>`,
+        )
+        .join("");
+      const css = `:root {
+  --bz-bg: #FDFDFD;          --bz-surface: #FFFFFF;
+  --bz-stage: #F9F9F9;       --bz-chip: #F4F4F4;
+  --bz-chip-hover: #F1F1F1;  --bz-chip-pressed: #EAE9E9;
+  --bz-text: #0D0D0D;        --bz-text-muted: #6C6C6C;
+  --bz-text-subtle: #767676; --bz-text-faint: #8F8F8F;
+  --bz-label-mono: #5E6073;
+  --bz-border: rgba(0,0,0,.06); --bz-line: #EEEEEE;
+  --bz-accent: #0073E5;      --bz-accent-hover: #0064C8;
+  --bz-accent-soft: rgba(0,115,229,.09);
+  --bz-cta: #0071FC;         --bz-cta-text: #FFFFFF;
+  --bz-tint-bg: rgba(0,113,252,.10); --bz-tint-ink: #0062D6;
+  /* sémantika zůstává z Bystra */
+  --bz-ok: #15803D;   --bz-ok-soft: #F0FDF4;
+  --bz-warn: #B45309; --bz-warn-soft: #FFFBEB;
+  --bz-danger: #DC2626; --bz-danger-soft: #FEF2F2;
+  --bz-radius-pill: 24px;
+  --bz-shadow-pop: 0 0 0 1px rgba(0,0,0,.06), 0 2px 6px rgba(0,0,0,.05), 0 4px 42px rgba(0,0,0,.06);
+}
+:root[data-theme="dark"] {
+  --bz-bg: #121212;          --bz-surface: #181818;
+  --bz-stage: #131313;       --bz-chip: rgba(255,255,255,.07);
+  --bz-chip-hover: rgba(255,255,255,.10);
+  --bz-text: #FFFFFF;        --bz-text-muted: rgba(202,202,202,.7);
+  --bz-text-faint: #8F8F8F;
+  --bz-border: rgba(255,255,255,.08); --bz-line: rgba(255,255,255,.08);
+  --bz-accent: #55CFFF;      --bz-accent-hover: #74D8FF;
+  --bz-accent-soft: rgba(85,207,255,.12);
+  --bz-cta: #0071FC;
+  --bz-tint-bg: rgba(0,113,252,.18); --bz-tint-ink: #7DB4FF;
+}`;
+      document.getElementById("css").textContent = css;
+      const b = document.getElementById("copy");
+      b.addEventListener("click", () => {
+        navigator.clipboard
+          .writeText(css)
+          .then(() => {
+            b.textContent = "Zkopírováno";
+            setTimeout(() => (b.textContent = "Kopírovat CSS"), 1600);
+          })
+          .catch(() => {
+            const r = document.createRange();
+            r.selectNodeContents(document.getElementById("css"));
+            const s = getSelection();
+            s.removeAllRanges();
+            s.addRange(r);
+            b.textContent = "Označeno, zkopíruj ⌘C";
+          });
+      });
+    </script>
+  </body>
+</html>

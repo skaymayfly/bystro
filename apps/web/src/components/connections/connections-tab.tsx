@@ -2,7 +2,6 @@ import { listConnections } from "@bystro/db";
 import type { FakturoidAccount } from "@bystro/integrations";
 
 import { SoonBadge } from "@/components/bits";
-import { Mascot } from "@/components/mascot/mascot";
 import { Button } from "@/components/ui/button";
 import { connectOutcomeNotice } from "@/lib/connection-status";
 import { PROVIDERS } from "@/lib/content";
@@ -68,20 +67,18 @@ export function ConnectOutcomeNotice({
   if (notice === null) {
     return null;
   }
-  const failed = notice.tone === "error";
   return (
-    <div
-      role={failed ? "alert" : "status"}
+    <p
+      role={notice.tone === "error" ? "alert" : "status"}
       className={cn(
-        "flex items-center gap-3 rounded-box border px-4 py-3 text-sm leading-normal",
-        failed
+        "rounded-box border px-4 py-3 text-sm leading-normal",
+        notice.tone === "error"
           ? "border-danger/30 bg-danger-soft text-danger-strong"
           : "border-line-strong bg-card text-ink-2",
       )}
     >
-      {failed && <Mascot mood="sad" size="sm" />}
-      <p>{notice.text}</p>
-    </div>
+      {notice.text}
+    </p>
   );
 }
 

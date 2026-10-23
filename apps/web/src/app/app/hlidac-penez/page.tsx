@@ -1,3 +1,4 @@
+import { TrendingUp } from "lucide-react";
 import type { Metadata } from "next";
 
 import { PageHeader, ScreenEmpty, SoonBadge } from "@/components/bits";
@@ -16,7 +17,7 @@ export default function CashflowPage() {
       />
 
       <ScreenEmpty
-        mascot="sleep"
+        icon={<TrendingUp aria-hidden size={28} strokeWidth={1.6} />}
         title="Bez banky nevím, kolik ti zbude"
         text="Propoj účet jen pro čtení. Spojím pohyby s fakturami a spočítám předpověď na 30, 60 a 90 dní."
       >

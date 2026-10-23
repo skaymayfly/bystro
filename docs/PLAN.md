@@ -275,6 +275,8 @@ Výsledek fáze: uživatel připojí Fakturoid nebo iDoklad a vidí své skuteč
 
 ### - [x] 2.9 Maskot Bystrouš
 
+> Maskot byl v kroku 2.10 na přání uživatele odebraný.
+
 **Cíl:** značka, která ožila: maskot z `docs/prototyp/maskot/` v aplikaci.
 
 **Udělej:**
@@ -284,6 +286,18 @@ Výsledek fáze: uživatel připojí Fakturoid nebo iDoklad a vidí své skuteč
 - Zapsat do ADR 0002.
 
 **Hotovo když:** maskot je vidět na uvedených místech na počítači i na mobilu, má popisek pro čtečky a test komponenty i E2E procházejí.
+
+### - [x] 2.10 Paleta podle libraries.dev a tmavý režim
+
+**Cíl:** nový branding podle podkladu `docs/prototyp/paleta-libraries-dev.html`, bez maskota.
+
+**Udělej:**
+
+- Barvy jako proměnné pro světlý i tmavý režim; tmavý podle systému a přepínač v Nastavení.
+- Hlavní tlačítka modrá pilulka, akcent na odkazech a aktivním stavu, segmentové přepínače, mono popisky, jemný pohyb podle libraries.dev.
+- Odebrat maskota Bystrouše celého. Zapsat do ADR 0003.
+
+**Hotovo když:** všechny obrazovky vypadají dobře v obou režimech na počítači i mobilu, kontrast textu splňuje WCAG AA a testy procházejí.
 
 ---
 
