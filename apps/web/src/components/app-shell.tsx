@@ -31,7 +31,7 @@ function SidebarLink({ item, active }: { item: NavItem; active: boolean }) {
         active ? "bg-card text-ink hover:bg-card" : "text-ink-2",
       )}
     >
-      <NavIcon name={item.icon} className={active ? "text-ink" : "text-ink-3"} />
+      <NavIcon name={item.icon} className={active ? "text-link" : "text-ink-3"} />
       <span className="hidden flex-1 min-[1000px]:inline">{item.label}</span>
     </Link>
   );
@@ -89,7 +89,7 @@ export function AppShell({
         </nav>
 
         <div className="mt-auto flex flex-col items-center gap-3 border-t border-line-soft pt-4 min-[1000px]:flex-row">
-          <span className="flex size-10 flex-none items-center justify-center rounded-full bg-ink text-sm font-bold text-white">
+          <span className="flex size-10 flex-none items-center justify-center rounded-full bg-ink text-sm font-bold text-on-ink">
             {initials(userName)}
           </span>
           <span className="hidden min-w-0 flex-1 min-[1000px]:block">
@@ -106,7 +106,11 @@ export function AppShell({
           <SignOutButton className="text-sm" />
         </header>
         <main className="min-w-0 flex-1 border-t border-line bg-card md:mt-3 md:rounded-tl-panel md:border-l">
-          <div className="mx-auto w-full max-w-[1440px] px-4 pt-2 pb-28 sm:px-6 md:px-10 md:pt-7 md:pb-12">
+          {/* Keyed by the address, so that every screen fades in as on libraries.dev. */}
+          <div
+            key={pathname}
+            className="page-in mx-auto w-full max-w-[1440px] px-4 pt-2 pb-28 sm:px-6 md:px-10 md:pt-7 md:pb-12"
+          >
             {children}
           </div>
         </main>
@@ -126,7 +130,7 @@ export function AppShell({
               aria-label={item.label}
               className={cn(
                 "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-[11px] font-medium",
-                active ? "text-ink" : "text-ink-3",
+                active ? "text-link" : "text-ink-3",
               )}
             >
               <NavIcon name={item.icon} />

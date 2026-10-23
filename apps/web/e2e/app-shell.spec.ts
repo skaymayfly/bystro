@@ -2,27 +2,16 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 
 import { completeOnboarding, createSignedInUser, KNOWN_COMPANY_NAME, signIn } from "./helpers";
 
-/** Each screen with a text that only its empty state shows, and Bystrouš where it appears. */
+/** Each screen with a text that only its empty state shows. */
 const SCREENS = [
-  { label: "Přehled", path: "/app", text: "Faktury zatím nevidím", mascot: null },
-  { label: "Asistent", path: "/app/asistent", text: "Na co se chceš zeptat?", mascot: null },
-  {
-    label: "Hlídač peněz",
-    path: "/app/hlidac-penez",
-    text: "Bez banky nevím, kolik ti zbude",
-    mascot: "Bystrouš spí",
-  },
-  {
-    label: "Faktury",
-    path: "/app/faktury",
-    text: "Zatím tu žádné faktury nejsou",
-    mascot: "Bystrouš spí",
-  },
+  { label: "Přehled", path: "/app", text: "Faktury zatím nevidím" },
+  { label: "Asistent", path: "/app/asistent", text: "Na co se chceš zeptat?" },
+  { label: "Hlídač peněz", path: "/app/hlidac-penez", text: "Bez banky nevím, kolik ti zbude" },
+  { label: "Faktury", path: "/app/faktury", text: "Zatím tu žádné faktury nejsou" },
   {
     label: "Nastavení",
     path: "/app/nastaveni",
     text: "Profil, propojení a jak často se ti mám ozývat.",
-    mascot: null,
   },
 ] as const;
 
@@ -49,8 +38,13 @@ test.beforeAll(async ({ browser }, testInfo) => {
 async function signedInPage(
   browser: Browser,
   viewport: { width: number; height: number },
+  colorScheme: "light" | "dark" = "light",
 ): Promise<Page> {
-  const context = await browser.newContext({ storageState: storageStatePath, viewport });
+  const context = await browser.newContext({
+    storageState: storageStatePath,
+    viewport,
+    colorScheme,
+  });
   return context.newPage();
 }
 
@@ -60,9 +54,6 @@ async function visitEveryScreen(page: Page, shots: string) {
     await nav.getByRole("link", { name: screen.label }).click();
     await expect(page).toHaveURL(screen.path);
     await expect(page.getByText(screen.text)).toBeVisible();
-    if (screen.mascot !== null) {
-      await expect(page.getByRole("img", { name: screen.mascot })).toBeVisible();
-    }
     await expect(nav.getByRole("link", { name: screen.label })).toHaveAttribute(
       "aria-current",
       "page",
@@ -91,6 +82,42 @@ test("navigace na počítači projde všechny obrazovky s prázdnými stavy", as
   await expect(sidebar.getByText(email)).toBeVisible();
 
   await visitEveryScreen(page, "desktop");
+  await page.context().close();
+});
+
+test("tmavý režim podle systému: obrazovky jsou tmavé a nic nepřetéká", async ({ browser }) => {
+  for (const [viewport, shots] of [
+    [DESKTOP, "dark-desktop"],
+    [MOBILE, "dark-mobile"],
+  ] as const) {
+    const page = await signedInPage(browser, viewport, "dark");
+    await page.goto("/app");
+    const background = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    expect(background).toBe("rgb(18, 18, 18)");
+    await visitEveryScreen(page, shots);
+    await page.context().close();
+  }
+});
+
+test("vzhled jde v Nastavení přepnout a volba vydrží", async ({ browser }) => {
+  const page = await signedInPage(browser, DESKTOP, "light");
+  await page.goto("/app/nastaveni");
+  const html = page.locator("html");
+  const body = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  expect(await body()).toBe("rgb(253, 253, 253)");
+
+  await page.getByRole("radio", { name: "Tmavý" }).click();
+  await expect(html).toHaveAttribute("data-theme", "dark");
+  await expect.poll(body).toBe("rgb(18, 18, 18)");
+
+  // The choice survives a reload, without a flash of the other theme.
+  await page.reload();
+  await expect(html).toHaveAttribute("data-theme", "dark");
+  await expect(page.getByRole("radio", { name: "Tmavý" })).toHaveAttribute("aria-checked", "true");
+
+  await page.getByRole("radio", { name: "Podle systému" }).click();
+  await expect(html).not.toHaveAttribute("data-theme", /./);
+  await expect.poll(body).toBe("rgb(253, 253, 253)");
   await page.context().close();
 });
 

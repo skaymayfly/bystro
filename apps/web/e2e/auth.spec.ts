@@ -20,6 +20,11 @@ test("registrace → odhlášení → přihlášení", async ({ page }) => {
   await expect(page).toHaveURL(/\/prihlaseni\?next=%2Fapp$/);
 
   await expect(page.getByRole("heading", { name: "Vítej zpátky v Bystro" })).toBeVisible();
+  for (const colorScheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme });
+    await page.screenshot({ path: test.info().outputPath(`prihlaseni-${colorScheme}.png`) });
+  }
+  await page.emulateMedia({ colorScheme: "light" });
   await signIn(page, email);
 
   // Signed in again; still no company, so onboarding comes first.

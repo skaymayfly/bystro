@@ -20,41 +20,18 @@ export default function GlobalError({
 
   return (
     <html lang="cs">
-      <body
-        style={{
-          margin: 0,
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 16,
-          padding: 24,
-          background: "#ffffff",
-          color: "#111111",
-          fontFamily: "system-ui, sans-serif",
-          textAlign: "center",
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: 28 }}>Něco se pokazilo</h1>
-        <p style={{ margin: 0, color: "#71717a" }}>
-          Chyba je na naší straně. Zkus to prosím znovu.
-        </p>
-        <button
-          type="button"
-          onClick={reset}
-          style={{
-            border: "none",
-            borderRadius: 999,
-            padding: "0 20px",
-            height: 46,
-            background: "#111111",
-            color: "#fff",
-            fontSize: 15,
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
+      {/* Its own minimal palette (libraries.dev colours), light and dark by the system. */}
+      <style>{`
+        .ge{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;background:#fdfdfd;color:#0d0d0d;font-family:system-ui,sans-serif;text-align:center}
+        .ge p{margin:0;color:#6c6c6c}
+        .ge h1{margin:0;font-size:28px;font-weight:500}
+        .ge button{border:0;border-radius:24px;padding:0 20px;height:46px;background:#0071fc;color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+        @media (prefers-color-scheme: dark){.ge{background:#121212;color:#fff}.ge p{color:rgba(202,202,202,.7)}}
+      `}</style>
+      <body className="ge">
+        <h1>Něco se pokazilo</h1>
+        <p>Chyba je na naší straně. Zkus to prosím znovu.</p>
+        <button type="button" onClick={reset}>
           Zkusit znovu
         </button>
       </body>

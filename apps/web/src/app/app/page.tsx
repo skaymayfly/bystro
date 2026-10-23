@@ -15,7 +15,7 @@ import { loadInvoiceOverview } from "@/server/invoices";
 
 export const metadata: Metadata = { title: "Přehled – Bystro" };
 
-const detailLinkClass = "text-[13px] text-ink-3 hover:text-ink";
+const detailLinkClass = "text-[13px] text-link hover:text-link-hover";
 
 /**
  * Přehled with nothing connected yet. The prototype only draws it full of data, so the

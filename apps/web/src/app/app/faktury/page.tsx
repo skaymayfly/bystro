@@ -6,11 +6,11 @@ import {
   sortInvoiceRows,
   type InvoiceFilter,
 } from "@bystro/core";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight, FileText, Search } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Card, PageHeader, ScreenEmpty } from "@/components/bits";
+import { Card, PageHeader, ScreenEmpty, SEGMENTED_BAR, segmentClass } from "@/components/bits";
 import { loadConnections } from "@/components/connections/connections-tab";
 import { InvoicingCta } from "@/components/connections/invoicing-cta";
 import { SourceNote, StatusPill } from "@/components/invoices/invoice-bits";
@@ -57,7 +57,7 @@ export default async function InvoicesPage(props: PageProps<"/app/faktury">) {
       <div className="flex flex-col gap-[22px]">
         <PageHeader title="Faktury" text="Fakturace není propojená" />
         <ScreenEmpty
-          mascot="sleep"
+          icon={<FileText aria-hidden size={28} strokeWidth={1.6} />}
           title="Zatím tu žádné faktury nejsou"
           text="Propoj svůj fakturační systém. Načtu faktury za poslední rok a začnu hlídat splatnosti."
         >
@@ -78,7 +78,7 @@ export default async function InvoicesPage(props: PageProps<"/app/faktury">) {
       <div className="flex flex-col gap-[22px]">
         <PageHeader title="Faktury" text={sources.connected} />
         <ScreenEmpty
-          mascot={loading ? "think" : "sleep"}
+          icon={<FileText aria-hidden size={28} strokeWidth={1.6} />}
           title={loading ? "Faktury se načítají" : `${sources.inside} zatím žádné faktury nevidím`}
           text={
             loading
@@ -164,19 +164,13 @@ export default async function InvoicesPage(props: PageProps<"/app/faktury">) {
 
       <Card className="gap-2.5 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3 px-1 pt-1 pb-2">
-          <nav
-            aria-label="Filtr faktur"
-            className="flex flex-wrap rounded-[26px] border border-line-soft bg-card p-[5px]"
-          >
+          <nav aria-label="Filtr faktur" className={SEGMENTED_BAR}>
             {FILTER_OPTIONS.map((option) => (
               <Link
                 key={option.filter}
                 href={invoiceListHref({ ...state, filter: option.filter })}
                 aria-current={filter === option.filter ? "page" : undefined}
-                className={cn(
-                  "rounded-full px-[18px] py-2.5 text-sm font-medium whitespace-nowrap transition-colors",
-                  filter === option.filter ? "bg-ink text-white" : "text-ink-3 hover:text-ink",
-                )}
+                className={segmentClass(filter === option.filter)}
               >
                 {option.label}
               </Link>
@@ -207,16 +201,14 @@ export default async function InvoicesPage(props: PageProps<"/app/faktury">) {
 
         <div className="overflow-x-auto">
           <div className="min-w-[720px]">
-            <div
-              className={cn(ROW_GRID, "py-2.5 text-xs font-medium tracking-[0.02em] text-ink-3")}
-            >
+            <div className={cn(ROW_GRID, "label-mono py-2.5")}>
               {SORT_OPTIONS.map((option) => (
                 <Link
                   key={option.sort}
                   href={invoiceListHref({ ...state, sort: option.sort })}
                   aria-label={`Seřadit podle: ${option.label}`}
                   className={cn(
-                    "uppercase hover:text-ink",
+                    "hover:text-link",
                     option.sort === "amount" && "text-right",
                     sort === option.sort && "text-ink",
                   )}
@@ -225,7 +217,7 @@ export default async function InvoicesPage(props: PageProps<"/app/faktury">) {
                   {sort === option.sort && <span aria-hidden> ↓</span>}
                 </Link>
               ))}
-              <span className="uppercase">Stav</span>
+              <span>Stav</span>
               <span />
             </div>
             <ul aria-label="Faktury">

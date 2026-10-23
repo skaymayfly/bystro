@@ -1,21 +1,19 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { Mascot } from "@/components/mascot/mascot";
-import type { MascotMood } from "@/lib/mascot";
 import { cn } from "@/lib/utils";
 
 /** The Bystro mark: a white slash on a black rounded square. */
 export function LogoMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 64 64" aria-hidden className={cn("size-8 flex-none", className)}>
-      <rect width="64" height="64" rx="16" fill="#111111" />
+      <rect width="64" height="64" rx="16" className="fill-ink" />
       <line
         x1="25"
         y1="47"
         x2="39"
         y2="17"
-        stroke="#FFFFFF"
+        className="stroke-on-ink"
         strokeWidth="8"
         strokeLinecap="round"
       />
@@ -121,28 +119,20 @@ export function PageHeader({
 /** Full-width empty state of a whole screen. */
 export function ScreenEmpty({
   icon,
-  mascot,
   title,
   text,
   children,
 }: {
-  /** An icon in a tile; ignored when `mascot` is given. */
-  icon?: ReactNode;
-  /** Bystrouš in this mood instead of the icon. */
-  mascot?: MascotMood;
+  icon: ReactNode;
   title: string;
   text: string;
   children?: ReactNode;
 }) {
   return (
     <Card className="items-center gap-3.5 px-6 py-16 text-center sm:px-8">
-      {mascot !== undefined ? (
-        <Mascot mood={mascot} size="lg" className="max-w-[45vw] max-sm:h-auto" />
-      ) : (
-        <span className="flex size-16 items-center justify-center rounded-[20px] bg-fill text-ink">
-          {icon}
-        </span>
-      )}
+      <span className="flex size-16 items-center justify-center rounded-[20px] bg-fill text-ink">
+        {icon}
+      </span>
       <h2 className="max-w-[520px] text-[26px] leading-tight font-medium tracking-[-0.02em]">
         {title}
       </h2>
@@ -182,26 +172,32 @@ export function Panel({
 
 /** "Nothing here yet" body of a Přehled panel. */
 export function PanelEmpty({
-  mascot,
   title,
   text,
   children,
 }: {
-  /** Bystrouš in this mood above the title. */
-  mascot?: MascotMood;
   title: string;
   text: string;
   children?: ReactNode;
 }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-1 px-2 py-6 text-center">
-      {mascot !== undefined && <Mascot mood={mascot} size="md" className="mb-2" />}
       <h3 className="text-sm font-medium text-ink">{title}</h3>
       <p className="max-w-[360px] text-sm leading-normal text-ink-3">{text}</p>
       {children !== undefined && (
         <div className="mt-3 flex flex-wrap items-center justify-center gap-2">{children}</div>
       )}
     </div>
+  );
+}
+
+/** A segmented control as on libraries.dev: a grey bar, the chosen segment a raised pill. */
+export const SEGMENTED_BAR = "flex w-fit max-w-full flex-wrap rounded-full bg-chip p-1";
+
+export function segmentClass(selected: boolean): string {
+  return cn(
+    "rounded-full px-[18px] py-2 text-sm font-medium whitespace-nowrap transition-[background-color,color] duration-200 ease-smooth",
+    selected ? "bg-pill text-ink shadow-soft" : "text-ink-3 hover:text-ink",
   );
 }
 
@@ -245,21 +241,14 @@ export function PillOptions({
   }
 
   return (
-    <div
-      role="group"
-      aria-label={label}
-      className="flex flex-wrap self-start rounded-[26px] border border-line-soft bg-card p-[5px]"
-    >
+    <div role="group" aria-label={label} className={cn(SEGMENTED_BAR, "self-start")}>
       {options.map((option) => (
         <button
           key={option}
           type="button"
           disabled
           aria-pressed={option === selected}
-          className={cn(
-            "cursor-not-allowed rounded-full px-[18px] py-2.5 text-sm font-medium whitespace-nowrap",
-            option === selected ? "bg-ink text-white" : "text-ink-3",
-          )}
+          className={cn(segmentClass(option === selected), "cursor-not-allowed")}
         >
           {option}
         </button>
