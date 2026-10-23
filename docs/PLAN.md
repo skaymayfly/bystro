@@ -299,7 +299,7 @@ Výsledek fáze: uživatel připojí Fakturoid nebo iDoklad a vidí své skuteč
 
 **Hotovo když:** všechny obrazovky vypadají dobře v obou režimech na počítači i mobilu, kontrast textu splňuje WCAG AA a testy procházejí.
 
-### - [ ] 2.11 Rozložení podle Revolut Business a Stripe
+### - [x] 2.11 Rozložení podle Revolut Business a Stripe
 
 **Cíl:** aplikace působí jako finanční nástroj (Revolut Business, Stripe Dashboard); barvy a písmo z ADR 0003 zůstávají.
 
