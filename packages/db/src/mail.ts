@@ -7,7 +7,7 @@ import type { Db, DbExecutor } from "./client";
 import { decrypt, encrypt } from "./crypto";
 import { requireUuid } from "./ids";
 import type { SyncScope, UpsertCounts } from "./invoices";
-import { mailMessages, mailThreads } from "./schema";
+import { mailMessages, mailThreads, type StoredMailAddress } from "./schema";
 
 /**
  * Mail of one connected mailbox. Every function takes the organization (through the
@@ -317,4 +317,209 @@ export async function listMailThreads(db: Db, scope: SyncScope): Promise<StoredM
       ),
     )
     .orderBy(sql`${mailThreads.lastMessageAt} desc`, mailThreads.externalId);
+}
+
+// ---------------------------------------------------------------------------------------
+// Reading for the Pošta screen
+// ---------------------------------------------------------------------------------------
+
+export const MAIL_FOLDERS = ["inbox", "sent"] as const;
+/** Doručené = a message of the thread is in INBOX; Odeslané = one was sent. */
+export type MailFolder = (typeof MAIL_FOLDERS)[number];
+
+export interface MailThreadListItem {
+  externalId: string;
+  subject: string | null;
+  lastMessageAt: Date;
+  messageCount: number;
+  unread: boolean;
+  hasAttachments: boolean;
+  /** Who the thread is with: the last sender other than the user, or for Odeslané the recipient. */
+  counterpart: StoredMailAddress | null;
+  /** Preview of the last message, decrypted. */
+  snippet: string;
+}
+
+const LIST_LIMIT = 100;
+
+/** `%` and `_` are wildcards in LIKE; a search for them must find them literally. */
+const likePattern = (query: string) => `%${query.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
+
+/**
+ * Threads of a folder, most recent first, optionally only those whose subject, sender or
+ * recipients contain `query`. The body is encrypted and therefore not searched.
+ */
+export async function listMailFolder(
+  db: Db,
+  scope: SyncScope,
+  options: { folder: MailFolder; query?: string; limit?: number },
+  encryptionKey: Buffer,
+): Promise<MailThreadListItem[]> {
+  const valid = validScope(scope);
+  const query = options.query?.trim() ?? "";
+  const conditions = [
+    eq(mailThreads.organizationId, valid.organizationId),
+    eq(mailThreads.connectionId, valid.connectionId),
+    options.folder === "inbox" ? eq(mailThreads.inInbox, true) : eq(mailThreads.hasSent, true),
+  ];
+  if (query !== "") {
+    const pattern = likePattern(query);
+    conditions.push(sql`exists (
+      select 1 from ${mailMessages} m
+      where m.organization_id = ${mailThreads.organizationId}
+        and m.connection_id = ${mailThreads.connectionId}
+        and m.thread_external_id = ${mailThreads.externalId}
+        and (m.subject ilike ${pattern} or m.from_name ilike ${pattern}
+          or m.from_address ilike ${pattern} or m.to_addresses::text ilike ${pattern}
+          or m.cc_addresses::text ilike ${pattern})
+    )`);
+  }
+  const threads = await db
+    .select()
+    .from(mailThreads)
+    .where(and(...conditions))
+    .orderBy(sql`${mailThreads.lastMessageAt} desc`, mailThreads.externalId)
+    .limit(Math.min(options.limit ?? LIST_LIMIT, LIST_LIMIT));
+  if (threads.length === 0) {
+    return [];
+  }
+
+  const messages = await db
+    .select({
+      threadExternalId: mailMessages.threadExternalId,
+      labels: mailMessages.labels,
+      fromName: mailMessages.fromName,
+      fromAddress: mailMessages.fromAddress,
+      toAddresses: mailMessages.toAddresses,
+      snippetEncrypted: mailMessages.snippetEncrypted,
+      hasAttachments: mailMessages.hasAttachments,
+    })
+    .from(mailMessages)
+    .where(
+      and(
+        ofConnection(valid),
+        inArray(
+          mailMessages.threadExternalId,
+          threads.map((thread) => thread.externalId),
+        ),
+      ),
+    )
+    .orderBy(sql`${mailMessages.receivedAt} desc`, mailMessages.externalId);
+
+  return threads.map((thread) => {
+    const ofThread = messages.filter((message) => message.threadExternalId === thread.externalId);
+    const last = ofThread[0];
+    const lastSent = ofThread.find((message) => message.labels.includes("SENT"));
+    // In Doručené the other side is whoever wrote last, not the user's own reply.
+    const lastReceived = ofThread.find((message) => !message.labels.includes("SENT")) ?? last;
+    const counterpart =
+      options.folder === "sent"
+        ? (lastSent?.toAddresses[0] ?? null)
+        : lastReceived === undefined || lastReceived.fromAddress === null
+          ? null
+          : { name: lastReceived.fromName, address: lastReceived.fromAddress };
+    return {
+      externalId: thread.externalId,
+      subject: thread.subject,
+      lastMessageAt: thread.lastMessageAt,
+      messageCount: thread.messageCount,
+      unread: thread.unread,
+      hasAttachments: ofThread.some((message) => message.hasAttachments),
+      counterpart,
+      snippet: last === undefined ? "" : decrypt(last.snippetEncrypted, encryptionKey),
+    };
+  });
+}
+
+/** How many threads in Doručené have an unread message. */
+export async function countUnreadInboxThreads(db: Db, scope: SyncScope): Promise<number> {
+  const valid = validScope(scope);
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(mailThreads)
+    .where(
+      and(
+        eq(mailThreads.organizationId, valid.organizationId),
+        eq(mailThreads.connectionId, valid.connectionId),
+        eq(mailThreads.inInbox, true),
+        eq(mailThreads.unread, true),
+      ),
+    );
+  return row?.count ?? 0;
+}
+
+export interface MailThreadMessage {
+  externalId: string;
+  receivedAt: Date;
+  labels: MailLabel[];
+  from: StoredMailAddress | null;
+  to: StoredMailAddress[];
+  cc: StoredMailAddress[];
+  subject: string | null;
+  /** Plain text, decrypted. Untrusted: show as text only, never as HTML. */
+  bodyText: string;
+  hasAttachments: boolean;
+}
+
+export interface MailThreadDetail {
+  externalId: string;
+  subject: string | null;
+  inInbox: boolean;
+  /** Oldest first. */
+  messages: MailThreadMessage[];
+}
+
+/** One thread of the connection with its messages decrypted, or `null` if there is none. */
+export async function getMailThread(
+  db: Db,
+  scope: SyncScope,
+  threadExternalId: string,
+  encryptionKey: Buffer,
+): Promise<MailThreadDetail | null> {
+  const valid = validScope(scope);
+  const rows = await db
+    .select()
+    .from(mailMessages)
+    .where(and(ofConnection(valid), eq(mailMessages.threadExternalId, threadExternalId)))
+    .orderBy(mailMessages.receivedAt, mailMessages.externalId);
+  const first = rows[0];
+  if (first === undefined) {
+    return null;
+  }
+  const messages = rows.map((row) => ({
+    externalId: row.externalId,
+    receivedAt: row.receivedAt,
+    labels: trackedLabels(row.labels),
+    from: row.fromAddress === null ? null : { name: row.fromName, address: row.fromAddress },
+    to: row.toAddresses,
+    cc: row.ccAddresses,
+    subject: row.subject,
+    bodyText: decrypt(row.bodyEncrypted, encryptionKey),
+    hasAttachments: row.hasAttachments,
+  }));
+  return {
+    externalId: threadExternalId,
+    subject: first.subject,
+    inInbox: messages.some((message) => message.labels.includes("INBOX")),
+    messages,
+  };
+}
+
+/**
+ * Takes a thread out of Doručené in Bystro after it was archived at the provider. Returns
+ * how many messages changed; 0 when the thread is unknown here.
+ */
+export async function archiveMailThread(
+  db: Db,
+  scope: SyncScope,
+  threadExternalId: string,
+): Promise<number> {
+  const valid = validScope(scope);
+  const rows = await db
+    .update(mailMessages)
+    .set({ labels: sql`array_remove(${mailMessages.labels}, 'INBOX')`, syncedAt: new Date() })
+    .where(and(ofConnection(valid), eq(mailMessages.threadExternalId, threadExternalId)))
+    .returning({ id: mailMessages.id });
+  await refreshMailThreads(db, valid);
+  return rows.length;
 }

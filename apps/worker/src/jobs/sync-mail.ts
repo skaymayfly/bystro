@@ -9,6 +9,7 @@ import {
   type IntegrationConnection,
 } from "@bystro/db";
 import {
+  freshConnectionTokens,
   OAuthError,
   syncMail,
   type MailboxReader,
@@ -17,7 +18,6 @@ import {
 
 import { PermanentJobError, type JobHandler } from "../processing";
 import { RateLimitedError, waitForRateLimit, type RateLimiter } from "../rate-limiter";
-import { freshConnectionTokens } from "./connection-tokens";
 
 /** Everything needed to read one mailbox on behalf of one connection. */
 export interface MailboxSetup {

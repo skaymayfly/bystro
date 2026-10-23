@@ -5,7 +5,7 @@ import {
   type Db,
   type IntegrationConnection,
 } from "@bystro/db";
-import { refreshAccessToken, type OAuthProviderConfig } from "@bystro/integrations";
+import { refreshAccessToken, type OAuthProviderConfig } from "./oauth";
 
 /** Refresh the access token when it expires within this time. */
 const REFRESH_AHEAD_MS = 5 * 60 * 1000;
@@ -19,7 +19,8 @@ export interface TokenRefreshDeps {
 }
 
 /**
- * Returns tokens that are valid for at least a few more minutes: the stored ones, or new
+ * Returns tokens that are valid for at least a few more minutes (used by the worker's syncs
+ * and by the web app when it calls a provider on the user's request): the stored ones, or new
  * ones from the provider, which are stored encrypted right away. Throws `reauth_required`
  * when the token cannot be refreshed; tokens are only ever held in memory.
  */

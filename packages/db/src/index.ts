@@ -76,14 +76,23 @@ export {
   type UpsertCounts,
 } from "./invoices";
 export {
+  archiveMailThread,
+  countUnreadInboxThreads,
   deleteMailMessages,
   deleteMailReceivedBefore,
+  getMailThread,
+  listMailFolder,
   listMailMessages,
   listMailThreads,
+  MAIL_FOLDERS,
   listStoredMailLabels,
   refreshMailThreads,
   setMailLabels,
   upsertMailMessages,
+  type MailFolder,
+  type MailThreadDetail,
+  type MailThreadListItem,
+  type MailThreadMessage,
   type StoredMailMessage,
   type StoredMailThread,
 } from "./mail";

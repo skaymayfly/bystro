@@ -8,8 +8,12 @@ import { createDb } from "./client";
 import { disconnectConnection, saveConnection } from "./integrations";
 import type { SyncScope } from "./invoices";
 import {
+  archiveMailThread,
+  countUnreadInboxThreads,
   deleteMailMessages,
   deleteMailReceivedBefore,
+  getMailThread,
+  listMailFolder,
   listMailMessages,
   listMailThreads,
   listStoredMailLabels,
@@ -185,5 +189,105 @@ describe("mail storage", () => {
     expect(
       (await listStoredMailLabels(db, { ...first, connectionId: second.connectionId })).size,
     ).toBe(0);
+  });
+});
+
+describe("mail for the Pošta screen", () => {
+  async function filled(name: string) {
+    const scope = await mailbox(name);
+    await upsertMailMessages(
+      db,
+      scope,
+      [
+        message("in1", {
+          threadExternalId: "t-faktura",
+          receivedAt: new Date("2026-10-20T08:00:00Z"),
+          labels: ["INBOX", "UNREAD"],
+          subject: "Faktura 2026-0142",
+          hasAttachments: true,
+        }),
+        message("re1", {
+          threadExternalId: "t-faktura",
+          receivedAt: new Date("2026-10-21T08:00:00Z"),
+          labels: ["SENT"],
+          from: { name: "Petr Dvořák", address: "petr@dvorak.test" },
+          to: [{ name: "Jana Nová", address: "jana@example.test" }],
+          subject: "Re: Faktura 2026-0142",
+          snippet: "Děkuji, zaplatím",
+          bodyText: "Děkuji, zaplatím do pátku.",
+        }),
+        message("in2", {
+          threadExternalId: "t-schuzka",
+          receivedAt: new Date("2026-10-22T08:00:00Z"),
+          labels: ["INBOX"],
+          from: { name: "Lenka Horáková", address: "lenka@horakova.test" },
+          subject: "Schůzka 100% potvrzena",
+          snippet: "Vidíme se ve čtvrtek",
+        }),
+      ],
+      key,
+    );
+    await refreshMailThreads(db, scope);
+    return scope;
+  }
+
+  it("lists Doručené and Odeslané with the counterpart and the last preview", async () => {
+    const scope = await filled("Pošta složky");
+    const inbox = await listMailFolder(db, scope, { folder: "inbox" }, key);
+    expect(inbox.map((thread) => thread.externalId)).toEqual(["t-schuzka", "t-faktura"]);
+    expect(inbox[1]).toMatchObject({
+      subject: "Faktura 2026-0142",
+      messageCount: 2,
+      unread: true,
+      hasAttachments: true,
+      // The thread is with Jana; the last message (previewed) is the user's own reply.
+      counterpart: { name: "Jana Nová", address: "jana@example.test" },
+      snippet: "Děkuji, zaplatím",
+    });
+
+    const sent = await listMailFolder(db, scope, { folder: "sent" }, key);
+    expect(sent.map((thread) => thread.externalId)).toEqual(["t-faktura"]);
+    expect(sent[0]?.counterpart).toEqual({ name: "Jana Nová", address: "jana@example.test" });
+    expect(await countUnreadInboxThreads(db, scope)).toBe(1);
+  });
+
+  it("searches subject, names and addresses, and takes % literally", async () => {
+    const scope = await filled("Pošta hledání");
+    const ids = async (query: string) =>
+      (await listMailFolder(db, scope, { folder: "inbox", query }, key)).map(
+        (thread) => thread.externalId,
+      );
+    expect(await ids("faktura")).toEqual(["t-faktura"]);
+    expect(await ids("horakova.test")).toEqual(["t-schuzka"]);
+    expect(await ids("Jana")).toEqual(["t-faktura"]);
+    expect(await ids("100%")).toEqual(["t-schuzka"]);
+    expect(await ids("%")).toEqual(["t-schuzka"]);
+    // The body is encrypted: a word only in the body is not found.
+    expect(await ids("pátku")).toEqual([]);
+  });
+
+  it("opens a thread oldest first with decrypted text, and archives it locally", async () => {
+    const scope = await filled("Pošta detail");
+    const thread = await getMailThread(db, scope, "t-faktura", key);
+    expect(thread).toMatchObject({ subject: "Faktura 2026-0142", inInbox: true });
+    expect(thread?.messages.map((item) => item.externalId)).toEqual(["in1", "re1"]);
+    expect(thread?.messages[1]?.bodyText).toBe("Děkuji, zaplatím do pátku.");
+    expect(await getMailThread(db, scope, "unknown", key)).toBeNull();
+
+    expect(await archiveMailThread(db, scope, "t-faktura")).toBe(2);
+    expect(
+      (await listMailFolder(db, scope, { folder: "inbox" }, key)).map((item) => item.externalId),
+    ).toEqual(["t-schuzka"]);
+    expect((await getMailThread(db, scope, "t-faktura", key))?.inInbox).toBe(false);
+    expect((await listStoredMailLabels(db, scope)).get("in1")).toEqual(["UNREAD"]);
+  });
+
+  it("shows nothing of another organization", async () => {
+    const first = await filled("Pošta čtení A");
+    const second = await mailbox("Pošta čtení B");
+    expect(await listMailFolder(db, second, { folder: "inbox" }, key)).toEqual([]);
+    expect(await getMailThread(db, second, "t-faktura", key)).toBeNull();
+    expect(await archiveMailThread(db, second, "t-faktura")).toBe(0);
+    expect(await listMailFolder(db, first, { folder: "inbox" }, key)).toHaveLength(2);
   });
 });

@@ -29,6 +29,7 @@ import { getGmailProfile, GMAIL_SOURCE, GmailNotFoundError, type GmailClient } f
 /** Quota units per call, from Google's quota table. */
 export const GMAIL_COST = {
   list: 5,
+  modifyThread: 10,
   getFull: 60,
   getMinimal: 20,
   history: 2,
@@ -241,6 +242,26 @@ export async function listGmailHistory(
     nextPageToken: parsed.data.nextPageToken ?? null,
     historyId: parsed.data.historyId,
   };
+}
+
+/**
+ * Archives a thread in Gmail (`threads.modify` without the INBOX label): every message of
+ * the thread leaves Doručené, nothing is deleted. Documentation (read 2026-10-24):
+ * https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.threads/modify
+ * Returns `false` when the thread no longer exists in the mailbox.
+ */
+export async function archiveGmailThread(client: GmailClient, threadId: string): Promise<boolean> {
+  try {
+    await client.postJson(
+      `/threads/${encodeURIComponent(threadId)}/modify`,
+      { removeLabelIds: ["INBOX"] },
+      GMAIL_COST.modifyThread,
+    );
+    return true;
+  } catch (error) {
+    if (error instanceof GmailNotFoundError) return false;
+    throw error;
+  }
 }
 
 /** What the mail sync needs from a mailbox, whatever the provider. */

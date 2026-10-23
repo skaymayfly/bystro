@@ -7,6 +7,7 @@ import htmlMessage from "./fixtures/message-html.json";
 import listExample from "./fixtures/messages-list.json";
 import { GmailClient } from "./gmail";
 import {
+  archiveGmailThread,
   getGmailMessage,
   GMAIL_COST,
   GmailMailbox,
@@ -204,5 +205,45 @@ describe("GmailMailbox", () => {
     });
     expect(urls[1]?.searchParams.get("q")).toBe("newer_than:30d");
     expect(urls[1]?.searchParams.get("labelIds")).toBe("SENT");
+  });
+});
+
+describe("archiveGmailThread", () => {
+  it("removes INBOX from the whole thread with one POST for 10 units", async () => {
+    const requests: { url: URL; method: string; body: string }[] = [];
+    const costs: number[] = [];
+    const gmail = new GmailClient({
+      accessToken: new Secret("access-token"),
+      onRequest: async (cost) => {
+        costs.push(cost);
+      },
+      fetch: (async (input: string | URL | Request, init?: RequestInit) => {
+        requests.push({
+          url: new URL(String(input)),
+          method: init?.method ?? "GET",
+          body: String(init?.body),
+        });
+        return Response.json({ id: "t1", historyId: "901" });
+      }) as typeof fetch,
+    });
+
+    expect(await archiveGmailThread(gmail, "t1")).toBe(true);
+    expect(requests).toEqual([
+      {
+        url: new URL("https://gmail.googleapis.com/gmail/v1/users/me/threads/t1/modify"),
+        method: "POST",
+        body: JSON.stringify({ removeLabelIds: ["INBOX"] }),
+      },
+    ]);
+    expect(costs).toEqual([GMAIL_COST.modifyThread]);
+  });
+
+  it("reports a thread that no longer exists and passes on other errors", async () => {
+    const { gmail } = client(() => ({ status: 404 }));
+    expect(await archiveGmailThread(gmail, "gone")).toBe(false);
+    const denied = client(() => ({ status: 401 }));
+    await expect(archiveGmailThread(denied.gmail, "t1")).rejects.toMatchObject({
+      code: "reauth_required",
+    });
   });
 });
