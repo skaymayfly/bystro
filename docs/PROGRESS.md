@@ -114,7 +114,7 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - Rozhodnutí: [ADR 0007](decisions/0007-odesilani-posty.md).
 - Databáze: migrace `0007_action_mail_send` (nová hodnota typu akce). API: `POST /api/mail/send` → 202 `{ actionId, status }`; `GET /api/mail/send/{id}` → `{ status, errorCode }`.
 - Testy: sestavení zprávy (diakritika, vlákno, vložené konce řádků odmítnuté) a validace; adaptér (odeslání, cena, limity, hledání v Odeslaných); worker (odeslání jednou, už odeslaná se neposílá, chyby, dořešení visících akcí); web (jedna akce na editor, šifrovaný text, role, cizí vlákno); E2E (odpověď s dvojklikem → jediná akce ve správném vlákně, nový e-mail).
-- 👤 Zbývá: na nasazené verzi poslat testovací e-mail na jinou svou adresu a ověřit, že dorazil (podmínka kroku); ověřit, že Gmail ponechal `Message-ID` od Bystra.
+- Ověřeno: CI na PR #32 i na `main`; uživatel z nasazené verze poslal nový e-mail i odpověď ve vláknu a obojí dorazilo, odpověď ve správném vlákně (2026-10-26). Zda Gmail ponechává `Message-ID` od Bystra, zatím ověřené není (pojistka přes Odeslané na tom závisí).
 - Otevřené body: „Odpovědět všem“; přílohy; schválená akce, kterou se nepodařilo zařadit do fronty (výpadek Redisu), pořád čeká na opakování požadavku.
 - Další krok: 5.7 Akce „Upomínka faktury“.
 
