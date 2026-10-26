@@ -7,7 +7,7 @@ import {
   todayInPrague,
   type DateOnly,
 } from "@bystro/core";
-import { getInvoiceDetail } from "@bystro/db";
+import { getInvoiceDetail, listMailCorrespondents } from "@bystro/db";
 import { ChevronLeft, History, ListOrdered } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { requireRequestContext } from "@/server/context";
 import { getDb } from "@/server/db";
 import { findMailbox } from "@/server/mail";
-import { loadReminderState } from "@/server/reminders";
+import { loadReminderState, recipientSuggestions } from "@/server/reminders";
 
 export const metadata: Metadata = { title: "Faktura – Bystro" };
 
@@ -102,6 +102,13 @@ export default async function InvoiceDetailPage(props: PageProps<"/app/faktury/[
           reminded: remindedOn.some((on) => on >= (invoice.dueOn as DateOnly)),
         });
   const mailbox = overdue ? await findMailbox(db, organization.id) : null;
+  const suggestions =
+    overdue && mailbox !== null
+      ? recipientSuggestions(
+          company === null ? null : { name: company.name, email: company.email },
+          await listMailCorrespondents(db, organization.id),
+        )
+      : [];
   const reminderTexts = (tone: "formal" | "soft") =>
     reminderText({
       tone,
@@ -202,6 +209,7 @@ export default async function InvoiceDetailPage(props: PageProps<"/app/faktury/[
               hasMailbox={mailbox !== null}
               canSend={role === "owner" || role === "admin"}
               defaultTo={defaultTo}
+              suggestions={suggestions}
               subject={reminderSubject(invoice.number)}
               texts={{ formal: reminderTexts("formal"), soft: reminderTexts("soft") }}
             />

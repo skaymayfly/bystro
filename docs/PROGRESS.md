@@ -115,7 +115,8 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - Databáze: migrace `0008_reminder_settings` (dva sloupce a kontrola u `organizations`). API: `POST /api/invoices/{id}/reminder`, `POST /api/organizations/reminder-settings`.
 - Testy: pravidlo návrhu a šablony; MIME s přílohou; DB (upomínky faktury, úprava náhledu jen u navržené akce, nastavení); worker (návrh jednou, bez Gmailu nic, odeslání s PDF i bez, zaplacená faktura neodejde); web (jedna akce i při dvojkliku, šifrovaný text, zamítnutí, role, faktura v termínu, bez Gmailu); E2E (návrh → jemnější tón → úprava → odeslání → jedna schválená akce s upraveným textem → po provedení „Připomenuto“ v detailu i seznamu).
 - 👤 Zbývá: na nasazené verzi poslat upomínku k faktuře po splatnosti (klientem může být vlastní adresa) a ověřit, že dorazila i s PDF.
-- Otevřené body: hlídání platby po upomínce (5.9); upomínka pro klienta bez e-mailu (dnes se nenavrhne, uživatel může adresu doplnit v kartě).
+- Klient bez e-mailu: ráno se mu upomínka nenavrhne, ale v kartě jde adresu vybrat z nabídky (e-mail z fakturace, pak lidé z Pošty za poslední měsíc, nahoře ti, jejichž jméno nebo doména sedí s názvem klienta), nebo napsat.
+- Otevřené body: hlídání platby po upomínce (5.9).
 - Další krok: 5.8 Obrazovka Akce.
 
 ## 2026-10-26 — krok 5.6 Odpověď a nový e-mail

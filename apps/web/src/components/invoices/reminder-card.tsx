@@ -18,6 +18,9 @@ const ERRORS: Record<string, string> = {
 };
 const FALLBACK = "Poslat se nepovedlo. Zkus to prosím znovu.";
 
+const formatPerson = (person: { name: string | null; address: string }) =>
+  person.name === null ? person.address : `${person.name} <${person.address}>`;
+
 const fieldClass =
   "w-full rounded-control border border-line-strong bg-card px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-4 focus:border-link focus:shadow-focus";
 
@@ -30,6 +33,8 @@ export interface ReminderCardProps {
   hasMailbox: boolean;
   canSend: boolean;
   defaultTo: string;
+  /** Addresses to pick from: the client's, then people from Pošta who match the client. */
+  suggestions: { name: string | null; address: string }[];
   subject: string;
   /** The text in the formal and the softer tone, made on the server. */
   texts: { formal: string; soft: string };
@@ -44,6 +49,7 @@ export function ReminderCard(props: ReminderCardProps) {
   const [open, setOpen] = useState(props.proposed);
   const [soft, setSoft] = useState(false);
   const [text, setText] = useState(props.texts.formal);
+  const [to, setTo] = useState(props.defaultTo);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,7 +80,7 @@ export function ReminderCard(props: ReminderCardProps) {
     const form = new FormData(event.currentTarget);
     void post({
       decision: "send",
-      to: String(form.get("to") ?? ""),
+      to,
       subject: String(form.get("subject") ?? ""),
       body: text,
       attachPdf: form.get("attachPdf") === "on",
@@ -154,8 +160,42 @@ export function ReminderCard(props: ReminderCardProps) {
       <form onSubmit={send} aria-label="Připomínka faktury" className="flex flex-col gap-2.5">
         <label className="flex flex-col gap-1 text-xs text-ink-3">
           Komu
-          <input name="to" defaultValue={props.defaultTo} required className={fieldClass} />
+          <input
+            name="to"
+            value={to}
+            onChange={(event) => setTo(event.target.value)}
+            list="reminder-recipients"
+            required
+            placeholder="jmeno@firma.cz"
+            className={fieldClass}
+          />
         </label>
+        <datalist id="reminder-recipients">
+          {props.suggestions.map((person) => (
+            <option key={person.address} value={formatPerson(person)} />
+          ))}
+        </datalist>
+        {props.defaultTo === "" && (
+          <p className="text-xs text-ink-3">
+            Klient nemá ve fakturaci e-mail. Vyber adresu, nebo ji napiš.
+          </p>
+        )}
+        {props.suggestions.length > 0 && (
+          <div role="group" aria-label="Vybrat adresu" className="flex flex-wrap gap-1.5">
+            {props.suggestions.slice(0, 6).map((person) => (
+              <button
+                key={person.address}
+                type="button"
+                onClick={() => setTo(formatPerson(person))}
+                aria-pressed={to === formatPerson(person)}
+                className="max-w-full truncate rounded-full border border-line-strong px-2.5 py-1 text-xs text-ink-2 transition-colors hover:bg-chip aria-pressed:border-link aria-pressed:text-link"
+                title={person.address}
+              >
+                {person.name === null ? person.address : `${person.name} · ${person.address}`}
+              </button>
+            ))}
+          </div>
+        )}
         <label className="flex flex-col gap-1 text-xs text-ink-3">
           Předmět
           <input name="subject" defaultValue={props.subject} required className={fieldClass} />

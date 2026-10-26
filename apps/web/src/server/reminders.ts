@@ -234,3 +234,41 @@ export async function loadRemindedOn(db: Db, organizationId: string): Promise<Ma
   }
   return result;
 }
+
+/** Lower-case words of a name without diacritics and legal forms ("Novák s.r.o." → ["novak"]). */
+function nameWords(value: string): string[] {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((word) => word.length >= 3 && !["sro", "spol", "a.s"].includes(word));
+}
+
+/**
+ * Whom a reminder can go to: the client's own e-mail first, then people from Pošta whose
+ * name or address shares a word with the client's name, then the rest. One per address.
+ */
+export function recipientSuggestions(
+  client: { name: string; email: string | null } | null,
+  correspondents: readonly { name: string | null; address: string }[],
+): { name: string | null; address: string }[] {
+  const words = client === null ? [] : nameWords(client.name);
+  const matches = (person: { name: string | null; address: string }) => {
+    const theirs = nameWords(`${person.name ?? ""} ${person.address}`);
+    return words.some((word) => theirs.includes(word));
+  };
+  const ordered = [
+    ...(client?.email === null || client?.email === undefined
+      ? []
+      : [{ name: client.name, address: client.email.toLowerCase() }]),
+    ...correspondents.filter(matches),
+    ...correspondents.filter((person) => !matches(person)),
+  ];
+  const seen = new Set<string>();
+  return ordered.filter((person) => {
+    if (seen.has(person.address)) return false;
+    seen.add(person.address);
+    return true;
+  });
+}

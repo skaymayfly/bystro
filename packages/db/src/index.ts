@@ -86,6 +86,7 @@ export {
   deleteMailMessages,
   deleteMailReceivedBefore,
   getMailThread,
+  listMailCorrespondents,
   listMailFolder,
   listMailMessages,
   listMailThreads,

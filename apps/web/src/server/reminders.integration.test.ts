@@ -14,7 +14,12 @@ import {
 import { createTestOrganization, readTestDatabase } from "@bystro/db/testing";
 import { afterAll, describe, expect, it } from "vitest";
 
-import { handleReminder, loadRemindedOn, type ReminderRequest } from "./reminders";
+import {
+  handleReminder,
+  loadRemindedOn,
+  recipientSuggestions,
+  type ReminderRequest,
+} from "./reminders";
 
 const { db, close } = createDb(readTestDatabase().url);
 const key = randomBytes(32);
@@ -206,5 +211,35 @@ describe("handleReminder", () => {
   it("knows when each invoice was last reminded", async () => {
     const { who } = await company();
     expect((await loadRemindedOn(db, who.organizationId)).size).toBe(0);
+  });
+});
+
+describe("recipientSuggestions", () => {
+  const people = [
+    { name: "Lenka Horáková", address: "lenka@horakova.test" },
+    { name: "Účetní Eva", address: "eva@novak-sro.test" },
+    { name: null, address: "info@pekarna.test" },
+  ];
+
+  it("puts the client's e-mail first, then people matching the client, once each", () => {
+    expect(
+      recipientSuggestions({ name: "Novák s.r.o.", email: "Jana@Novak.test" }, [
+        ...people,
+        { name: "Jana", address: "jana@novak.test" },
+      ]).map((person) => person.address),
+    ).toEqual([
+      "jana@novak.test",
+      "eva@novak-sro.test",
+      "lenka@horakova.test",
+      "info@pekarna.test",
+    ]);
+  });
+
+  it("offers the people from Pošta when the client has no e-mail", () => {
+    expect(
+      recipientSuggestions({ name: "Pekárna U Mlýna", email: null }, people).map(
+        (person) => person.address,
+      ),
+    ).toEqual(["info@pekarna.test", "lenka@horakova.test", "eva@novak-sro.test"]);
   });
 });
