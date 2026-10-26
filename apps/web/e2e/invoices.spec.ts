@@ -339,7 +339,7 @@ test("upomínka: návrh → úprava textu → odeslání → Připomenuto", asyn
   await expect(page.getByText("Gmail je propojený.")).toBeVisible();
 
   await page.goto("/app/faktury?stav=po-splatnosti");
-  await page.getByRole("link", { name: /Novák s\.r\.o\..*2026-0142/ }).click();
+  await listed(page).filter({ hasText: "2026-0142" }).click();
   await page.getByRole("button", { name: "Poslat připomínku" }).click();
   const form = page.getByRole("form", { name: "Připomínka faktury" });
   await expect(form.getByLabel("Komu")).toHaveValue("Novák s.r.o. <novak@example.test>");
