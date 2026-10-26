@@ -379,7 +379,7 @@ Výsledek fáze: uživatel schválí upomínku k faktuře po splatnosti, odejde 
 
 **Hotovo když:** E2E: vlákno se otevře, archivace ho přesune a projeví se v Gmailu; žádné HTML z e-mailu se nevykreslí.
 
-### - [ ] 5.6 Odpověď a nový e-mail
+### - [x] 5.6 Odpověď a nový e-mail
 
 **Cíl:** odpovídat a psát rovnou z Bystra.
 
