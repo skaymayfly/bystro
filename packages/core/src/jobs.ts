@@ -212,6 +212,17 @@ export const executeActionJob = defineJob<ExecuteActionPayload>({
 });
 
 /**
+ * Every morning, proposes reminders of invoices that are overdue long enough (the
+ * company's settings) and have not been reminded recently. Proposes only; the user sends.
+ */
+export const proposeRemindersJob = defineJob<EmptyPayload>({
+  name: "actions.propose-reminders",
+  queue: QUEUE_NAMES.scheduled,
+  schema: emptyPayloadSchema,
+  retry: DEFAULT_RETRY_POLICY,
+});
+
+/**
  * Settles actions whose worker stopped while carrying them out (deploy, crash): an e-mail
  * found in the mailbox's Odeslané counts as sent, otherwise the action fails as
  * `interrupted`. Nothing is sent again.
@@ -267,6 +278,8 @@ export const JOB_SCHEDULES: readonly JobSchedule[] = [
   schedule("sync-mail-night", "0 0-5,22,23 * * *", dispatchMailSyncJob, { mode: "incremental" }),
   schedule("sync-mail-daily-full", "15 3 * * *", dispatchMailSyncJob, { mode: "full" }),
   schedule("recover-actions", "*/10 * * * *", recoverActionsJob, {}),
+  // Before the morning brief: the proposals are ready when the user opens Bystro.
+  schedule("propose-reminders", "30 7 * * *", proposeRemindersJob, {}),
 ];
 
 // ---------------------------------------------------------------------------------------

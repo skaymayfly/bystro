@@ -145,3 +145,40 @@ describe("small helpers", () => {
     expect(toBase64Url("ž?>")).toBe(Buffer.from("ž?>").toString("base64url"));
   });
 });
+
+describe("attachments", () => {
+  it("sends the text and the PDF as multipart/mixed, both in base64", () => {
+    const pdf = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x37]);
+    const raw = buildMimeMessage(
+      compose({
+        attachments: [{ fileName: "faktura-27.pdf", contentType: "application/pdf", content: pdf }],
+      }),
+    );
+    expect(headerOf(raw, "Content-Type")).toBe(
+      'multipart/mixed; boundary="=_bystro_part_boundary"',
+    );
+    const parts = raw.split("--=_bystro_part_boundary");
+    expect(parts).toHaveLength(4);
+    expect(parts[1]).toContain('Content-Type: text/plain; charset="UTF-8"');
+    expect(parts[2]).toContain('Content-Disposition: attachment; filename="faktura-27.pdf"');
+    const data = parts[2]?.split("\r\n\r\n")[1]?.replace(/\r\n/g, "") ?? "";
+    expect(Buffer.from(data, "base64")).toEqual(Buffer.from(pdf));
+    expect(parts[3]?.startsWith("--")).toBe(true);
+  });
+
+  it("refuses an attachment name that would break the headers", () => {
+    expect(() =>
+      buildMimeMessage(
+        compose({
+          attachments: [
+            {
+              fileName: 'x"\r\nBcc: a@b.test',
+              contentType: "application/pdf",
+              content: new Uint8Array(),
+            },
+          ],
+        }),
+      ),
+    ).toThrow(RangeError);
+  });
+});

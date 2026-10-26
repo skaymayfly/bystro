@@ -107,6 +107,17 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 
 ## Záznamy
 
+## 2026-10-26 — krok 5.7 Akce „Upomínka faktury“
+
+- Dokumentace (2026-10-26): Fakturoid `download.pdf` (PDF, `204` dokud není vygenerované).
+- Hotovo: pravidlo návrhu a šablony upomínky (dva tóny) v `packages/core/src/reminders.ts`; e-mail s přílohou (multipart MIME); nastavení firmy pro upomínky (migrace `0008_reminder_settings`) v Nastavení → Upozornění; ranní úloha `actions.propose-reminders` (7:30); provedení `invoice_reminder` (Gmail + PDF z fakturace, bez PDF když není); karta „Připomínka“ na detailu faktury po splatnosti (komu, předmět, text, tón, PDF, „Odeslat připomínku“ / „Teď ne“, „Poslat připomínku“ bez návrhu, stav odesílání); stav „Připomenuto“ v seznamu i detailu a řádek v historii. Dořešení visících akcí platí i pro upomínky a jedna nečitelná akce už nezastaví ostatní.
+- Rozhodnutí: [ADR 0008](decisions/0008-upominky-faktur.md).
+- Databáze: migrace `0008_reminder_settings` (dva sloupce a kontrola u `organizations`). API: `POST /api/invoices/{id}/reminder`, `POST /api/organizations/reminder-settings`.
+- Testy: pravidlo návrhu a šablony; MIME s přílohou; DB (upomínky faktury, úprava náhledu jen u navržené akce, nastavení); worker (návrh jednou, bez Gmailu nic, odeslání s PDF i bez, zaplacená faktura neodejde); web (jedna akce i při dvojkliku, šifrovaný text, zamítnutí, role, faktura v termínu, bez Gmailu); E2E (návrh → jemnější tón → úprava → odeslání → jedna schválená akce s upraveným textem → po provedení „Připomenuto“ v detailu i seznamu).
+- 👤 Zbývá: na nasazené verzi poslat upomínku k faktuře po splatnosti (klientem může být vlastní adresa) a ověřit, že dorazila i s PDF.
+- Otevřené body: hlídání platby po upomínce (5.9); upomínka pro klienta bez e-mailu (dnes se nenavrhne, uživatel může adresu doplnit v kartě).
+- Další krok: 5.8 Obrazovka Akce.
+
 ## 2026-10-26 — krok 5.6 Odpověď a nový e-mail
 
 - Dokumentace (2026-10-26): `users.messages.send`, návod k odesílání (RFC 2822, base64url, vlákno), operátor `rfc822msgid:`.

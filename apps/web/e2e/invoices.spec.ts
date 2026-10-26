@@ -1,7 +1,10 @@
 import { formatCzk, todayInPrague, type Client, type DateOnly, type Invoice } from "@bystro/core";
 import {
+  applyActionEvent,
   applyConnectionEvent,
   createDb,
+  decrypt,
+  listActions,
   listConnections,
   listOrganizationsForUser,
   upsertCompanies,
@@ -10,6 +13,7 @@ import {
 import { readTestDatabase } from "@bystro/db/testing";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 
+import { E2E_ENCRYPTION_KEY } from "./config";
 import { completeOnboarding, createSignedInUser } from "./helpers";
 
 const SOURCE = "fakturoid";
@@ -106,8 +110,12 @@ const INVOICES: Invoice[] = [
 ];
 
 /** Connects Fakturoid in the browser (through the stand-in) and stores synced invoices. */
+/** The user of the shared session, for looking at what the tests left in the database. */
+let sharedUserId = "";
+
 async function companyWithInvoices(page: Page): Promise<void> {
   const { userId } = await createSignedInUser(page.context());
+  sharedUserId = userId;
   await page.goto("/onboarding");
   await completeOnboarding(page);
   await page.goto("/app/nastaveni?karta=propojeni");
@@ -307,4 +315,68 @@ test("cizí ani vymyšlenou fakturu otevřít nejde", async ({ browser, page }) 
   // And this company's own list is empty.
   await page.goto("/app/faktury");
   await expect(page.getByText("Zatím tu žádné faktury nejsou")).toBeVisible();
+});
+
+async function reminderActions() {
+  const { db, close } = createDb(readTestDatabase().url);
+  try {
+    const [membership] = await listOrganizationsForUser(db, sharedUserId);
+    const organizationId = membership?.organization.id ?? "";
+    const actions = (await listActions(db, organizationId)).filter(
+      (action) => action.type === "invoice_reminder",
+    );
+    return { organizationId, actions };
+  } finally {
+    await close();
+  }
+}
+
+// Last on purpose: it connects Gmail in the shared session.
+test("upomínka: návrh → úprava textu → odeslání → Připomenuto", async ({ browser }) => {
+  const page = await signedIn(browser);
+  await page.goto("/app/posta");
+  await page.getByRole("button", { name: "Propojit e-mail" }).click();
+  await expect(page.getByText("Gmail je propojený.")).toBeVisible();
+
+  await page.goto("/app/faktury?stav=po-splatnosti");
+  await page.getByRole("link", { name: /Novák s\.r\.o\..*2026-0142/ }).click();
+  await page.getByRole("button", { name: "Poslat připomínku" }).click();
+  const form = page.getByRole("form", { name: "Připomínka faktury" });
+  await expect(form.getByLabel("Komu")).toHaveValue("Novák s.r.o. <novak@example.test>");
+  await expect(form.getByLabel("Předmět")).toHaveValue("Připomínka faktury 2026-0142");
+  await expect(form.getByLabel("Text")).toHaveValue(/fakturu 2026-0142 na .*, která byla splatná/);
+  await form.getByRole("button", { name: "Jemnější tón" }).click();
+  await expect(form.getByLabel("Text")).toHaveValue(/jen drobnost/);
+
+  const edited = "Dobrý den,\nposílám upravenou připomínku.\nPetr Dvořák";
+  await form.getByLabel("Text").fill(edited);
+  await form.getByRole("button", { name: "Odeslat připomínku" }).dblclick();
+  await expect(page.getByText("Připomínka se odesílá z tvé schránky.")).toBeVisible();
+
+  const { organizationId, actions } = await reminderActions();
+  expect(actions).toHaveLength(1);
+  const [action] = actions;
+  expect(action?.status).toBe("approved");
+  const preview = action?.preview as { bodyEncrypted: string; attachPdf: boolean };
+  expect(preview.attachPdf).toBe(true);
+  expect(decrypt(preview.bodyEncrypted, Buffer.from(E2E_ENCRYPTION_KEY, "base64"))).toBe(edited);
+
+  // What the worker does (no worker runs in E2E): the reminder went out.
+  const { db, close } = createDb(readTestDatabase().url);
+  try {
+    const worker = { actor: { type: "system" as const }, source: "worker" as const };
+    await applyActionEvent(db, organizationId, action?.id ?? "", "start", worker);
+    await applyActionEvent(db, organizationId, action?.id ?? "", "succeed", {
+      ...worker,
+      resultReference: "sent-in-e2e",
+    });
+  } finally {
+    await close();
+  }
+  await page.reload();
+  await expect(page.getByText("Připomenuto").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Poslat připomínku" })).toBeVisible();
+  await page.goto("/app/faktury?stav=po-splatnosti");
+  await expect(listed(page).filter({ hasText: "2026-0142" })).toContainText("Připomenuto");
+  await page.context().close();
 });

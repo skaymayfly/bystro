@@ -126,3 +126,35 @@ export async function listOrganizationsForUser(
     .where(eq(memberships.userId, requireUuid(userId, "userId")))
     .orderBy(asc(memberships.createdAt), asc(memberships.id));
 }
+
+/**
+ * Changes when Bystro proposes reminders of overdue invoices. Both values are whole days
+ * from 1 to 60; the change is audited with the new values.
+ */
+export async function setReminderSettings(
+  db: Db,
+  organizationId: string,
+  settings: { afterDays: number; repeatDays: number },
+  context: { userId: string; source: AuditSource },
+): Promise<void> {
+  const orgId = requireUuid(organizationId, "organizationId");
+  const userId = requireUuid(context.userId, "userId");
+  for (const value of [settings.afterDays, settings.repeatDays]) {
+    if (!Number.isInteger(value) || value < 1 || value > 60) {
+      throw new RangeError("Reminder days must be whole numbers from 1 to 60.");
+    }
+  }
+  await db.transaction(async (tx) => {
+    await tx
+      .update(organizations)
+      .set({ reminderAfterDays: settings.afterDays, reminderRepeatDays: settings.repeatDays })
+      .where(eq(organizations.id, orgId));
+    await writeAudit(tx, orgId, {
+      actor: { type: "user", userId },
+      action: "organization.reminder_settings_changed",
+      target: { type: "organization", id: orgId },
+      source: context.source,
+      metadata: { afterDays: settings.afterDays, repeatDays: settings.repeatDays },
+    });
+  });
+}

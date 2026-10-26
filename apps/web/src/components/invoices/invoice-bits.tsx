@@ -4,11 +4,13 @@ import { cn } from "@/lib/utils";
 
 const TONE_PILL: Record<InvoiceTone, string> = {
   danger: "bg-danger-soft text-danger-strong",
+  warning: "bg-warning-soft text-warning-strong",
   neutral: "bg-chip text-ink-2",
   success: "bg-success-soft text-success-strong",
 };
 const TONE_DOT: Record<InvoiceTone, string> = {
   danger: "bg-danger-strong",
+  warning: "bg-warning-strong",
   neutral: "bg-ink-2",
   success: "bg-success-strong",
 };

@@ -9,7 +9,7 @@ import {
   type AuditSource,
   type JsonValue,
 } from "@bystro/core";
-import { and, desc, eq, inArray, lt } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, sql } from "drizzle-orm";
 
 import { writeAudit, type AuditActor } from "./audit";
 import type { Db, DbExecutor } from "./client";
@@ -385,4 +385,60 @@ export async function listStuckActions(
       ),
     )
     .orderBy(actions.statusChangedAt);
+}
+
+/** Reminder actions about one invoice of the organization, newest first. */
+export async function listInvoiceReminders(
+  db: Db,
+  organizationId: string,
+  invoiceId: string,
+): Promise<StoredAction[]> {
+  const orgId = requireUuid(organizationId, "organizationId");
+  const id = requireUuid(invoiceId, "invoiceId");
+  return db
+    .select()
+    .from(actions)
+    .where(
+      and(
+        eq(actions.organizationId, orgId),
+        eq(actions.type, "invoice_reminder"),
+        sql`${actions.sources} @> ${JSON.stringify([{ type: "invoice", id }])}::jsonb`,
+      ),
+    )
+    .orderBy(desc(actions.createdAt), desc(actions.id));
+}
+
+/**
+ * Replaces the preview of an action that is still waiting for a decision (the user edited
+ * the text before sending). Returns `null` when the action is no longer proposed. The audit
+ * records that it changed, never what it says.
+ */
+export async function updateProposedActionPreview(
+  db: Db,
+  organizationId: string,
+  actionId: string,
+  preview: { [key: string]: JsonValue },
+  context: { userId: string; source: AuditSource },
+): Promise<StoredAction | null> {
+  const orgId = requireUuid(organizationId, "organizationId");
+  const userId = requireUuid(context.userId, "userId");
+  return db.transaction(async (tx) => {
+    const current = await requireAction(tx, orgId, actionId, { lock: true });
+    if (current.status !== "proposed") {
+      return null;
+    }
+    const [updated] = await tx
+      .update(actions)
+      .set({ preview })
+      .where(eq(actions.id, current.id))
+      .returning();
+    await writeAudit(tx, orgId, {
+      actor: { type: "user", userId },
+      action: "action.preview_edited",
+      target: { type: "action", id: current.id },
+      source: context.source,
+      metadata: { type: current.type },
+    });
+    return updated ?? null;
+  });
 }
