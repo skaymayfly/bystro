@@ -45,7 +45,7 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 - **👤 Ověření Gmailu u Googlu před betou** (krok 8.3): `gmail.modify` je restricted scope, veřejný provoz potřebuje ověření aplikace a bezpečnostní posouzení. Do té doby Gmail jen pro testovací uživatele a s přístupem na 7 dní.
 - **Upomínky pro firmy bez Gmailu:** Outlook přijde ve fázi 8; Seznam.cz nemá OAuth API pro poštu (jen SMTP/IMAP s heslem, hesla neukládáme). Rozhodnout, co nabídnout firmám na Seznamu.
 - **Vypršelé akce se zatím neoznačují samy.** Akce po platnosti se označí `expired` až ve chvíli, kdy ji někdo zkusí schválit nebo spustit. Pravidelnou úlohu, která je označí, přidat v kroku 5.2 nebo 5.4, až budou akce vznikat.
-- **Akce, kterou worker začal provádět a pak spadl** (nasazení, pád), zůstane ve stavu `executing`. Úloha se neopakuje, aby se nic neodeslalo dvakrát. Až budou akce něco odesílat (5.3/5.4), vyřešit: po čase ji označit `failed` s kódem `interrupted`, nebo ověřit u poskytovatele, jestli zpráva odešla.
+- **Akce, kterou worker začal provádět a pak spadl** (nasazení, pád): pro `mail_send` vyřešeno v kroku 5.6 (úloha `maintenance.recover-actions` ověří v Odeslaných, ADR 0007). Až přibude další typ akce, který něco provádí venku, potřebuje vlastní ověření.
 - **Schválená akce, kterou se nepodařilo zařadit do fronty** (Redis nedostupný), čeká, dokud uživatel schválení nezopakuje. Pravidelnou úlohu, která schválené a nezahájené akce zařadí znovu, přidat spolu s označováním vypršelých akcí v kroku 5.4.
 - **Client secret iDokladu prošel chatem** (2026-10-11, na snímku obrazovky z Developer portálu). Je v lokálním `.env` a v Railway; před betou v portálu vytvořit nový (Detail aplikace → Client secret → Nový client secret), starý smazat a nový zadat přímo do Railway (web i worker).
 - **iDoklad není ověřený proti skutečnému účtu s daty.** Stav k 2026-10-11: přihlášení a vydání tokenu proti skutečnému iDokladu funguje; dál se nedošlo, protože účet uživatele je na tarifu Základní a iDoklad dává API až od tarifu Oblíbený (ceník <https://www.idoklad.cz/cenik>: Zdarma a Základní 0 požadavků, Oblíbený 7 500, Prémiový 75 000 měsíčně). Uživatel to vyzkouší s někým, kdo tarif s API platí. Při tom ověřit: že faktury a součty na obrazovce Faktury sedí s iDokladem (podmínka kroku 2.8); v jakém tvaru chodí data (`2026-09-30`, nebo s časem); jestli jsou částky dobropisů záporné; že smazaný doklad vrací 404; že `Reports/…/Pdf` vrací PDF v Base64. Potom nahrát skutečné odpovědi do `packages/integrations/src/idoklad/fixtures/recorded/` (skript jako u Fakturoidu zatím není). Když propojení selže, řádek `Integration connection failed` v logu služby web říká krok a kód (`detail`).
@@ -106,6 +106,17 @@ Nejnovější záznam nahoře. Claude Code přidá záznam po každém dokončen
 ---
 
 ## Záznamy
+
+## 2026-10-26 — krok 5.6 Odpověď a nový e-mail
+
+- Dokumentace (2026-10-26): `users.messages.send`, návod k odesílání (RFC 2822, base64url, vlákno), operátor `rfc822msgid:`.
+- Hotovo: v Poště „Odpovědět“ pod vláknem (příjemce kdo psal naposled, předmět „Re: …“) a „Nový e-mail“; jen prostý text. Kliknutí na „Odeslat“ navrhne a schválí akci `mail_send` (klíč editoru → jedna akce), worker sestaví zprávu (RFC 2822, UTF-8, diakritika v hlavičkách, vlákno přes `threadId`, `In-Reply-To`, `References`) s `Message-ID` z ID akce, ověří Odeslané a odešle; výsledkem je ID zprávy z Gmailu. Úloha `maintenance.recover-actions` dořeší visící odesílání. Editor ukazuje stav a nikdy neříká „odesláno“, dokud to není pravda.
+- Rozhodnutí: [ADR 0007](decisions/0007-odesilani-posty.md).
+- Databáze: migrace `0007_action_mail_send` (nová hodnota typu akce). API: `POST /api/mail/send` → 202 `{ actionId, status }`; `GET /api/mail/send/{id}` → `{ status, errorCode }`.
+- Testy: sestavení zprávy (diakritika, vlákno, vložené konce řádků odmítnuté) a validace; adaptér (odeslání, cena, limity, hledání v Odeslaných); worker (odeslání jednou, už odeslaná se neposílá, chyby, dořešení visících akcí); web (jedna akce na editor, šifrovaný text, role, cizí vlákno); E2E (odpověď s dvojklikem → jediná akce ve správném vlákně, nový e-mail).
+- 👤 Zbývá: na nasazené verzi poslat testovací e-mail na jinou svou adresu a ověřit, že dorazil (podmínka kroku); ověřit, že Gmail ponechal `Message-ID` od Bystra.
+- Otevřené body: „Odpovědět všem“; přílohy; schválená akce, kterou se nepodařilo zařadit do fronty (výpadek Redisu), pořád čeká na opakování požadavku.
+- Další krok: 5.7 Akce „Upomínka faktury“.
 
 ## 2026-10-24 — oprava: dlouhé první načtení pošty
 

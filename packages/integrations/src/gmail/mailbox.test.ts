@@ -8,12 +8,14 @@ import listExample from "./fixtures/messages-list.json";
 import { GmailClient } from "./gmail";
 import {
   archiveGmailThread,
+  findSentGmailMessage,
   getGmailMessage,
   GMAIL_COST,
   GmailMailbox,
   listGmailHistory,
   listGmailMessages,
   MailHistoryExpiredError,
+  sendGmailMessage,
 } from "./mailbox";
 
 type Route = { status: number; body?: unknown; headers?: Record<string, string> };
@@ -288,5 +290,55 @@ describe("Gmail's 403 reasons", () => {
       expect(error.retryable).toBe(false);
       expect(String(error)).not.toContain("secret text");
     }
+  });
+});
+
+describe("sending", () => {
+  it("sends the raw message into its thread for 100 units and returns Gmail's ids", async () => {
+    const requests: { url: URL; body: string }[] = [];
+    const costs: number[] = [];
+    const gmail = new GmailClient({
+      accessToken: new Secret("access-token"),
+      onRequest: async (cost) => {
+        costs.push(cost);
+      },
+      fetch: (async (input: string | URL | Request, init?: RequestInit) => {
+        requests.push({ url: new URL(String(input)), body: String(init?.body) });
+        return Response.json({ id: "sent-1", threadId: "t1", labelIds: ["SENT"] });
+      }) as typeof fetch,
+    });
+
+    expect(await sendGmailMessage(gmail, "cmF3", "t1")).toEqual({ id: "sent-1", threadId: "t1" });
+    expect(requests[0]?.url.pathname).toBe("/gmail/v1/users/me/messages/send");
+    expect(JSON.parse(requests[0]?.body ?? "")).toEqual({ raw: "cmF3", threadId: "t1" });
+    expect(costs).toEqual([GMAIL_COST.send]);
+
+    await sendGmailMessage(gmail, "cmF3", null);
+    expect(JSON.parse(requests[1]?.body ?? "")).toEqual({ raw: "cmF3" });
+  });
+
+  it("maps Gmail's sending limit and refuses a malformed answer", async () => {
+    const limited = client(() => ({ status: 429, headers: { "retry-after": "3600" } }));
+    await expect(sendGmailMessage(limited.gmail, "cmF3", null)).rejects.toMatchObject({
+      code: "rate_limited",
+      retryAfterMs: 3_600_000,
+    });
+    const odd = client(() => ({ status: 200, body: { nothing: true } }));
+    await expect(sendGmailMessage(odd.gmail, "cmF3", null)).rejects.toMatchObject({
+      code: "invalid_response",
+    });
+  });
+
+  it("finds a sent message by its Message-ID in Odeslané", async () => {
+    const { gmail, urls } = client(() => ({
+      status: 200,
+      body: { messages: [{ id: "sent-1", threadId: "t1" }] },
+    }));
+    expect(await findSentGmailMessage(gmail, "<bystro.a1@dvorak.test>")).toBe("sent-1");
+    expect(urls[0]?.searchParams.get("q")).toBe("rfc822msgid:bystro.a1@dvorak.test");
+    expect(urls[0]?.searchParams.get("labelIds")).toBe("SENT");
+
+    const none = client(() => ({ status: 200, body: { resultSizeEstimate: 0 } }));
+    expect(await findSentGmailMessage(none.gmail, "<x@y>")).toBeNull();
   });
 });

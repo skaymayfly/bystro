@@ -469,6 +469,9 @@ export interface MailThreadMessage {
   /** Plain text, decrypted. Untrusted: show as text only, never as HTML. */
   bodyText: string;
   hasAttachments: boolean;
+  /** `Message-ID` and `References`: what a reply to this message refers to. */
+  messageIdHeader: string | null;
+  references: string[];
 }
 
 export interface MailThreadDetail {
@@ -506,6 +509,8 @@ export async function getMailThread(
     subject: row.subject,
     bodyText: decrypt(row.bodyEncrypted, encryptionKey),
     hasAttachments: row.hasAttachments,
+    messageIdHeader: row.messageIdHeader,
+    references: row.references,
   }));
   return {
     externalId: threadExternalId,

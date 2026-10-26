@@ -211,6 +211,18 @@ export const executeActionJob = defineJob<ExecuteActionPayload>({
   retry: { attempts: 1, baseDelayMs: 0, maxDelayMs: 0, jitter: 0 },
 });
 
+/**
+ * Settles actions whose worker stopped while carrying them out (deploy, crash): an e-mail
+ * found in the mailbox's Odeslané counts as sent, otherwise the action fails as
+ * `interrupted`. Nothing is sent again.
+ */
+export const recoverActionsJob = defineJob<EmptyPayload>({
+  name: "maintenance.recover-actions",
+  queue: QUEUE_NAMES.scheduled,
+  schema: emptyPayloadSchema,
+  retry: DEFAULT_RETRY_POLICY,
+});
+
 // ---------------------------------------------------------------------------------------
 // Schedules
 // ---------------------------------------------------------------------------------------
@@ -254,6 +266,7 @@ export const JOB_SCHEDULES: readonly JobSchedule[] = [
   schedule("sync-mail-day", "*/5 6-21 * * *", dispatchMailSyncJob, { mode: "incremental" }),
   schedule("sync-mail-night", "0 0-5,22,23 * * *", dispatchMailSyncJob, { mode: "incremental" }),
   schedule("sync-mail-daily-full", "15 3 * * *", dispatchMailSyncJob, { mode: "full" }),
+  schedule("recover-actions", "*/10 * * * *", recoverActionsJob, {}),
 ];
 
 // ---------------------------------------------------------------------------------------

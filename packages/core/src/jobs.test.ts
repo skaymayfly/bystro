@@ -110,6 +110,7 @@ describe("job definitions and schedules", () => {
         ["sync-mail-day", "sync.dispatch-mail", { mode: "incremental" }],
         ["sync-mail-night", "sync.dispatch-mail", { mode: "incremental" }],
         ["sync-mail-daily-full", "sync.dispatch-mail", { mode: "full" }],
+        ["recover-actions", "maintenance.recover-actions", {}],
       ],
     );
   });

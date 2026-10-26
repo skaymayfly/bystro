@@ -9,8 +9,10 @@
 
 /** Kinds of actions. More come with the features that need them. */
 export const ACTION_TYPES = [
-  /** Remind a client of an overdue invoice (step 5.4). */
+  /** Remind a client of an overdue invoice (step 5.7). */
   "invoice_reminder",
+  /** Send an e-mail the user wrote in Pošta: a reply or a new message (step 5.6). */
+  "mail_send",
 ] as const;
 export type ActionType = (typeof ACTION_TYPES)[number];
 

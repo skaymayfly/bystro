@@ -49,12 +49,14 @@ export {
 } from "./gmail/gmail";
 export {
   archiveGmailThread,
+  findSentGmailMessage,
   getGmailMessage,
   GMAIL_COST,
   GmailMailbox,
   listGmailHistory,
   listGmailMessages,
   MailHistoryExpiredError,
+  sendGmailMessage,
   type GmailMessageRef,
   type MailboxReader,
 } from "./gmail/mailbox";

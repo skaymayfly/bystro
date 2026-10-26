@@ -14,6 +14,7 @@ export {
   getAction,
   getApproval,
   listActions,
+  listStuckActions,
   proposeAction,
   type ActionSourceRef,
   type ProposeActionInput,

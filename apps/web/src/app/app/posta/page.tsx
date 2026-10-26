@@ -1,3 +1,4 @@
+import { replySubject } from "@bystro/core";
 import {
   countMailMessages,
   countUnreadInboxThreads,
@@ -7,7 +8,7 @@ import {
   type MailThreadDetail,
   type MailThreadListItem,
 } from "@bystro/db";
-import { ArrowLeft, Inbox, Mail, Paperclip, Search } from "lucide-react";
+import { ArrowLeft, Inbox, Mail, Paperclip, PenLine, Search } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -23,7 +24,8 @@ import { ConnectForm } from "@/components/connections/connect-form";
 import { ConnectOutcomeNotice, loadConnections } from "@/components/connections/connections-tab";
 import { ArchiveButton } from "@/components/mail/archive-button";
 import { AutoRefresh } from "@/components/mail/auto-refresh";
-import { Button } from "@/components/ui/button";
+import { NewMail, ReplyBox } from "@/components/mail/composer";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { relativeTime } from "@/lib/connection-status";
 import {
   addressLabel,
@@ -112,7 +114,29 @@ function ThreadRow({
   );
 }
 
-function ThreadDetail({ thread, backHref }: { thread: MailThreadDetail; backHref: string }) {
+/** Who a reply goes to: whoever wrote last other than the user, else whom the user wrote to. */
+function replyTarget(thread: MailThreadDetail): string {
+  const received = [...thread.messages]
+    .reverse()
+    .find((message) => !message.labels.includes("SENT"));
+  const people =
+    received?.from !== null && received !== undefined
+      ? [received.from]
+      : (thread.messages.at(-1)?.to ?? []);
+  return people
+    .map((person) => (person.name === null ? person.address : `${person.name} <${person.address}>`))
+    .join(", ");
+}
+
+function ThreadDetail({
+  thread,
+  backHref,
+  canSend,
+}: {
+  thread: MailThreadDetail;
+  backHref: string;
+  canSend: boolean;
+}) {
   return (
     <Card className="gap-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -162,6 +186,13 @@ function ThreadDetail({ thread, backHref }: { thread: MailThreadDetail; backHref
           </li>
         ))}
       </ol>
+      {canSend && (
+        <ReplyBox
+          threadId={thread.externalId}
+          defaultTo={replyTarget(thread)}
+          defaultSubject={replySubject(thread.messages.at(-1)?.subject ?? thread.subject)}
+        />
+      )}
     </Card>
   );
 }
@@ -171,7 +202,8 @@ function ThreadDetail({ thread, backHref }: { thread: MailThreadDetail; backHref
  * thread side by side (one at a time on a phone). Mail is shown as plain text only.
  */
 export default async function MailPage(props: PageProps<"/app/posta">) {
-  const { organization } = await requireRequestContext();
+  const { organization, role } = await requireRequestContext();
+  const canSend = role === "owner" || role === "admin";
   const query = await props.searchParams;
   const outcome = param(query.propojeni);
   const { mailbox, mailAvailable } =
@@ -219,6 +251,7 @@ export default async function MailPage(props: PageProps<"/app/posta">) {
       : Promise.resolve(null),
   ]);
   const listHref = mailHref({ folder, query: search });
+  const writing = canSend && param(query.novy) === "1" && mailbox.status !== "reauth_required";
   const updated =
     mailbox.lastSyncAt === null
       ? null
@@ -238,7 +271,20 @@ export default async function MailPage(props: PageProps<"/app/posta">) {
       <PageHeader
         title="Pošta"
         text={["Gmail", mailbox.displayName, updated].filter(Boolean).join(" · ")}
-      />
+      >
+        {canSend && mailbox.status !== "reauth_required" && (
+          <Link href="/app/posta?novy=1" className={buttonVariants({ size: "sm" })}>
+            <PenLine aria-hidden />
+            Nový e-mail
+          </Link>
+        )}
+      </PageHeader>
+      {param(query.odeslano) !== undefined && (
+        <p role="status" className="text-sm text-success-strong">
+          {param(query.odeslano) === "1" ? "E-mail odešel." : "E-mail se odesílá na pozadí."} V
+          Odeslaných se objeví po nejbližší aktualizaci.
+        </p>
+      )}
       <ConnectOutcomeNotice outcome={outcome} provider="gmail" />
       {mailbox.status === "reauth_required" && (
         <Card className="items-start gap-3">
@@ -270,7 +316,12 @@ export default async function MailPage(props: PageProps<"/app/posta">) {
         />
       ) : (
         <div className="grid items-start gap-4 lg:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]">
-          <Card className={cn("gap-0 overflow-hidden p-0", open !== null && "hidden lg:flex")}>
+          <Card
+            className={cn(
+              "gap-0 overflow-hidden p-0",
+              (open !== null || writing) && "hidden lg:flex",
+            )}
+          >
             <div className="flex flex-col gap-3 p-4">
               <nav aria-label="Složky pošty" className={SEGMENTED_BAR}>
                 {(["inbox", "sent"] as const).map((key) => (
@@ -331,8 +382,18 @@ export default async function MailPage(props: PageProps<"/app/posta">) {
             )}
           </Card>
 
-          {open !== null ? (
-            <ThreadDetail thread={open} backHref={listHref} />
+          {writing ? (
+            <Card className="gap-4">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold tracking-[-0.01em]">Nový e-mail</h2>
+                <Link href={listHref} className="text-[13px] text-ink-3 hover:text-ink">
+                  Zahodit
+                </Link>
+              </div>
+              <NewMail />
+            </Card>
+          ) : open !== null ? (
+            <ThreadDetail thread={open} backHref={listHref} canSend={canSend} />
           ) : (
             <Card className="hidden items-center gap-2 py-16 text-center lg:flex">
               <Mail aria-hidden size={22} className="text-ink-4" />

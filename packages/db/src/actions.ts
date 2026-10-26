@@ -9,7 +9,7 @@ import {
   type AuditSource,
   type JsonValue,
 } from "@bystro/core";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, lt } from "drizzle-orm";
 
 import { writeAudit, type AuditActor } from "./audit";
 import type { Db, DbExecutor } from "./client";
@@ -361,4 +361,28 @@ export async function decideAction(
     throw new ActionExpiredError(outcome.action);
   }
   return outcome.action;
+}
+
+/**
+ * Actions of a type that have been `executing` since before `startedBefore`, in every
+ * organization: their worker most likely stopped half-way (deploy, crash). System use only
+ * (the worker's recovery job): identifiers only, each one is then handled inside its
+ * organization.
+ */
+export async function listStuckActions(
+  db: Db,
+  type: ActionType,
+  startedBefore: Date,
+): Promise<{ organizationId: string; actionId: string }[]> {
+  return db
+    .select({ organizationId: actions.organizationId, actionId: actions.id })
+    .from(actions)
+    .where(
+      and(
+        eq(actions.type, type),
+        eq(actions.status, "executing"),
+        lt(actions.statusChangedAt, startedBefore),
+      ),
+    )
+    .orderBy(actions.statusChangedAt);
 }
