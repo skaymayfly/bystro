@@ -105,6 +105,7 @@ export {
   defineJob,
   dispatchInvoiceSyncJob,
   dispatchMailSyncJob,
+  recoverActionsJob,
   MAIL_SYNC_JOB_MODES,
   syncMailJob,
   type DispatchMailSyncPayload,
@@ -158,6 +159,22 @@ export {
   type MailMessage,
   type MimePart,
 } from "./mail";
+export {
+  buildMimeMessage,
+  mailDraftSchema,
+  mailSendPreviewSchema,
+  MAX_MAIL_RECIPIENTS,
+  MAX_MAIL_SUBJECT_CHARS,
+  MAX_MAIL_TEXT_CHARS,
+  messageIdForAction,
+  replySubject,
+  toBase64Url,
+  type ComposedMail,
+  type MailDraft,
+  type MailRecipient,
+  type MailSendPreview,
+  type MailThreading,
+} from "./mail-compose";
 export { organizationInputSchema, type OrganizationInput } from "./organization-input";
 export {
   AMOUNT_KEY,

@@ -1,6 +1,7 @@
 import type { MailMessage } from "@bystro/core";
 import {
   createDb,
+  listActions,
   listConnections,
   listOrganizationsForUser,
   readConnectionTokens,
@@ -214,5 +215,77 @@ test("Pošta: vlákno se otevře jako text bez HTML a archivace ho přesune i v 
   expect(await modifiedThreads(page)).toContainEqual({
     id: "thread-faktura",
     removeLabelIds: ["INBOX"],
+  });
+});
+
+async function mailActions(userId: string) {
+  const { db, close } = createDb(readTestDatabase().url);
+  try {
+    const [membership] = await listOrganizationsForUser(db, userId);
+    return (await listActions(db, membership?.organization.id ?? "")).filter(
+      (action) => action.type === "mail_send",
+    );
+  } finally {
+    await close();
+  }
+}
+
+test("Pošta: odpověď a nový e-mail, dvojklik na Odeslat vytvoří jediné odeslání", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const { userId } = await createSignedInUser(page.context());
+  await page.goto("/onboarding");
+  await completeOnboarding(page);
+  await page.goto("/app/posta");
+  await page.getByRole("button", { name: "Propojit e-mail" }).click();
+  await expect(page.getByText("Gmail je propojený.")).toBeVisible();
+  await storeMail(userId, [
+    mail("dotaz", {
+      subject: "Dotaz na termín",
+      messageIdHeader: "<dotaz-1@novak.example>",
+      references: ["<dotaz-0@novak.example>"],
+    }),
+  ]);
+
+  // A reply: addressed to whoever wrote, in the thread, one action however often clicked.
+  await page.goto("/app/posta?vlakno=thread-dotaz");
+  await page.getByRole("button", { name: "Odpovědět" }).click();
+  const reply = page.getByRole("form", { name: "Odpověď" });
+  await expect(reply.getByLabel("Komu")).toHaveValue("Jana Nová <jana@novak.example>");
+  await expect(reply.getByLabel("Předmět")).toHaveValue("Re: Dotaz na termín");
+  await reply.getByLabel("Text").fill("Hodí se čtvrtek v 10.");
+  await reply.getByRole("button", { name: "Odeslat" }).dblclick();
+  await expect(reply.getByRole("button", { name: /Odesílám/ })).toBeVisible();
+
+  await expect.poll(async () => (await mailActions(userId)).length).toBe(1);
+  const [action] = await mailActions(userId);
+  expect(action?.status).toBe("approved");
+  expect(action?.preview).toMatchObject({
+    to: [{ name: "Jana Nová", address: "jana@novak.example" }],
+    subject: "Re: Dotaz na termín",
+    threadExternalId: "thread-dotaz",
+    inReplyTo: "<dotaz-1@novak.example>",
+    references: ["<dotaz-0@novak.example>"],
+  });
+  expect(JSON.stringify(action?.preview)).not.toContain("čtvrtek");
+
+  // A new e-mail goes out without a thread.
+  await page.goto("/app/posta");
+  await page.getByRole("link", { name: "Nový e-mail" }).click();
+  await expect(page).toHaveURL("/app/posta?novy=1");
+  const draft = page.getByRole("form", { name: "Nový e-mail" });
+  await draft.getByLabel("Komu").fill("Lenka Horáková <lenka@horakova.example>");
+  await draft.getByLabel("Předmět").fill("Nabídka");
+  await draft.getByLabel("Text").fill("Posílám nabídku.");
+  await draft.getByRole("button", { name: "Odeslat" }).click();
+
+  await expect.poll(async () => (await mailActions(userId)).length).toBe(2);
+  const created = (await mailActions(userId)).find(
+    (item) => (item.preview as { subject?: string }).subject === "Nabídka",
+  );
+  expect(created?.preview).toMatchObject({
+    to: [{ name: "Lenka Horáková", address: "lenka@horakova.example" }],
+    threadExternalId: null,
   });
 });

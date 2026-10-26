@@ -30,6 +30,7 @@ import { getGmailProfile, GMAIL_SOURCE, GmailNotFoundError, type GmailClient } f
 export const GMAIL_COST = {
   list: 5,
   modifyThread: 10,
+  send: 100,
   getFull: 60,
   getMinimal: 20,
   history: 2,
@@ -262,6 +263,48 @@ export async function archiveGmailThread(client: GmailClient, threadId: string):
     if (error instanceof GmailNotFoundError) return false;
     throw error;
   }
+}
+
+const sentSchema = z.object({ id: z.string(), threadId: z.string() });
+
+/**
+ * Sends a message (`messages.send`, 100 quota units): `raw` is the whole RFC 2822 message
+ * in base64url, `threadExternalId` puts a reply into its thread. Documentation (read
+ * 2026-10-26): https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/send
+ * and https://developers.google.com/workspace/gmail/api/guides/sending. A success means
+ * Gmail accepted the message, not that it was delivered.
+ */
+export async function sendGmailMessage(
+  client: GmailClient,
+  raw: string,
+  threadExternalId: string | null,
+): Promise<{ id: string; threadId: string }> {
+  const body = await client.postJson(
+    "/messages/send",
+    threadExternalId === null ? { raw } : { raw, threadId: threadExternalId },
+    GMAIL_COST.send,
+  );
+  const parsed = sentSchema.safeParse(body);
+  if (!parsed.success) {
+    throw new ProviderError("invalid_response");
+  }
+  return parsed.data;
+}
+
+/**
+ * The id of a sent message with this `Message-ID` header, or `null` (search operator
+ * `rfc822msgid:`, https://support.google.com/mail/answer/7190). Lets Bystro find out
+ * whether a message it was sending went out before a crash.
+ */
+export async function findSentGmailMessage(
+  client: GmailClient,
+  messageIdHeader: string,
+): Promise<string | null> {
+  const page = await listGmailMessages(client, {
+    labelId: "SENT",
+    query: `rfc822msgid:${messageIdHeader.replace(/^<|>$/g, "")}`,
+  });
+  return page.messages[0]?.id ?? null;
 }
 
 /** What the mail sync needs from a mailbox, whatever the provider. */

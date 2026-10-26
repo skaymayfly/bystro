@@ -50,6 +50,13 @@
       "when": 1792798239918,
       "tag": "0006_sync_progress",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793014660449,
+      "tag": "0007_action_mail_send",
+      "breakpoints": true
     }
   ]
 }

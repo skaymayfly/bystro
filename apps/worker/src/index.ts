@@ -3,8 +3,10 @@ import {
   dispatchInvoiceSyncJob,
   dispatchMailSyncJob,
   executeActionJob,
+  recoverActionsJob,
   syncInvoicesJob,
   syncMailJob,
+  type SyncMailPayload,
 } from "@bystro/core";
 import { createDb, deleteExpiredOAuthRequests, listSyncTargets } from "@bystro/db";
 
@@ -13,6 +15,7 @@ import { cleanupOAuthRequestsHandler } from "./jobs/cleanup-oauth-requests";
 import { dispatchInvoiceSyncHandler } from "./jobs/dispatch-invoice-sync";
 import { dispatchMailSyncHandler } from "./jobs/dispatch-mail-sync";
 import { executeActionHandler } from "./jobs/execute-action";
+import { createMailSendExecutor, recoverActionsHandler } from "./jobs/send-mail";
 import { syncInvoicesHandler } from "./jobs/sync-invoices";
 import { syncMailHandler } from "./jobs/sync-mail";
 import { logger } from "./logger";
@@ -54,6 +57,13 @@ async function start(): Promise<void> {
   const queues = createQueues(connection);
 
   const rateLimiter = createRateLimiter(connection, queues.prefix);
+  const mailSend = {
+    db,
+    encryptionKey: env.encryptionKey,
+    gmail: env.providers.gmail,
+    enqueueMailSync: (data: SyncMailPayload, jobId: string) =>
+      enqueue(queues, syncMailJob, data, { jobId }),
+  };
   const registry = new JobRegistry()
     .register(
       cleanupOAuthRequestsJob,
@@ -93,8 +103,11 @@ async function start(): Promise<void> {
         resolveMailbox: createMailboxResolver(env.providers),
       }),
     )
-    // No action type can be carried out yet: sending reminders comes with steps 5.3 and 5.4.
-    .register(executeActionJob, executeActionHandler({ db, executors: {} }));
+    .register(
+      executeActionJob,
+      executeActionHandler({ db, executors: { mail_send: createMailSendExecutor(mailSend) } }),
+    )
+    .register(recoverActionsJob, recoverActionsHandler(mailSend));
 
   await registerSchedules(queues);
   const workers = startWorkers({

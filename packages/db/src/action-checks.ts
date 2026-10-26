@@ -1,6 +1,7 @@
 import { invoiceStatus, todayInPrague, type DateOnly } from "@bystro/core";
 
 import type { Db } from "./client";
+import { getConnection } from "./integrations";
 import { getInvoiceDetail } from "./invoices";
 import type { StoredAction } from "./actions";
 
@@ -41,6 +42,18 @@ async function checkInvoiceReminder(db: Db, action: StoredAction, now: Date): Pr
   return status === "overdue" ? { ok: true } : { ok: false, reason: "source_changed" };
 }
 
+/** An e-mail can go out only while the mailbox it is sent from is still connected. */
+async function checkMailSend(db: Db, action: StoredAction): Promise<ActionCheck> {
+  const source = action.sources.find((item) => item.type === "integration_connection");
+  if (source === undefined || !UUID.test(source.id)) {
+    return { ok: false, reason: "source_missing" };
+  }
+  const connection = await getConnection(db, action.organizationId, source.id);
+  return connection === null || connection.status === "revoked"
+    ? { ok: false, reason: "source_missing" }
+    : { ok: true };
+}
+
 export async function checkActionStillValid(
   db: Db,
   action: StoredAction,
@@ -49,5 +62,7 @@ export async function checkActionStillValid(
   switch (action.type) {
     case "invoice_reminder":
       return checkInvoiceReminder(db, action, now);
+    case "mail_send":
+      return checkMailSend(db, action);
   }
 }
