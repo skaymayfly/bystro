@@ -4,10 +4,14 @@ import {
   buildMimeMessage,
   mailSendPreviewSchema,
   messageIdForAction,
-  ProviderError,
+  reminderPreviewSchema,
   syncMailJob,
   toBase64Url,
   type EmptyPayload,
+  type InvoiceDocument,
+  type MailAttachment,
+  type MailDraft,
+  type MailThreading,
   type SyncMailPayload,
 } from "@bystro/core";
 import {
@@ -15,6 +19,7 @@ import {
   decrypt,
   getAction,
   getConnection,
+  listConnections,
   listStuckActions,
   readConnectionTokens,
   type Db,
@@ -59,11 +64,18 @@ export interface MailSendDeps {
 
 const SYSTEM = { actor: { type: "system" as const }, source: "worker" as const };
 
-/** The mailbox an action sends from: its connection, as recorded in the action's sources. */
+/**
+ * The mailbox an action sends from: the connection recorded in its sources (a message
+ * written in Pošta), or else the company's connected Gmail (a reminder).
+ */
 async function mailboxOf(db: Db, action: StoredAction): Promise<IntegrationConnection> {
   const source = action.sources.find((item) => item.type === "integration_connection");
   const connection =
-    source === undefined ? null : await getConnection(db, action.organizationId, source.id);
+    source !== undefined
+      ? await getConnection(db, action.organizationId, source.id)
+      : ((await listConnections(db, action.organizationId)).find(
+          (item) => item.provider === GMAIL_SOURCE && item.status !== "revoked",
+        ) ?? null);
   if (
     connection === null ||
     connection.provider !== GMAIL_SOURCE ||
@@ -117,48 +129,106 @@ async function gmailFor(deps: MailSendDeps, connection: IntegrationConnection) {
   }
 }
 
+interface OutgoingMail {
+  draft: MailDraft;
+  threading: MailThreading | null;
+  attachments: MailAttachment[];
+}
+
 /**
- * Carries out a `mail_send` action: builds the message the user wrote, with a Message-ID
- * derived from the action, and sends it from the user's own mailbox. If a message with that
- * Message-ID is already in Odeslané (a previous attempt went out), it is not sent again.
- * The result is Gmail's id of the sent message. Nothing of the mail is logged.
+ * Sends a message for an action from the company's Gmail, with a Message-ID derived from
+ * the action. If a message with that Message-ID is already in Odeslané (a previous attempt
+ * went out), it is not sent again. Returns Gmail's id of the sent message.
  */
-export function createMailSendExecutor(deps: MailSendDeps): ActionExecutor {
+async function sendForAction(
+  deps: MailSendDeps,
+  action: StoredAction,
+  build: () => Promise<OutgoingMail>,
+): Promise<{ resultReference: string }> {
   const now = deps.now ?? (() => new Date());
+  const connection = await mailboxOf(deps.db, action);
+  const client = await gmailFor(deps, connection);
+  const address = connection.externalAccountId as string;
+  const messageId = messageIdForAction(action.id, address);
+
+  const already = await findSentGmailMessage(client, messageId);
+  if (already !== null) {
+    return { resultReference: already };
+  }
+
+  const mail = await build();
+  const raw = buildMimeMessage({
+    from: { name: null, address },
+    draft: mail.draft,
+    messageId,
+    threading: mail.threading,
+    date: now(),
+    attachments: mail.attachments,
+  });
+  const sent = await sendGmailMessage(
+    client,
+    toBase64Url(raw),
+    mail.threading?.threadExternalId ?? null,
+  );
+
+  // Best effort: the regular sync would pick the message up within minutes anyway.
+  await deps
+    .enqueueMailSync?.(
+      { organizationId: action.organizationId, connectionId: connection.id, mode: "incremental" },
+      buildJobId(syncMailJob.name, connection.id, "sent", action.id),
+    )
+    .catch(() => false);
+  return { resultReference: sent.id };
+}
+
+/** Carries out a `mail_send` action: the e-mail the user wrote in Pošta. */
+export function createMailSendExecutor(deps: MailSendDeps): ActionExecutor {
   return async (action) => {
     const preview = mailSendPreviewSchema.safeParse(action.preview);
     if (!preview.success) {
       throw new MailSendError("invalid_preview");
     }
-    const connection = await mailboxOf(deps.db, action);
-    const client = await gmailFor(deps, connection);
-    const address = connection.externalAccountId as string;
-    const messageId = messageIdForAction(action.id, address);
-
-    const already = await findSentGmailMessage(client, messageId);
-    if (already !== null) {
-      return { resultReference: already };
-    }
-
     const { to, cc, subject, bodyEncrypted, threadExternalId, inReplyTo, references } =
       preview.data;
-    const raw = buildMimeMessage({
-      from: { name: null, address },
+    return sendForAction(deps, action, async () => ({
       draft: { to, cc, subject, body: decrypt(bodyEncrypted, deps.encryptionKey) },
-      messageId,
       threading: threadExternalId === null ? null : { threadExternalId, inReplyTo, references },
-      date: now(),
-    });
-    const sent = await sendGmailMessage(client, toBase64Url(raw), threadExternalId);
+      attachments: [],
+    }));
+  };
+}
 
-    // Best effort: the regular sync would pick the message up within minutes anyway.
-    await deps
-      .enqueueMailSync?.(
-        { organizationId: action.organizationId, connectionId: connection.id, mode: "incremental" },
-        buildJobId(syncMailJob.name, connection.id, "sent", action.id),
-      )
-      .catch(() => false);
-    return { resultReference: sent.id };
+/** Fetches the invoice's PDF from its invoicing system; `null` when it cannot be had now. */
+export type InvoiceDocumentFetcher = (
+  organizationId: string,
+  invoiceId: string,
+) => Promise<InvoiceDocument | null>;
+
+/**
+ * Carries out an `invoice_reminder` action: the reminder the user approved, with the
+ * invoice's PDF attached when asked for and available. Without the PDF (not generated yet,
+ * or the invoicing system is unavailable) the reminder still goes out.
+ */
+export function createInvoiceReminderExecutor(
+  deps: MailSendDeps & { fetchDocument: InvoiceDocumentFetcher },
+): ActionExecutor {
+  return async (action) => {
+    const preview = reminderPreviewSchema.safeParse(action.preview);
+    const invoice = action.sources.find((item) => item.type === "invoice");
+    if (!preview.success || preview.data.bodyEncrypted === null || invoice === undefined) {
+      throw new MailSendError("invalid_preview");
+    }
+    const { to, subject, bodyEncrypted, attachPdf } = preview.data;
+    return sendForAction(deps, action, async () => {
+      const document = attachPdf
+        ? await deps.fetchDocument(action.organizationId, invoice.id).catch(() => null)
+        : null;
+      return {
+        draft: { to, cc: [], subject, body: decrypt(bodyEncrypted, deps.encryptionKey) },
+        threading: null,
+        attachments: document === null ? [] : [document],
+      };
+    });
   };
 }
 
@@ -166,18 +236,18 @@ export function createMailSendExecutor(deps: MailSendDeps): ActionExecutor {
 const STUCK_AFTER_MS = 15 * 60 * 1000;
 
 /**
- * Settles `mail_send` actions whose worker stopped half-way: when the message is in
+ * Settles e-mail actions (`mail_send`, `invoice_reminder`) whose worker stopped half-way: when the message is in
  * Odeslané it succeeded (with its id), otherwise it failed as `interrupted`. When Gmail
  * cannot be asked right now, the action is left for the next run. Never sends anything.
  */
 export function recoverActionsHandler(deps: MailSendDeps): JobHandler<EmptyPayload> {
   const now = deps.now ?? (() => new Date());
   return async ({ logger }) => {
-    const stuck = await listStuckActions(
-      deps.db,
-      "mail_send",
-      new Date(now().getTime() - STUCK_AFTER_MS),
-    );
+    const since = new Date(now().getTime() - STUCK_AFTER_MS);
+    const stuck = [
+      ...(await listStuckActions(deps.db, "mail_send", since)),
+      ...(await listStuckActions(deps.db, "invoice_reminder", since)),
+    ];
     let succeeded = 0;
     let failed = 0;
     let unknown = 0;
@@ -197,11 +267,11 @@ export function recoverActionsHandler(deps: MailSendDeps): JobHandler<EmptyPaylo
         if (error instanceof MailSendError && error.code === "mailbox_missing") {
           // The mailbox is gone: nothing can be checked any more, and nothing was proven sent.
           sentId = null;
-        } else if (error instanceof MailSendError || error instanceof ProviderError) {
+        } else {
+          // Gmail cannot be asked now (or this one action cannot be read): leave it for the
+          // next run, and do not let it hold up the others.
           unknown += 1;
           continue;
-        } else {
-          throw error;
         }
       }
 

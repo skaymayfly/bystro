@@ -101,13 +101,38 @@ function base64Lines(text: string): string {
   return encoded.match(/.{1,76}/g)?.join("\r\n") ?? "";
 }
 
+export interface MailAttachment {
+  fileName: string;
+  contentType: string;
+  content: Uint8Array;
+}
+
 export interface ComposedMail {
   from: MailRecipient;
   draft: MailDraft;
   messageId: string;
   threading: MailThreading | null;
   date: Date;
+  /** Files sent along (e.g. the invoice PDF); the message is then multipart/mixed. */
+  attachments?: readonly MailAttachment[];
 }
+
+/** Base64 of raw bytes, in lines of 76 characters. */
+function base64BytesLines(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return (
+    btoa(binary)
+      .match(/.{1,76}/g)
+      ?.join("\r\n") ?? ""
+  );
+}
+
+/**
+ * Separates the parts of a multipart message. Every part is base64, whose alphabet has no
+ * "_", so this line can never appear inside a part.
+ */
+const BOUNDARY = "=_bystro_part_boundary";
 
 /**
  * The whole message as RFC 2822 text with CRLF line ends: headers, then the body as
@@ -133,15 +158,47 @@ export function buildMimeMessage(mail: ComposedMail): string {
     }
     if (references.length > 0) headers.push(`References: ${references.join(" ")}`);
   }
-  headers.push(
-    "MIME-Version: 1.0",
+  const attachments = mail.attachments ?? [];
+  for (const attachment of attachments) {
+    if (
+      /[\r\n"]/.test(attachment.fileName) ||
+      !/^[\w.+-]+\/[\w.+-]+$/.test(attachment.contentType)
+    ) {
+      throw new RangeError("An attachment has an unusable name or type.");
+    }
+  }
+  headers.push("MIME-Version: 1.0");
+  const textPart = [
     'Content-Type: text/plain; charset="UTF-8"',
     "Content-Transfer-Encoding: base64",
-  );
+    "",
+    base64Lines(draft.body),
+  ].join("\r\n");
+  let body: string;
+  if (attachments.length === 0) {
+    headers.push('Content-Type: text/plain; charset="UTF-8"', "Content-Transfer-Encoding: base64");
+    body = base64Lines(draft.body);
+  } else {
+    headers.push(`Content-Type: multipart/mixed; boundary="${BOUNDARY}"`);
+    const parts = [
+      textPart,
+      ...attachments.map((attachment) => {
+        const name = encodeHeaderText(attachment.fileName);
+        return [
+          `Content-Type: ${attachment.contentType}; name="${name}"`,
+          `Content-Disposition: attachment; filename="${name}"`,
+          "Content-Transfer-Encoding: base64",
+          "",
+          base64BytesLines(attachment.content),
+        ].join("\r\n");
+      }),
+    ];
+    body = `${parts.map((part) => `--${BOUNDARY}\r\n${part}`).join("\r\n")}\r\n--${BOUNDARY}--`;
+  }
   for (const header of headers) {
     if (/[\r\n]/.test(header)) throw new RangeError("A header value contains a line break.");
   }
-  return `${headers.join("\r\n")}\r\n\r\n${base64Lines(draft.body)}\r\n`;
+  return `${headers.join("\r\n")}\r\n\r\n${body}\r\n`;
 }
 
 /** Base64url without padding, as Gmail's `raw` field wants it. */
@@ -163,3 +220,15 @@ export const mailSendPreviewSchema = z.object({
   references: z.array(z.string()),
 });
 export type MailSendPreview = z.infer<typeof mailSendPreviewSchema>;
+
+/**
+ * The preview of an `invoice_reminder` action. Proposed by Bystro with the recipient and
+ * subject only; the text (encrypted) and the user's choices are added when the user sends it.
+ */
+export const reminderPreviewSchema = z.object({
+  to: z.array(recipientSchema).min(1),
+  subject: z.string(),
+  bodyEncrypted: z.string().min(1).nullable(),
+  attachPdf: z.boolean(),
+});
+export type ReminderPreview = z.infer<typeof reminderPreviewSchema>;

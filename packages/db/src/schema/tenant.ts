@@ -14,6 +14,7 @@ import {
   boolean,
   check,
   index,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -51,6 +52,10 @@ export const organizations = pgTable(
     /** ISO 3166-1 alpha-2. */
     country: text("country").notNull().default("CZ"),
     vatPayer: boolean("vat_payer").notNull().default(false),
+    /** Propose a reminder once an invoice is this many days overdue. */
+    reminderAfterDays: integer("reminder_after_days").notNull().default(3),
+    /** After a reminder, propose another one for the same invoice no sooner than this. */
+    reminderRepeatDays: integer("reminder_repeat_days").notNull().default(7),
     createdAt: timestamptz("created_at").defaultNow().notNull(),
     updatedAt: timestamptz("updated_at")
       .defaultNow()
@@ -60,6 +65,10 @@ export const organizations = pgTable(
   (table) => [
     check("organizations_ico_format", sql`${table.ico} ~ '^[0-9]{8}$'`),
     check("organizations_country_format", sql`${table.country} ~ '^[A-Z]{2}$'`),
+    check(
+      "organizations_reminder_days",
+      sql`${table.reminderAfterDays} between 1 and 60 and ${table.reminderRepeatDays} between 1 and 60`,
+    ),
     index("organizations_ico_idx").on(table.ico),
   ],
 );

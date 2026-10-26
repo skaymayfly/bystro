@@ -105,6 +105,7 @@ export {
   defineJob,
   dispatchInvoiceSyncJob,
   dispatchMailSyncJob,
+  proposeRemindersJob,
   recoverActionsJob,
   MAIL_SYNC_JOB_MODES,
   syncMailJob,
@@ -163,6 +164,7 @@ export {
   buildMimeMessage,
   mailDraftSchema,
   mailSendPreviewSchema,
+  reminderPreviewSchema,
   MAX_MAIL_RECIPIENTS,
   MAX_MAIL_SUBJECT_CHARS,
   MAX_MAIL_TEXT_CHARS,
@@ -171,10 +173,25 @@ export {
   toBase64Url,
   type ComposedMail,
   type MailDraft,
+  type MailAttachment,
   type MailRecipient,
   type MailSendPreview,
+  type ReminderPreview,
   type MailThreading,
 } from "./mail-compose";
+export {
+  DEFAULT_REMINDER_SETTINGS,
+  REMINDER_AFTER_DAYS_OPTIONS,
+  REMINDER_REPEAT_DAYS_OPTIONS,
+  REMINDER_TONES,
+  reminderSubject,
+  reminderText,
+  shouldProposeReminder,
+  type ReminderCandidate,
+  type ReminderSettings,
+  type ReminderTextInput,
+  type ReminderTone,
+} from "./reminders";
 export { organizationInputSchema, type OrganizationInput } from "./organization-input";
 export {
   AMOUNT_KEY,

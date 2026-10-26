@@ -2,10 +2,12 @@ import {
   buildInvoiceRows,
   formatDate,
   formatMoney,
+  reminderSubject,
+  reminderText,
   todayInPrague,
   type DateOnly,
 } from "@bystro/core";
-import { getInvoiceDetail } from "@bystro/db";
+import { getInvoiceDetail, listMailCorrespondents } from "@bystro/db";
 import { ChevronLeft, History, ListOrdered } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -14,11 +16,14 @@ import { notFound } from "next/navigation";
 import { Card } from "@/components/bits";
 import { loadConnections } from "@/components/connections/connections-tab";
 import { SourceNote, StatusPill } from "@/components/invoices/invoice-bits";
+import { ReminderCard } from "@/components/invoices/reminder-card";
 import { formatQuantity, invoiceStatusLabel, type InvoiceTone } from "@/lib/invoice-labels";
 import { providerWording } from "@/lib/invoicing-providers";
 import { cn } from "@/lib/utils";
 import { requireRequestContext } from "@/server/context";
 import { getDb } from "@/server/db";
+import { findMailbox } from "@/server/mail";
+import { loadReminderState, recipientSuggestions } from "@/server/reminders";
 
 export const metadata: Metadata = { title: "Faktura – Bystro" };
 
@@ -41,11 +46,11 @@ interface TimelineEvent {
 }
 
 /**
- * Detail of one invoice, as in the prototype but without actions: reminders come with
- * phase 5 and Bystro never changes anything in the invoicing system.
+ * Detail of one invoice, as in the prototype. An overdue invoice has the reminder card;
+ * Bystro never changes anything in the invoicing system itself.
  */
 export default async function InvoiceDetailPage(props: PageProps<"/app/faktury/[id]">) {
-  const { organization } = await requireRequestContext();
+  const { organization, user, role } = await requireRequestContext();
   const { id } = await props.params;
   if (organization === null || !UUID.test(id)) {
     notFound();
@@ -83,11 +88,46 @@ export default async function InvoiceDetailPage(props: PageProps<"/app/faktury/[
     ],
     today,
   );
+  const db = getDb();
+  const reminders = await loadReminderState(db, organization.id, invoice.id);
+  const remindedOn = reminders.sent
+    .map((action) => (action.executedAt === null ? null : todayInPrague(action.executedAt)))
+    .filter((on): on is DateOnly => on !== null);
+  const overdue = row?.status === "overdue";
   // Drafts and cancelled invoices are not listed, but a direct link may still lead here.
   const status: { label: string; tone: InvoiceTone } =
     row === undefined
       ? { label: invoice.sourceStatus === "draft" ? "Koncept" : "Stornováno", tone: "neutral" }
-      : invoiceStatusLabel(row);
+      : invoiceStatusLabel(row, {
+          reminded: remindedOn.some((on) => on >= (invoice.dueOn as DateOnly)),
+        });
+  const mailbox = overdue ? await findMailbox(db, organization.id) : null;
+  const suggestions =
+    overdue && mailbox !== null
+      ? recipientSuggestions(
+          company === null ? null : { name: company.name, email: company.email },
+          await listMailCorrespondents(db, organization.id),
+        )
+      : [];
+  const reminderTexts = (tone: "formal" | "soft") =>
+    reminderText({
+      tone,
+      invoiceNumber: invoice.number,
+      amount: formatMoney(row?.remainingMinor ?? invoice.totalMinor, invoice.currency),
+      dueOn: formatDate(invoice.dueOn as DateOnly),
+      senderName: user.name,
+    });
+  const proposedTo = reminders.open?.preview.to;
+  const defaultTo =
+    Array.isArray(proposedTo) && proposedTo.length > 0
+      ? (proposedTo as { name: string | null; address: string }[])
+          .map((person) =>
+            person.name === null ? person.address : `${person.name} <${person.address}>`,
+          )
+          .join(", ")
+      : company?.email === null || company?.email === undefined
+        ? ""
+        : `${company.name} <${company.email}>`;
   const paid = row?.status === "paid";
   const money = (amountMinor: bigint) => formatMoney(amountMinor, invoice.currency);
 
@@ -105,6 +145,9 @@ export default async function InvoiceDetailPage(props: PageProps<"/app/faktury/[
       title: row.status === "overdue" ? "Splatnost vypršela" : "Splatnost",
       done: row.status === "overdue",
     });
+  }
+  for (const on of remindedOn) {
+    events.push({ on, title: "Připomenuto", done: true });
   }
   if (paid && invoice.paidOn !== null) {
     events.push({ on: invoice.paidOn as DateOnly, title: "Zaplaceno", done: true });
@@ -155,6 +198,22 @@ export default async function InvoiceDetailPage(props: PageProps<"/app/faktury/[
               <Fact label="Kontakt" value={company?.email ?? company?.phone ?? "—"} />
             </div>
           </Card>
+
+          {overdue && (
+            <ReminderCard
+              invoiceId={invoice.id}
+              proposed={reminders.open?.status === "proposed"}
+              sending={
+                reminders.open?.status === "approved" || reminders.open?.status === "executing"
+              }
+              hasMailbox={mailbox !== null}
+              canSend={role === "owner" || role === "admin"}
+              defaultTo={defaultTo}
+              suggestions={suggestions}
+              subject={reminderSubject(invoice.number)}
+              texts={{ formal: reminderTexts("formal"), soft: reminderTexts("soft") }}
+            />
+          )}
 
           {lines.length > 0 && (
             <Card className="gap-1.5">

@@ -538,3 +538,42 @@ export async function archiveMailThread(
   await refreshMailThreads(db, valid);
   return rows.length;
 }
+
+/**
+ * People the company wrote with in the last mail (senders of received mail and recipients
+ * of sent mail), most recent first, one row per address. Used to suggest whom to send
+ * something to; the company's own mailbox address is left out.
+ */
+export async function listMailCorrespondents(
+  db: Db,
+  organizationId: string,
+  limit = 30,
+): Promise<StoredMailAddress[]> {
+  const orgId = requireUuid(organizationId, "organizationId");
+  const result = await db.execute<{ name: string | null; address: string }>(sql`
+    with people as (
+      select m.from_name as name, lower(m.from_address) as address, m.received_at
+      from ${mailMessages} m
+      where m.organization_id = ${orgId}
+        and m.from_address is not null
+        and not ('SENT' = any(m.labels))
+      union all
+      select r ->> 'name', lower(r ->> 'address'), m.received_at
+      from ${mailMessages} m, jsonb_array_elements(m.to_addresses) r
+      where m.organization_id = ${orgId} and 'SENT' = any(m.labels)
+    ),
+    mailbox as (
+      select lower(external_account_id) as address
+      from integration_connections
+      where organization_id = ${orgId} and category = 'email'
+    ),
+    latest as (
+      select distinct on (address) name, address, received_at
+      from people
+      where address not in (select address from mailbox where address is not null)
+      order by address, (name is null), received_at desc
+    )
+    select name, address from latest order by received_at desc limit ${limit}
+  `);
+  return result.rows.map((row) => ({ name: row.name, address: row.address }));
+}

@@ -13,6 +13,7 @@ import {
   deleteMailMessages,
   deleteMailReceivedBefore,
   getMailThread,
+  listMailCorrespondents,
   listMailFolder,
   listMailMessages,
   listMailThreads,
@@ -289,5 +290,38 @@ describe("mail for the Pošta screen", () => {
     expect(await getMailThread(db, second, "t-faktura", key)).toBeNull();
     expect(await archiveMailThread(db, second, "t-faktura")).toBe(0);
     expect(await listMailFolder(db, first, { folder: "inbox" }, key)).toHaveLength(2);
+  });
+});
+
+describe("listMailCorrespondents", () => {
+  it("lists who wrote and who was written to, newest first, without the own mailbox", async () => {
+    const scope = await mailbox("Pošta korespondenti");
+    await upsertMailMessages(
+      db,
+      scope,
+      [
+        message("r1", {
+          receivedAt: new Date("2026-10-20T08:00:00Z"),
+          from: { name: "Jana Nová", address: "Jana@Novak.test" },
+        }),
+        message("s1", {
+          receivedAt: new Date("2026-10-22T08:00:00Z"),
+          labels: ["SENT"],
+          from: { name: "Petr", address: "petr@dvorak.test" },
+          to: [{ name: "Lenka Horáková", address: "lenka@horakova.test" }],
+        }),
+        message("r2", {
+          receivedAt: new Date("2026-10-21T08:00:00Z"),
+          from: { name: null, address: "jana@novak.test" },
+        }),
+      ],
+      key,
+    );
+    expect(await listMailCorrespondents(db, scope.organizationId)).toEqual([
+      { name: "Lenka Horáková", address: "lenka@horakova.test" },
+      { name: "Jana Nová", address: "jana@novak.test" },
+    ]);
+    const other = await mailbox("Pošta korespondenti B");
+    expect(await listMailCorrespondents(db, other.organizationId)).toEqual([]);
   });
 });

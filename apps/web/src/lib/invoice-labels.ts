@@ -21,14 +21,21 @@ export function overdueSentence(count: number): string {
   return count <= 4 ? `${count} faktury jsou po splatnosti` : `${count} faktur je po splatnosti`;
 }
 
-export type InvoiceTone = "danger" | "neutral" | "success";
+export type InvoiceTone = "danger" | "warning" | "neutral" | "success";
 
+/**
+ * The status as the list and the detail show it. An overdue invoice the client was
+ * reminded of since it fell due shows "Připomenuto", as in the prototype.
+ */
 export function invoiceStatusLabel(
   row: Pick<InvoiceRow, "status" | "daysOverdue" | "daysUntilDue">,
+  options: { reminded?: boolean } = {},
 ): { label: string; tone: InvoiceTone } {
   switch (row.status) {
     case "overdue":
-      return { label: `${daysLabel(row.daysOverdue)} po splatnosti`, tone: "danger" };
+      return options.reminded === true
+        ? { label: "Připomenuto", tone: "warning" }
+        : { label: `${daysLabel(row.daysOverdue)} po splatnosti`, tone: "danger" };
     case "due_soon":
       return {
         label:

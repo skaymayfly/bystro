@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Card, CardTitle, PageHeader, PillOptions, SoonBadge } from "@/components/bits";
+import { ReminderSettingsForm } from "@/components/invoices/reminder-settings";
 import { ConnectionsTab } from "@/components/connections/connections-tab";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { Input } from "@/components/ui/input";
@@ -115,10 +116,24 @@ function ProfileTab({ context }: { context: RequestContext }) {
   );
 }
 
-/** Morning brief and cash warning settings from the prototype; none of them is stored yet. */
-function NotificationsTab() {
+/**
+ * Reminders of overdue invoices (stored), then the morning brief and cash warning settings
+ * from the prototype, which are not stored yet.
+ */
+function NotificationsTab({ context }: { context: RequestContext }) {
   return (
     <>
+      <Card>
+        <CardTitle text="Bystro navrhne připomínku k faktuře po splatnosti. Odejde až tvým kliknutím.">
+          Připomínky faktur
+        </CardTitle>
+        <ReminderSettingsForm
+          afterDays={context.organization?.reminderAfterDays ?? 3}
+          repeatDays={context.organization?.reminderRepeatDays ?? 7}
+          canEdit={context.role === "owner" || context.role === "admin"}
+        />
+      </Card>
+
       <Card>
         <CardTitle
           text="Jedna zpráva každý pracovní den. Víkendy tě nechám v klidu."
@@ -221,7 +236,7 @@ export default async function SettingsPage(props: PageProps<"/app/nastaveni">) {
               provider={outcomeProvider}
             />
           )}
-          {active === "upozorneni" && <NotificationsTab />}
+          {active === "upozorneni" && <NotificationsTab context={context} />}
         </div>
       </div>
     </div>

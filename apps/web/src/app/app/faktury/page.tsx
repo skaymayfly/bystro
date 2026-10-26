@@ -27,7 +27,9 @@ import { describeInvoicingSources } from "@/lib/invoicing-providers";
 import { initials } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 import { requireRequestContext } from "@/server/context";
+import { getDb } from "@/server/db";
 import { loadInvoiceOverview } from "@/server/invoices";
+import { loadRemindedOn } from "@/server/reminders";
 
 export const metadata: Metadata = { title: "Faktury – Bystro" };
 
@@ -71,6 +73,7 @@ export default async function InvoicesPage(props: PageProps<"/app/faktury">) {
 
   const now = new Date();
   const { rows, summary } = await loadInvoiceOverview(organization.id, now);
+  const remindedOn = await loadRemindedOn(getDb(), organization.id);
 
   if (rows.length === 0) {
     const { loading } = sources;
@@ -222,7 +225,9 @@ export default async function InvoicesPage(props: PageProps<"/app/faktury">) {
             </div>
             <ul aria-label="Faktury">
               {visible.map((row) => {
-                const status = invoiceStatusLabel(row);
+                const status = invoiceStatusLabel(row, {
+                  reminded: (remindedOn.get(row.id) ?? "") >= row.dueOn,
+                });
                 return (
                   <li key={row.id} className="border-t border-line-soft">
                     <Link

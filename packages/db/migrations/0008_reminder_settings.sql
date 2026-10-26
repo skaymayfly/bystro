@@ -1,0 +1,3 @@
+ALTER TABLE "organizations" ADD COLUMN "reminder_after_days" integer DEFAULT 3 NOT NULL;--> statement-breakpoint
+ALTER TABLE "organizations" ADD COLUMN "reminder_repeat_days" integer DEFAULT 7 NOT NULL;--> statement-breakpoint
+ALTER TABLE "organizations" ADD CONSTRAINT "organizations_reminder_days" CHECK ("organizations"."reminder_after_days" between 1 and 60 and "organizations"."reminder_repeat_days" between 1 and 60);

@@ -3,6 +3,7 @@ import {
   dispatchInvoiceSyncJob,
   dispatchMailSyncJob,
   executeActionJob,
+  proposeRemindersJob,
   recoverActionsJob,
   syncInvoicesJob,
   syncMailJob,
@@ -15,7 +16,12 @@ import { cleanupOAuthRequestsHandler } from "./jobs/cleanup-oauth-requests";
 import { dispatchInvoiceSyncHandler } from "./jobs/dispatch-invoice-sync";
 import { dispatchMailSyncHandler } from "./jobs/dispatch-mail-sync";
 import { executeActionHandler } from "./jobs/execute-action";
-import { createMailSendExecutor, recoverActionsHandler } from "./jobs/send-mail";
+import { createInvoiceDocumentFetcher, proposeRemindersHandler } from "./jobs/reminders";
+import {
+  createInvoiceReminderExecutor,
+  createMailSendExecutor,
+  recoverActionsHandler,
+} from "./jobs/send-mail";
 import { syncInvoicesHandler } from "./jobs/sync-invoices";
 import { syncMailHandler } from "./jobs/sync-mail";
 import { logger } from "./logger";
@@ -57,6 +63,7 @@ async function start(): Promise<void> {
   const queues = createQueues(connection);
 
   const rateLimiter = createRateLimiter(connection, queues.prefix);
+  const invoiceProviders = createInvoiceProviderResolver(env.providers);
   const mailSend = {
     db,
     encryptionKey: env.encryptionKey,
@@ -84,7 +91,7 @@ async function start(): Promise<void> {
         db,
         encryptionKey: env.encryptionKey,
         rateLimiter,
-        resolveProvider: createInvoiceProviderResolver(env.providers),
+        resolveProvider: invoiceProviders,
       }),
     )
     .register(
@@ -105,9 +112,31 @@ async function start(): Promise<void> {
     )
     .register(
       executeActionJob,
-      executeActionHandler({ db, executors: { mail_send: createMailSendExecutor(mailSend) } }),
+      executeActionHandler({
+        db,
+        executors: {
+          mail_send: createMailSendExecutor(mailSend),
+          invoice_reminder: createInvoiceReminderExecutor({
+            ...mailSend,
+            fetchDocument: createInvoiceDocumentFetcher({
+              db,
+              encryptionKey: env.encryptionKey,
+              resolveProvider: invoiceProviders,
+              rateLimiter,
+            }),
+          }),
+        },
+      }),
     )
-    .register(recoverActionsJob, recoverActionsHandler(mailSend));
+    .register(recoverActionsJob, recoverActionsHandler(mailSend))
+    .register(
+      proposeRemindersJob,
+      proposeRemindersHandler({
+        db,
+        listOrganizations: async () =>
+          (await listSyncTargets(db, "invoicing")).map((target) => target.organizationId),
+      }),
+    );
 
   await registerSchedules(queues);
   const workers = startWorkers({
